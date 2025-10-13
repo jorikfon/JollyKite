@@ -249,6 +249,8 @@ header {
     margin: 20px 0;
     z-index: 1;
     cursor: default !important;
+    /* Static background image of the map area */
+    background: url('/images/map-background.png') center center / cover no-repeat;
 }
 
 .leaflet-container {

@@ -25,10 +25,11 @@ class MapController {
             ...config.map.interactions // Spread all interaction settings
         });
 
-        // Добавление тайлов карты
-        L.tileLayer(config.map.tileServer, {
-            attribution: ''
-        }).addTo(this.map);
+        // Не добавляем tile layer - используем CSS gradient background
+        // L.tileLayer(config.map.tileServer, {
+        //     attribution: '',
+        //     detectRetina: false
+        // }).addTo(this.map);
 
         this.addMarkers();
         return this.map;

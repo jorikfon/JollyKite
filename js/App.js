@@ -158,6 +158,32 @@ class App {
             windSpeedElement.textContent = windData.windSpeedKnots.toFixed(1);
         }
 
+        // Обновление индикатора на градиентном баре
+        const windSpeedIndicator = document.getElementById('windSpeedIndicator');
+        if (windSpeedIndicator) {
+            // Масштабируем скорость ветра на шкалу от 0 до 30+ узлов
+            const maxSpeed = 30;
+            const speed = Math.min(windData.windSpeedKnots, maxSpeed);
+            const percentage = (speed / maxSpeed) * 100;
+            windSpeedIndicator.style.left = `${percentage}%`;
+        }
+
+        // Обновление порывов ветра
+        const windGustElement = document.getElementById('windGust');
+        if (windGustElement) {
+            windGustElement.textContent = (windData.windGustKnots !== null && windData.windGustKnots !== undefined)
+                ? windData.windGustKnots.toFixed(1)
+                : '--';
+        }
+
+        // Обновление максимального порыва сегодня
+        const maxGustElement = document.getElementById('maxGust');
+        if (maxGustElement) {
+            maxGustElement.textContent = (windData.maxGustKnots !== null && windData.maxGustKnots !== undefined)
+                ? windData.maxGustKnots.toFixed(1)
+                : '--';
+        }
+
         // Обновление направления и описания ветра
         this.updateWindDescription(windData);
     }
@@ -169,41 +195,35 @@ class App {
         const windTitle = document.getElementById('windTitle');
         const windSubtitle = document.getElementById('windSubtitle');
         const windCardinal = document.getElementById('windCardinal');
-        const windSafetyDesc = document.getElementById('windSafetyDesc');
 
         if (windIcon) windIcon.textContent = windDesc.icon;
         if (windTitle) windTitle.textContent = windDesc.title;
-        if (windSubtitle) windSubtitle.textContent = windDesc.subtitle;
+
+        // windSubtitle показывает только статус безопасности и тип ветра (без скорости)
+        if (windSubtitle && windData.safety) {
+            let safetyText = windData.safety.text + ' • ';
+            let textColor = windData.safety.color;
+
+            // Добавляем информацию о типе ветра (offshore/onshore)
+            if (windData.safety.isOffshore) {
+                safetyText = '⚠️ ОПАСНО • Отжим (offshore)';
+                textColor = '#FF4500'; // Красный для offshore - это всегда опасно!
+            } else if (windData.safety.isOnshore) {
+                safetyText += 'Прижим (onshore)';
+            } else {
+                safetyText += 'Боковой (sideshore)';
+            }
+
+            windSubtitle.textContent = safetyText;
+            windSubtitle.style.color = textColor;
+            windSubtitle.style.fontWeight = '600';
+        }
 
         // Обновление направления ветра (румб)
         if (windCardinal) {
             windCardinal.textContent = this.degreesToCardinal(windData.windDir);
         }
 
-        // Обновление описания безопасности
-        if (windSafetyDesc && windData.safety) {
-            let safetyText = windData.safety.text;
-
-            // Добавляем информацию о типе ветра (offshore/onshore)
-            if (windData.safety.isOffshore) {
-                safetyText += ' • Отжим (offshore)';
-            } else if (windData.safety.isOnshore) {
-                safetyText += ' • Прижим (onshore)';
-            } else {
-                safetyText += ' • Боковой (sideshore)';
-            }
-
-            windSafetyDesc.textContent = safetyText;
-            windSafetyDesc.style.color = windData.safety.color;
-            windSafetyDesc.style.fontWeight = '600';
-        }
-
-        // Обновление цвета на основе безопасности
-        const windButton = document.getElementById('windDescriptionButton');
-        if (windButton && windData.safety) {
-            windButton.style.borderColor = windData.safety.color;
-            windButton.style.boxShadow = `0 0 20px ${windData.safety.color}40`;
-        }
     }
 
     degreesToCardinal(degrees) {

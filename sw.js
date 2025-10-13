@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v1.0.0';
-const API_CACHE_NAME = 'jollykite-api-v1.0.0';
+const CACHE_NAME = 'jollykite-v1.1.8';
+const API_CACHE_NAME = 'jollykite-api-v1.1.8';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -9,6 +9,7 @@ const CORE_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/kiter.png',
+  '/images/map-background.png',
   '/css/main.css',
   '/js/config.js',
   '/js/utils/WindUtils.js',
@@ -75,25 +76,31 @@ self.addEventListener('activate', event => {
 // Обработка fetch запросов
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  
+
+  // НЕ кэшировать плитки карт - всегда загружать из сети
+  if (isMapTile(url)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Стратегия для API запросов - Network First with Cache Fallback
   if (isApiRequest(url)) {
     event.respondWith(handleApiRequest(event.request));
     return;
   }
-  
+
   // Стратегия для статических ресурсов - Cache First
   if (isStaticAsset(url)) {
     event.respondWith(handleStaticAsset(event.request));
     return;
   }
-  
+
   // Стратегия для HTML - Network First with Cache Fallback
   if (isHTMLRequest(event.request)) {
     event.respondWith(handleHTMLRequest(event.request));
     return;
   }
-  
+
   // По умолчанию - попытка из сети с fallback на кэш
   event.respondWith(
     fetch(event.request)
@@ -101,9 +108,16 @@ self.addEventListener('fetch', event => {
   );
 });
 
+// Проверка, является ли запрос плиткой карты
+function isMapTile(url) {
+  return url.hostname.includes('tile.openstreetmap.org') ||
+         url.hostname.includes('basemaps.cartocdn.com') ||
+         url.pathname.match(/\/\d+\/\d+\/\d+(@2x)?\.(png|jpg)/);
+}
+
 // Проверка, является ли запрос API
 function isApiRequest(url) {
-  return url.hostname.includes('lightning.ambientweather.net') || 
+  return url.hostname.includes('lightning.ambientweather.net') ||
          url.hostname.includes('api.open-meteo.com');
 }
 

@@ -13,7 +13,7 @@ const config = {
     // Geographical Locations
     locations: {
         spot: [12.346596280786017, 99.99817902532192], // JollyKite spot coordinates
-        kiter: [12.3468, 100.0125], // Kiter in the sea
+        kiter: [12.3468, 100.0116], // Kiter in the sea (100m closer to shore)
         beachNorth: [12.350, 99.996],
         beachSouth: [12.343, 100.001],
         beach: [12.347, 99.998],
@@ -100,7 +100,7 @@ const config = {
     map: {
         containerId: 'windMap', // Map container element ID
         defaultZoom: 14,
-        centerOffset: -0.002, // Offset map center to the left
+        centerOffset: 0.00286, // Offset map center to the right (~320m)
         tileServer: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         // All interactions disabled for static map
         interactions: {
@@ -120,7 +120,8 @@ const config = {
     conversions: {
         mphToMs: 0.44704,      // Miles per hour to meters per second
         mphToKnots: 0.868976,  // Miles per hour to knots
-        msToKnots: 1.944       // Meters per second to knots
+        msToKnots: 1.944,      // Meters per second to knots
+        kmhToKnots: 0.539957   // Kilometers per hour to knots (1 / 1.852)
     },
 
     // Wind Speed Categories

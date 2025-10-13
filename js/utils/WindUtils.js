@@ -34,6 +34,15 @@ class WindUtils {
     }
 
     /**
+     * Convert kilometers per hour to knots
+     * @param {number} kmh - Speed in kilometers per hour
+     * @returns {number} Speed in knots
+     */
+    static kmhToKnots(kmh) {
+        return kmh * config.conversions.kmhToKnots;
+    }
+
+    /**
      * Convert degrees to cardinal direction
      * @param {number} degrees - Wind direction in degrees
      * @returns {string} Cardinal direction (С, СВ, В, etc.)

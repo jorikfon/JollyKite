@@ -36,62 +36,26 @@ class ForecastManager {
     displayForecast(hoursData) {
         if (!this.forecastContainer) return;
 
-        const getWindSafety = (direction, speed) => {
-            const dir = parseInt(direction);
+        const getWindColor = (speed) => {
             const knots = parseFloat(speed) || 0;
-
-            // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
-            const isOffshore = (dir >= 225 && dir <= 315);
-            // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
-            const isOnshore = (dir >= 45 && dir <= 135);
-
-            let safetyLevel = 'medium';
-            let safetyColor = '#FFA500';
-            let isGoodForKiting = false;
-
-            if (knots < 5) {
-                safetyLevel = 'low';
-                safetyColor = '#87CEEB';
-            } else if (isOffshore || knots > 30) {
-                // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
-                safetyLevel = 'danger';
-                safetyColor = '#FF4500';
-            } else if (isOnshore && knots >= 12 && knots <= 25) {
-                // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
-                safetyLevel = 'high';
-                safetyColor = '#00FF00';
-                isGoodForKiting = true;
-            } else if (isOnshore && knots >= 5 && knots < 12) {
-                // Onshore (прижим) со слабым-средним ветром = БЕЗОПАСНО (желтый)
-                safetyLevel = 'good';
-                safetyColor = '#FFD700';
-            } else if (knots >= 8 && knots <= 15) {
-                // Sideshore с умеренным ветром = ХОРОШО (желтый)
-                safetyLevel = 'good';
-                safetyColor = '#FFD700';
-            }
-
-            return {
-                level: safetyLevel,
-                color: safetyColor,
-                isOffshore,
-                isOnshore,
-                isGoodForKiting
-            };
-        };
-
-        const getWindIcon = (speed) => {
-            if (speed < 5) return '💨';
-            if (speed < 12) return '🌬️';
-            if (speed < 20) return '💨';
-            if (speed < 30) return '🌪️';
-            return '⚡';
+            if (knots < 5) return '#87CEEB';      // Голубой - слабый
+            if (knots < 10) return '#00CED1';     // Бирюзовый
+            if (knots < 15) return '#00FF00';     // Зелёный - отлично
+            if (knots < 20) return '#FFD700';     // Жёлтый - хорошо
+            if (knots < 25) return '#FFA500';     // Оранжевый
+            if (knots < 30) return '#FF4500';     // Красно-оранжевый
+            return '#8B0000';                      // Тёмно-красный - опасно
         };
 
         const getCardinalDirection = (degrees) => {
             const directions = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
             const index = Math.round(degrees / 45) % 8;
             return directions[index];
+        };
+
+        const isOffshore = (direction) => {
+            const dir = parseInt(direction);
+            return (dir >= 225 && dir <= 315);
         };
 
         // Группировка по дням
@@ -107,34 +71,56 @@ class ForecastManager {
         let forecastHTML = '';
         Object.entries(dayGroups).forEach(([dayKey, group]) => {
             const dayName = this.getDayName(new Date(dayKey));
-            
+
             forecastHTML += `
                 <div class="mb-6">
-                    <div class="text-sm font-semibold text-white mb-3 text-center bg-white/10 rounded-lg py-2">
+                    <div class="text-sm font-semibold text-white mb-3 text-center">
                         ${dayName}
                     </div>
-                    <div class="flex gap-1 min-w-full">
+                    <div style="position: relative;">
+                        <!-- Градиентная шкала ветра -->
+                        <div style="display: flex; height: 50px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
             `;
 
-            group.forEach(hour => {
-                const safety = getWindSafety(hour.direction, hour.speed);
-                const windIcon = getWindIcon(hour.speed);
+            // Создаём градиентные сегменты для каждого часа
+            group.forEach((hour, index) => {
+                const color = getWindColor(hour.speed);
                 const cardinalDir = getCardinalDirection(hour.direction);
-                const kiteIcon = safety.isGoodForKiting ? '🪁' : '';
+                const offshore = isOffshore(hour.direction);
+                const offshoreWarning = offshore ? '⚠️ ОТЖИМ!' : '';
 
                 forecastHTML += `
-                    <div class="flex-1 min-w-[60px] rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                         style="background: ${safety.color}; border: 2px solid ${safety.color}; box-shadow: 0 0 15px ${safety.color}40;"
-                         onclick="simulateWind(${hour.direction}, ${hour.speed})" title="Нажмите для симуляции">
-                        <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00 ${kiteIcon}</div>
-                        <div class="text-lg my-1 drop-shadow-md">${windIcon}</div>
-                        <div class="text-sm font-bold text-white drop-shadow-md">${hour.speed.toFixed(1)}</div>
-                        <div class="text-xs text-white/90 drop-shadow-sm">${cardinalDir}</div>
+                    <div style="flex: 1; background: ${color}; position: relative; cursor: pointer; transition: all 0.2s ease;"
+                         onclick="simulateWind(${hour.direction}, ${hour.speed})"
+                         onmouseover="this.style.transform='scaleY(1.2)'; this.style.zIndex='10';"
+                         onmouseout="this.style.transform='scaleY(1)'; this.style.zIndex='1';"
+                         title="${hour.time}:00 - ${hour.speed.toFixed(1)} узлов ${cardinalDir} ${offshoreWarning}">
                     </div>
                 `;
             });
 
             forecastHTML += `
+                        </div>
+                        <!-- Часовые метки -->
+                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7);">
+            `;
+
+            // Добавляем метки времени
+            group.forEach((hour, index) => {
+                if (index % 2 === 0 || index === group.length - 1) {
+                    forecastHTML += `
+                        <div style="text-align: center; flex: 1;">
+                            <div style="font-weight: 600; color: rgba(255,255,255,0.9);">${hour.time}:00</div>
+                            <div style="font-size: 0.65rem; margin-top: 2px;">${hour.speed.toFixed(1)}</div>
+                        </div>
+                    `;
+                } else {
+                    forecastHTML += `<div style="flex: 1;"></div>`;
+                }
+            });
+
+            forecastHTML += `
+                        </div>
                     </div>
                 </div>
             `;

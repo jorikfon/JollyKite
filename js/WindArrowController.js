@@ -59,7 +59,7 @@ class WindArrowController {
     getOffsetForDirection(windDirection, kiterLocation) {
         // Radius of invisible circle (in degrees lat/lng)
         // Adjust this value to make circle bigger/smaller
-        const circleRadius = 0.0008; // ~90 meters at this latitude
+        const circleRadius = 0.006; // ~660 meters at this latitude
 
         // Convert wind direction to radians
         // Add 180° because arrow points FROM wind direction

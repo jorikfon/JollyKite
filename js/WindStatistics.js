@@ -119,13 +119,24 @@ class WindStatistics {
             };
         }
 
-        // Получаем среднюю скорость за последние 15 минут
-        const currentAverage = this.getAverageSpeed(this.analysisIntervalMinutes);
+        // Определяем период анализа в зависимости от доступных данных
+        // Минимум 15 минут, предпочтительно 30 минут
+        let analysisMinutes = 15;
 
-        // Получаем среднюю скорость за предыдущие 15 минут (15-30 минут назад)
+        // Проверяем, есть ли данные за 30 минут
+        const dataAge = this.getDataAge();
+        if (dataAge >= 60) {
+            // Если данных >= 60 минут, используем 30-минутные периоды
+            analysisMinutes = 30;
+        }
+
+        // Получаем среднюю скорость за последние N минут
+        const currentAverage = this.getAverageSpeed(analysisMinutes);
+
+        // Получаем среднюю скорость за предыдущие N минут (N-2N минут назад)
         const previousAverage = this.getAverageInTimeRange(
-            this.analysisIntervalMinutes,
-            this.analysisIntervalMinutes * 2
+            analysisMinutes,
+            analysisMinutes * 2
         );
 
         if (currentAverage === null || previousAverage === null) {
@@ -144,8 +155,9 @@ class WindStatistics {
         const percentChange = (speedChange / previousAverage) * 100;
 
         // Определяем тренд на основе изменения скорости
-        if (Math.abs(percentChange) < 5) {
-            // Изменение меньше 5% - стабильно
+        // Используем порог 10% для более стабильных результатов
+        if (Math.abs(percentChange) < 10) {
+            // Изменение меньше 10% - стабильно
             return {
                 trend: 'stable',
                 text: 'Стабильный',
@@ -181,6 +193,21 @@ class WindStatistics {
                 percentChange: percentChange
             };
         }
+    }
+
+    /**
+     * Получение возраста данных (насколько старая самая старая запись)
+     * @returns {number} Возраст в минутах
+     */
+    getDataAge() {
+        if (this.windHistory.length === 0) {
+            return 0;
+        }
+
+        const now = new Date();
+        const oldest = this.windHistory[0].timestamp;
+        const ageMs = now.getTime() - oldest.getTime();
+        return ageMs / (60 * 1000); // Convert to minutes
     }
 
     /**

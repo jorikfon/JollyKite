@@ -66,9 +66,9 @@ class WindDataManager {
                 const hourIndex = day * 24 + hour;
                 if (hourIndex < hourly.time.length) {
                     const datetime = new Date(hourly.time[hourIndex]);
-                    const windSpeed = WindUtils.msToKnots(hourly.wind_speed_10m[hourIndex]);
+                    const windSpeed = WindUtils.kmhToKnots(hourly.wind_speed_10m[hourIndex]);
                     const windDir = hourly.wind_direction_10m[hourIndex];
-                    const windGust = WindUtils.msToKnots(hourly.wind_gusts_10m[hourIndex]);
+                    const windGust = WindUtils.kmhToKnots(hourly.wind_gusts_10m[hourIndex]);
 
                     hoursToShow.push({
                         date: datetime,
