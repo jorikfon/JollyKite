@@ -98,6 +98,7 @@ const config = {
 
     // Map Configuration
     map: {
+        containerId: 'windMap', // Map container element ID
         defaultZoom: 14,
         centerOffset: -0.002, // Offset map center to the left
         tileServer: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

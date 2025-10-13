@@ -19,7 +19,7 @@ class MapController {
         // Инициализация карты
         const mapCenter = [this.spotLocation[0], this.spotLocation[1] + config.map.centerOffset];
 
-        this.map = L.map('map', {
+        this.map = L.map(config.map.containerId, {
             center: mapCenter,
             zoom: config.map.defaultZoom,
             ...config.map.interactions // Spread all interaction settings
