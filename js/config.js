@@ -185,15 +185,16 @@ const config = {
 
         // Directional offsets for 8 cardinal directions (in lat/lng degrees)
         // Offsets are interpolated smoothly for angles between these directions
+        // Reduced by factor of 10 for better visibility on current map scale
         directions: {
-            0: { x: -0.0043, y: 0.0006 },     // North (С)
-            45: { x: -0.0033, y: -0.0037 },   // Northeast (СВ)
-            90: { x: -0.0004, y: -0.0041 },   // East (В)
-            135: { x: 0.004, y: -0.0037 },    // Southeast (ЮВ)
-            180: { x: 0.003, y: 0.0011 },     // South (Ю)
-            225: { x: 0.0025, y: 0.0045 },    // Southwest (ЮЗ)
-            270: { x: -0.0006, y: 0.004 },    // West (З)
-            315: { x: -0.0034, y: 0.004 }     // Northwest (СЗ)
+            0: { x: -0.00043, y: 0.00006 },     // North (С)
+            45: { x: -0.00033, y: -0.00037 },   // Northeast (СВ)
+            90: { x: -0.00004, y: -0.00041 },   // East (В)
+            135: { x: 0.0004, y: -0.00037 },    // Southeast (ЮВ)
+            180: { x: 0.0003, y: 0.00011 },     // South (Ю)
+            225: { x: 0.00025, y: 0.00045 },    // Southwest (ЮЗ)
+            270: { x: -0.00006, y: 0.0004 },    // West (З)
+            315: { x: -0.00034, y: 0.0004 }     // Northwest (СЗ)
         }
     }
 };
