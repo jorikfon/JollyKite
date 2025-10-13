@@ -11,23 +11,23 @@
     <meta name="author" content="JollyKite">
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="./manifest.json">
 
     <!-- PWA Theme Colors -->
     <meta name="theme-color" content="#0ea5e9">
     <meta name="msapplication-TileColor" content="#1e293b">
-    <meta name="msapplication-config" content="/browserconfig.xml">
+    <meta name="msapplication-config" content="./browserconfig.xml">
 
     <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png">
-    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png">
-    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="./icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="./icons/icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="96x96" href="./icons/icon-96x96.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="./icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="./icons/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="384x384" href="./icons/icon-384x384.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./icons/icon-512x512.png">
 
     <!-- Apple Mobile Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -35,22 +35,22 @@
     <meta name="apple-mobile-web-app-title" content="JollyKite">
 
     <!-- Microsoft Tiles -->
-    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
-    <meta name="msapplication-square70x70logo" content="/icons/icon-72x72.png">
-    <meta name="msapplication-square150x150logo" content="/icons/icon-144x144.png">
-    <meta name="msapplication-wide310x150logo" content="/icons/icon-384x384.png">
-    <meta name="msapplication-square310x310logo" content="/icons/icon-384x384.png">
+    <meta name="msapplication-TileImage" content="./icons/icon-144x144.png">
+    <meta name="msapplication-square70x70logo" content="./icons/icon-72x72.png">
+    <meta name="msapplication-square150x150logo" content="./icons/icon-144x144.png">
+    <meta name="msapplication-wide310x150logo" content="./icons/icon-384x384.png">
+    <meta name="msapplication-square310x310logo" content="./icons/icon-384x384.png">
 
     <!-- Favicons -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
-    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/icon-16x16.png">
+    <link rel="shortcut icon" href="./favicon.ico">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
     <meta property="og:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
-    <meta property="og:image" content="/icons/icon-512x512.png">
+    <meta property="og:image" content="./icons/icon-512x512.png">
     <meta property="og:url" content="https://jollykite.com">
     <meta property="og:site_name" content="JollyKite">
 
@@ -58,7 +58,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
     <meta name="twitter:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
-    <meta name="twitter:image" content="/icons/icon-512x512.png">
+    <meta name="twitter:image" content="./icons/icon-512x512.png">
 
     <!-- External CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,7 +67,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="./css/main.css">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -363,7 +363,7 @@
         // Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .then(registration => console.log('✓ Service Worker registered:', registration.scope))
                     .catch(err => console.log('✗ Service Worker registration failed:', err));
             });
