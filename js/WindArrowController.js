@@ -50,62 +50,29 @@ class WindArrowController {
     }
 
     /**
-     * Calculate arrow offset for given wind direction with smooth interpolation
-     * @param {number} angle - Wind direction in degrees (0-360)
-     * @returns {object} - {x, y} offset coordinates
+     * Calculate arrow position on invisible circle around kiter
+     * Arrow starts from circle edge, pointing towards wind direction
+     * @param {number} windDirection - Wind direction in degrees (0-360)
+     * @param {array} kiterLocation - [lat, lng] coordinates of kiter
+     * @returns {object} - {x, y} offset coordinates on circle
      */
-    getOffsetForDirection(angle) {
-        const directions = [0, 45, 90, 135, 180, 225, 270, 315];
-        const arrowConfig = config.windArrow;
+    getOffsetForDirection(windDirection, kiterLocation) {
+        // Radius of invisible circle (in degrees lat/lng)
+        // Adjust this value to make circle bigger/smaller
+        const circleRadius = 0.0008; // ~90 meters at this latitude
 
-        // Normalize angle (0-360)
-        let normalizedAngle = angle % 360;
-        if (normalizedAngle < 0) normalizedAngle += 360;
+        // Convert wind direction to radians
+        // Add 180° because arrow points FROM wind direction
+        const angleRad = ((windDirection + 180) % 360) * (Math.PI / 180);
 
-        // If angle exactly matches one of the 8 cardinal directions, return it directly
-        if (directions.includes(normalizedAngle)) {
-            return arrowConfig.directions[normalizedAngle];
-        }
+        // Calculate position on circle edge
+        // Note: latitude increases northward, longitude increases eastward
+        const offsetX = circleRadius * Math.sin(angleRad); // longitude offset
+        const offsetY = circleRadius * Math.cos(angleRad); // latitude offset
 
-        // Find the two nearest directions for interpolation
-        let lowerDir = 315;  // Default to NW
-        let upperDir = 0;    // Default to N
-
-        for (let i = 0; i < directions.length; i++) {
-            const currentDir = directions[i];
-            const nextDir = directions[(i + 1) % directions.length];
-
-            // Handle wrap around at 360/0
-            if (currentDir === 315) {
-                if (normalizedAngle >= 315 || normalizedAngle < 45) {
-                    lowerDir = 315;
-                    upperDir = 0;
-                    break;
-                }
-            } else if (normalizedAngle >= currentDir && normalizedAngle < nextDir) {
-                lowerDir = currentDir;
-                upperDir = nextDir;
-                break;
-            }
-        }
-
-        // Get offsets for both directions
-        const lowerOffset = arrowConfig.directions[lowerDir];
-        const upperOffset = arrowConfig.directions[upperDir];
-
-        // Calculate angle difference and interpolation ratio
-        let angleDiff = upperDir - lowerDir;
-        if (angleDiff < 0) angleDiff += 360; // Handle wrap at 360/0
-
-        let currentDiff = normalizedAngle - lowerDir;
-        if (currentDiff < 0) currentDiff += 360; // Handle wrap at 360/0
-
-        const ratio = currentDiff / angleDiff;
-
-        // Linear interpolation between the two offsets
         return {
-            x: lowerOffset.x + (upperOffset.x - lowerOffset.x) * ratio,
-            y: lowerOffset.y + (upperOffset.y - lowerOffset.y) * ratio
+            x: offsetY,  // lat offset (Y becomes X in our coordinate system)
+            y: offsetX   // lng offset (X becomes Y in our coordinate system)
         };
     }
 
@@ -130,15 +97,16 @@ class WindArrowController {
         const kiterLocation = this.mapController.getKiterLocation();
         console.log('📍 Позиция кайтера:', kiterLocation);
 
-        // Calculate directional offset based on wind direction
-        const offset = this.getOffsetForDirection(this.windDirection);
-        console.log(`📐 Направление ветра: ${this.windDirection}°, Смещение:`, offset);
+        // Calculate position on invisible circle around kiter
+        const offset = this.getOffsetForDirection(this.windDirection, kiterLocation);
+        console.log(`📐 Направление ветра: ${this.windDirection}°, Позиция на окружности:`, offset);
 
-        // Position arrow around kiter with directional offset
+        // Position arrow on circle edge
         const arrowPosition = [
             kiterLocation[0] + offset.x,
             kiterLocation[1] + offset.y
         ];
+        console.log('🎯 Финальная позиция стрелки:', arrowPosition);
 
         // Если маркер уже существует - обновляем позицию, иконку и поворот
         if (this.windArrowMarker) {
