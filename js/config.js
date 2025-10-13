@@ -177,24 +177,22 @@ const config = {
     },
 
     // Wind Arrow Positioning Configuration
-    // These offsets position the wind arrow around the kiter based on wind direction
-    // Each direction (0°, 45°, 90°, etc.) has custom X and Y coordinate offsets
+    // Arrow is centered on kiter position for maximum visibility
     windArrow: {
         // Global angle correction applied to all arrow rotations
         globalAngle: 0,
 
         // Directional offsets for 8 cardinal directions (in lat/lng degrees)
-        // Offsets are interpolated smoothly for angles between these directions
-        // Reduced by factor of 10 for better visibility on current map scale
+        // Set to zero to keep arrow centered on kiter position
         directions: {
-            0: { x: -0.00043, y: 0.00006 },     // North (С)
-            45: { x: -0.00033, y: -0.00037 },   // Northeast (СВ)
-            90: { x: -0.00004, y: -0.00041 },   // East (В)
-            135: { x: 0.0004, y: -0.00037 },    // Southeast (ЮВ)
-            180: { x: 0.0003, y: 0.00011 },     // South (Ю)
-            225: { x: 0.00025, y: 0.00045 },    // Southwest (ЮЗ)
-            270: { x: -0.00006, y: 0.0004 },    // West (З)
-            315: { x: -0.00034, y: 0.0004 }     // Northwest (СЗ)
+            0: { x: 0, y: 0 },     // North (С)
+            45: { x: 0, y: 0 },   // Northeast (СВ)
+            90: { x: 0, y: 0 },   // East (В)
+            135: { x: 0, y: 0 },    // Southeast (ЮВ)
+            180: { x: 0, y: 0 },     // South (Ю)
+            225: { x: 0, y: 0 },    // Southwest (ЮЗ)
+            270: { x: 0, y: 0 },    // West (З)
+            315: { x: 0, y: 0 }     // Northwest (СЗ)
         }
     }
 };
