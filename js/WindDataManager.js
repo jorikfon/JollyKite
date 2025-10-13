@@ -94,9 +94,9 @@ class WindDataManager {
         const dir = parseInt(direction);
         const knots = parseFloat(speed) || 0;
 
-        // Безопасный оффшорный ветер: 225°-315° (ЮЗ-СЗ)
+        // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
         const isOffshore = (dir >= 225 && dir <= 315);
-        // Опасный оншорный ветер: 45°-135° (СВ-ЮВ)
+        // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
         const isOnshore = (dir >= 45 && dir <= 135);
 
         let safetyLevel = 'medium';
@@ -107,15 +107,18 @@ class WindDataManager {
             safetyLevel = 'low';
             safetyText = 'Слабый ветер';
             safetyColor = '#87CEEB';
-        } else if (isOffshore && knots >= 12 && knots <= 25) {
+        } else if (isOnshore && knots >= 12 && knots <= 25) {
+            // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
             safetyLevel = 'high';
             safetyText = 'Отличные условия!';
             safetyColor = '#00FF00';
-        } else if (isOnshore || knots > 30) {
+        } else if (isOffshore || knots > 30) {
+            // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
             safetyLevel = 'danger';
             safetyText = 'Опасно!';
             safetyColor = '#FF4500';
         } else if (knots >= 8 && knots <= 15) {
+            // Sideshore с умеренным ветром = ХОРОШО (желтый)
             safetyLevel = 'good';
             safetyText = 'Хорошие условия';
             safetyColor = '#FFD700';

@@ -3,6 +3,7 @@ import MapController from './MapController.js';
 import ForecastManager from './ForecastManager.js';
 import WindArrowController from './WindArrowController.js';
 import HistoryManager from './HistoryManager.js';
+import WindStatistics from './WindStatistics.js';
 
 class App {
     constructor() {
@@ -11,7 +12,8 @@ class App {
         this.mapController = new MapController();
         this.forecastManager = new ForecastManager();
         this.historyManager = new HistoryManager();
-        
+        this.windStatistics = new WindStatistics();
+
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
         this.isInitialized = false;
@@ -102,12 +104,18 @@ class App {
             
             // Обновление UI
             this.updateWindDisplay(windData);
-            
+
             // Обновление стрелки ветра
             if (this.windArrowController) {
                 this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
             }
-            
+
+            // Добавление измерения в статистику
+            this.windStatistics.addMeasurement(windData);
+
+            // Обновление тренда
+            this.updateWindTrend();
+
             // Сохранение в историю
             if (this.historyManager.isStorageAvailable()) {
                 this.historyManager.saveWindData(windData);
@@ -117,6 +125,27 @@ class App {
         } catch (error) {
             console.error('Ошибка обновления данных о ветре:', error);
             throw error;
+        }
+    }
+
+    updateWindTrend() {
+        const trend = this.windStatistics.analyzeTrend();
+        const trendElement = document.getElementById('windTrend');
+
+        if (trendElement) {
+            trendElement.innerHTML = `
+                <span style="font-size: 1.5em;">${trend.icon}</span>
+                <span style="margin-left: 5px; font-weight: bold;">${trend.text}</span>
+            `;
+            trendElement.style.color = trend.color;
+
+            // Добавляем tooltip с подробной информацией
+            if (trend.currentSpeed && trend.previousSpeed) {
+                const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
+                trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+            } else {
+                trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+            }
         }
     }
 
@@ -133,14 +162,39 @@ class App {
 
     updateWindDescription(windData) {
         const windDesc = this.getWindDescription(windData.windSpeedKnots, windData.windDir);
-        
+
         const windIcon = document.getElementById('windIcon');
         const windTitle = document.getElementById('windTitle');
         const windSubtitle = document.getElementById('windSubtitle');
+        const windCardinal = document.getElementById('windCardinal');
+        const windSafetyDesc = document.getElementById('windSafetyDesc');
 
         if (windIcon) windIcon.textContent = windDesc.icon;
         if (windTitle) windTitle.textContent = windDesc.title;
         if (windSubtitle) windSubtitle.textContent = windDesc.subtitle;
+
+        // Обновление направления ветра (румб)
+        if (windCardinal) {
+            windCardinal.textContent = this.degreesToCardinal(windData.windDir);
+        }
+
+        // Обновление описания безопасности
+        if (windSafetyDesc && windData.safety) {
+            let safetyText = windData.safety.text;
+
+            // Добавляем информацию о типе ветра (offshore/onshore)
+            if (windData.safety.isOffshore) {
+                safetyText += ' • Отжим (offshore)';
+            } else if (windData.safety.isOnshore) {
+                safetyText += ' • Прижим (onshore)';
+            } else {
+                safetyText += ' • Боковой (sideshore)';
+            }
+
+            windSafetyDesc.textContent = safetyText;
+            windSafetyDesc.style.color = windData.safety.color;
+            windSafetyDesc.style.fontWeight = '600';
+        }
 
         // Обновление цвета на основе безопасности
         const windButton = document.getElementById('windDescriptionButton');
@@ -150,10 +204,26 @@ class App {
         }
     }
 
+    degreesToCardinal(degrees) {
+        const deg = parseFloat(degrees) || 0;
+        const normalized = ((deg % 360) + 360) % 360; // Нормализация к 0-360
+
+        // Определение направления с 8 румбами
+        if (normalized >= 337.5 || normalized < 22.5) return 'С';      // North
+        if (normalized >= 22.5 && normalized < 67.5) return 'СВ';      // Northeast
+        if (normalized >= 67.5 && normalized < 112.5) return 'В';      // East
+        if (normalized >= 112.5 && normalized < 157.5) return 'ЮВ';    // Southeast
+        if (normalized >= 157.5 && normalized < 202.5) return 'Ю';     // South
+        if (normalized >= 202.5 && normalized < 247.5) return 'ЮЗ';    // Southwest
+        if (normalized >= 247.5 && normalized < 292.5) return 'З';     // West
+        if (normalized >= 292.5 && normalized < 337.5) return 'СЗ';    // Northwest
+        return 'С'; // Fallback
+    }
+
     getWindDescription(speedKnots, degrees) {
         // Это упрощенная версия, полную логику можно взять из оригинального файла
         const speed = parseFloat(speedKnots) || 0;
-        
+
         if (speed < 5) {
             return {
                 icon: '🍃',
@@ -278,6 +348,16 @@ class App {
 
     clearHistory() {
         return this.historyManager.clearHistory();
+    }
+
+    // Методы для работы со статистикой
+    getStatisticsCacheInfo() {
+        return this.windStatistics.getCacheInfo();
+    }
+
+    clearStatisticsCache() {
+        this.windStatistics.clearHistory();
+        console.log('✓ Кеш статистики очищен');
     }
 
     // Методы для внешнего управления

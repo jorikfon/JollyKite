@@ -36,11 +36,44 @@ class ForecastManager {
     displayForecast(hoursData) {
         if (!this.forecastContainer) return;
 
-        const getWindClass = (speed) => {
-            if (speed < 8) return 'wind-light';
-            if (speed < 15) return 'wind-moderate';
-            if (speed < 25) return 'wind-strong';
-            return 'wind-extreme';
+        const getWindSafety = (direction, speed) => {
+            const dir = parseInt(direction);
+            const knots = parseFloat(speed) || 0;
+
+            // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
+            const isOffshore = (dir >= 225 && dir <= 315);
+            // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
+            const isOnshore = (dir >= 45 && dir <= 135);
+
+            let safetyLevel = 'medium';
+            let safetyColor = '#FFA500';
+            let isGoodForKiting = false;
+
+            if (knots < 5) {
+                safetyLevel = 'low';
+                safetyColor = '#87CEEB';
+            } else if (isOnshore && knots >= 12 && knots <= 25) {
+                // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
+                safetyLevel = 'high';
+                safetyColor = '#00FF00';
+                isGoodForKiting = true;
+            } else if (isOffshore || knots > 30) {
+                // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
+                safetyLevel = 'danger';
+                safetyColor = '#FF4500';
+            } else if (knots >= 8 && knots <= 15) {
+                // Sideshore с умеренным ветром = ХОРОШО (желтый)
+                safetyLevel = 'good';
+                safetyColor = '#FFD700';
+            }
+
+            return {
+                level: safetyLevel,
+                color: safetyColor,
+                isOffshore,
+                isOnshore,
+                isGoodForKiting
+            };
         };
 
         const getWindIcon = (speed) => {
@@ -49,13 +82,6 @@ class ForecastManager {
             if (speed < 20) return '💨';
             if (speed < 30) return '🌪️';
             return '⚡';
-        };
-
-        const getTailwindWindClass = (speed) => {
-            if (speed < 8) return 'bg-gradient-to-br from-blue-400/80 to-blue-600/80 border border-blue-300/50';
-            if (speed < 15) return 'bg-gradient-to-br from-green-400/80 to-green-600/80 border border-green-300/50';
-            if (speed < 25) return 'bg-gradient-to-br from-yellow-400/80 to-orange-500/80 border border-yellow-300/50';
-            return 'bg-gradient-to-br from-red-500/80 to-red-700/80 border border-red-400/50';
         };
 
         const getCardinalDirection = (degrees) => {
@@ -87,14 +113,16 @@ class ForecastManager {
             `;
 
             group.forEach(hour => {
-                const windClass = getTailwindWindClass(hour.speed);
+                const safety = getWindSafety(hour.direction, hour.speed);
                 const windIcon = getWindIcon(hour.speed);
                 const cardinalDir = getCardinalDirection(hour.direction);
+                const kiteIcon = safety.isGoodForKiting ? '🪁' : '';
 
                 forecastHTML += `
-                    <div class="flex-1 min-w-[60px] ${windClass} rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" 
+                    <div class="flex-1 min-w-[60px] rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                         style="background: ${safety.color}; border: 2px solid ${safety.color}; box-shadow: 0 0 15px ${safety.color}40;"
                          onclick="simulateWind(${hour.direction}, ${hour.speed})" title="Нажмите для симуляции">
-                        <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00</div>
+                        <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00 ${kiteIcon}</div>
                         <div class="text-lg my-1 drop-shadow-md">${windIcon}</div>
                         <div class="text-sm font-bold text-white drop-shadow-md">${hour.speed.toFixed(1)}</div>
                         <div class="text-xs text-white/90 drop-shadow-sm">${cardinalDir}</div>

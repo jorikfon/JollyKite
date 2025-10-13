@@ -5,6 +5,7 @@ class WindArrowController {
         this.windArrowMarker = null;
         this.windDirection = 0;
         this.windSpeed = 0;
+        this.isInitialized = false; // Флаг для отслеживания первого обновления
     }
 
     createArrowSVG(safety) {
@@ -49,62 +50,73 @@ class WindArrowController {
     updateArrow() {
         if (!this.mapController.map) return;
 
-        // Удаление предыдущей стрелки
-        if (this.windArrowMarker) {
-            this.mapController.removeWindArrow(this.windArrowMarker);
+        // Не отображаем стрелку до первого обновления данных из API
+        if (!this.isInitialized) {
+            return;
         }
 
         const safety = this.windDataManager.getWindSafety(this.windDirection, this.windSpeed);
-        const arrowDistance = 0.01;
         const kiterLocation = this.mapController.getKiterLocation();
 
-        let arrowPosition;
-        if (safety.isOffshore) {
-            // Стрелка НАЧИНАЕТСЯ от кайтера для оффшорного ветра
-            const angleRad = (this.windDirection * Math.PI) / 180;
-            arrowPosition = [
-                kiterLocation[0] + Math.sin(angleRad) * arrowDistance,
-                kiterLocation[1] + Math.cos(angleRad) * arrowDistance
-            ];
-        } else {
-            // Стрелка УКАЗЫВАЕТ НА кайтера для оншорного ветра
-            const angleRad = ((this.windDirection + 180) * Math.PI) / 180;
-            arrowPosition = [
-                kiterLocation[0] + Math.sin(angleRad) * arrowDistance,
-                kiterLocation[1] + Math.cos(angleRad) * arrowDistance
-            ];
-        }
+        // Стрелка всегда размещается строго в центре позиции кайтера
+        const arrowPosition = kiterLocation;
 
-        const windArrowIcon = L.divIcon({
-            html: this.createArrowSVG(safety),
-            className: 'wind-arrow-container',
-            iconSize: [60, 60],
-            iconAnchor: [30, 30]
-        });
+        // Если маркер уже существует - обновляем только иконку и поворот
+        if (this.windArrowMarker) {
+            // Обновляем иконку (цвет меняется в зависимости от безопасности)
+            const windArrowIcon = L.divIcon({
+                html: this.createArrowSVG(safety),
+                className: 'wind-arrow-container',
+                iconSize: [60, 60],
+                iconAnchor: [30, 30]
+            });
 
-        this.windArrowMarker = L.marker(arrowPosition, { 
-            icon: windArrowIcon,
-            rotationAngle: this.windDirection
-        });
+            this.windArrowMarker.setIcon(windArrowIcon);
 
-        // Поворот стрелки
-        this.windArrowMarker.on('add', () => {
+            // Обновляем поворот
+            // +180° для корректного отображения направления (стрелка показывает ОТКУДА дует ветер)
             const element = this.windArrowMarker.getElement();
             if (element) {
-                element.style.transform += ` rotate(${this.windDirection}deg)`;
+                element.style.transform = `rotate(${this.windDirection + 180}deg)`;
                 element.style.transformOrigin = 'center';
-                
-                // Добавление информации о ветре
                 element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
             }
-        });
+        } else {
+            // Создаем маркер в первый раз
+            const windArrowIcon = L.divIcon({
+                html: this.createArrowSVG(safety),
+                className: 'wind-arrow-container',
+                iconSize: [60, 60],
+                iconAnchor: [30, 30]
+            });
 
-        this.mapController.addWindArrow(this.windArrowMarker);
+            this.windArrowMarker = L.marker(arrowPosition, {
+                icon: windArrowIcon
+            });
+
+            // Добавляем маркер на карту
+            this.mapController.addWindArrow(this.windArrowMarker);
+
+            // Принудительно обновляем позицию и поворот после добавления
+            setTimeout(() => {
+                if (this.windArrowMarker && this.mapController.map) {
+                    this.windArrowMarker.setLatLng(arrowPosition);
+
+                    const element = this.windArrowMarker.getElement();
+                    if (element) {
+                        element.style.transform = `rotate(${this.windDirection + 180}deg)`;
+                        element.style.transformOrigin = 'center';
+                        element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                    }
+                }
+            }, 100);
+        }
     }
 
     updateWind(direction, speed) {
         this.windDirection = direction;
         this.windSpeed = speed;
+        this.isInitialized = true; // Помечаем, что данные получены
         this.updateArrow();
     }
 

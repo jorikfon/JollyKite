@@ -1063,6 +1063,14 @@
                                     <div id="maxGust" style="color: #333; font-weight: 600;">--</div>
                                 </div>
                             </div>
+                            <!-- Тренд ветра -->
+                            <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; text-align: center;">
+                                <div style="color: #555; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 5px;">Тренд</div>
+                                <div id="windTrend" style="color: #808080; font-weight: 600; font-size: 0.9rem;">
+                                    <span style="font-size: 1.5em;">⏳</span>
+                                    <span style="margin-left: 5px; font-weight: bold;">Накапливаем данные...</span>
+                                </div>
+                            </div>
                         </div>
                         
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center;">
@@ -1080,6 +1088,16 @@
             </div>
         </div>
 
+        <!-- Кнопка с описанием ветра под картой -->
+        <div style="text-align: center; margin: 40px 0;">
+            <div id="windDescriptionButton" class="wind-description-block">
+                <div class="wind-description-icon" id="windIcon">🍃</div>
+                <div class="wind-description-text">
+                    <div class="wind-description-title" id="windTitle">Загружаем данные...</div>
+                    <div class="wind-description-subtitle" id="windSubtitle">Подождите немного</div>
+                </div>
+            </div>
+        </div>
 
         <!-- Симулятор направлений ветра для отладки -->
         <div style="text-align: center; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
@@ -1099,15 +1117,165 @@
             </div>
         </div>
 
-        <!-- Кнопка с описанием ветра под картой -->
-        <div style="text-align: center; margin: 40px 0;">
-            <div id="windDescriptionButton" class="wind-description-block">
-                <div class="wind-description-icon" id="windIcon">🍃</div>
-                <div class="wind-description-text">
-                    <div class="wind-description-title" id="windTitle">Загружаем данные...</div>
-                    <div class="wind-description-subtitle" id="windSubtitle">Подождите немного</div>
+        <!-- Форма настройки смещения стрелки -->
+        <div style="text-align: center; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+            <h3 style="margin-bottom: 15px;">⚙️ Настройка позиции стрелки</h3>
+
+            <!-- Общая корректировка угла -->
+            <div style="background: rgba(138,43,226,0.1); padding: 15px; border-radius: 10px; border: 2px solid #8b5cf6; max-width: 400px; margin: 0 auto 20px;">
+                <h4 style="color: #8b5cf6; margin-bottom: 10px;">🧭 Общая корректировка угла</h4>
+                <p style="font-size: 0.85rem; margin-bottom: 10px; opacity: 0.8;">Поворот всех стрелок относительно берега</p>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 3px;">Корректировка угла (градусы):</label>
+                    <input type="number" id="globalAngleOffset" step="1" value="0" min="-180" max="180" oninput="applyArrowOffsets()"
+                           style="width: 100%; padding: 8px; border-radius: 5px; background: rgba(0,0,0,0.3); border: 1px solid #8b5cf6; color: white; text-align: center; font-size: 1.1rem;">
+                    <p style="font-size: 0.75rem; margin-top: 5px; opacity: 0.7;">Положительные значения - по часовой стрелке</p>
                 </div>
             </div>
+
+            <h4 style="margin-bottom: 15px; color: #94a3b8;">Настройка позиции для каждого направления</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 1200px; margin: 0 auto;">
+
+                <!-- С (0°) -->
+                <div style="background: rgba(135,206,250,0.15); padding: 12px; border-radius: 8px; border: 2px solid #60a5fa;">
+                    <h4 style="color: #60a5fa; margin-bottom: 8px; font-size: 0.95rem;">⬆️ С (0°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir0OffsetX" step="0.0001" value="-0.0043" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #60a5fa; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir0OffsetY" step="0.0001" value="0.0006" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #60a5fa; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- СВ (45°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">↗️ СВ (45°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir45OffsetX" step="0.0001" value="-0.0033" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir45OffsetY" step="0.0001" value="-0.0037" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- В (90°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">➡️ В (90°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir90OffsetX" step="0.0001" value="-0.0004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir90OffsetY" step="0.0001" value="-0.0041" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ЮВ (135°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">↘️ ЮВ (135°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir135OffsetX" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir135OffsetY" step="0.0001" value="-0.0037" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ю (180°) -->
+                <div style="background: rgba(245,158,11,0.15); padding: 12px; border-radius: 8px; border: 2px solid #f59e0b;">
+                    <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 0.95rem;">⬇️ Ю (180°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir180OffsetX" step="0.0001" value="0.003" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #f59e0b; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir180OffsetY" step="0.0001" value="0.0011" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #f59e0b; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ЮЗ (225°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">↙️ ЮЗ (225°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir225OffsetX" step="0.0001" value="0.0025" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir225OffsetY" step="0.0001" value="0.0045" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- З (270°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">⬅️ З (270°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir270OffsetX" step="0.0001" value="-0.0006" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir270OffsetY" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- СЗ (315°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">↖️ СЗ (315°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir315OffsetX" step="0.0001" value="-0.0034" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir315OffsetY" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <button onclick="applyArrowOffsets()" style="margin-top: 15px; padding: 10px 20px; border-radius: 8px; background: #3b82f6; color: white; border: none; cursor: pointer; font-weight: bold;">
+                ✅ Применить настройки
+            </button>
         </div>
 
         <!-- Блок прогноза ветра -->
@@ -1127,44 +1295,7 @@
 
 
 
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-8 my-8 border border-white/20 animate-fadeIn">
-            <h2 class="text-center text-3xl font-bold text-white mb-8">
-                🏄 Кайт-станция JollyKite
-            </h2>
-            
-            <p class="text-center text-lg text-white/95 mb-8 leading-relaxed">
-                Профессиональное обучение кайтсерфингу в лучшем споте Таиланда!<br>
-                Идеальные условия с ноября по апрель
-            </p>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white/10 rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 hover:-translate-y-2">
-                    <div class="text-xl font-semibold text-white mb-2">🎯 Первый урок</div>
-                    <div class="text-3xl font-bold text-yellow-400">2500฿</div>
-                </div>
-                <div class="bg-white/10 rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 hover:-translate-y-2">
-                    <div class="text-xl font-semibold text-white mb-2">📚 Базовый курс</div>
-                    <div class="text-3xl font-bold text-yellow-400">15000฿</div>
-                </div>
-                <div class="bg-white/10 rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 hover:-translate-y-2">
-                    <div class="text-xl font-semibold text-white mb-2">🚀 Прокат кайта</div>
-                    <div class="text-3xl font-bold text-yellow-400">1500฿/день</div>
-                </div>
-                <div class="bg-white/10 rounded-xl p-6 text-center hover:bg-white/20 transition-all duration-300 hover:-translate-y-2">
-                    <div class="text-xl font-semibold text-white mb-2">💼 Хранение</div>
-                    <div class="text-3xl font-bold text-yellow-400">3000฿/мес</div>
-                </div>
-            </div>
-
-            <div class="text-center">
-                <p class="text-white/90 text-lg">
-                    📍 Pak Nam Pran Beach, Pranburi<br>
-                    📞 +66 89 123 4567
-                </p>
-            </div>
-        </div>
-
-        <!-- Блок сообщества и контактов в самом низу -->
+        <!-- Блок контактов -->
         <div class="text-center my-12">
             <h3 class="text-white text-2xl font-semibold mb-6">Присоединяйтесь к нашему сообществу!</h3>
             <a href="https://t.me/gypsy_mermaid" class="inline-flex items-center gap-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-xl">
@@ -1281,9 +1412,9 @@
                 const dir = parseInt(direction);
                 const knots = parseFloat(speed) || 0;
 
-                // Безопасный оффшорный ветер: 225°-315° (ЮЗ-СЗ)
+                // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
                 const isOffshore = (dir >= 225 && dir <= 315);
-                // Опасный оншорный ветер: 45°-135° (СВ-ЮВ)
+                // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
                 const isOnshore = (dir >= 45 && dir <= 135);
 
                 let safetyLevel = 'medium';
@@ -1294,15 +1425,18 @@
                     safetyLevel = 'low';
                     safetyText = 'Слабый ветер';
                     safetyColor = '#87CEEB';
-                } else if (isOffshore && knots >= 12 && knots <= 25) {
+                } else if (isOnshore && knots >= 12 && knots <= 25) {
+                    // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
                     safetyLevel = 'high';
                     safetyText = 'Отличные условия!';
                     safetyColor = '#00FF00';
-                } else if (isOnshore || knots > 30) {
+                } else if (isOffshore || knots > 30) {
+                    // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
                     safetyLevel = 'danger';
                     safetyText = 'Опасно!';
                     safetyColor = '#FF4500';
                 } else if (knots >= 8 && knots <= 15) {
+                    // Sideshore с умеренным ветром = ХОРОШО (желтый)
                     safetyLevel = 'good';
                     safetyText = 'Хорошие условия';
                     safetyColor = '#FFD700';
@@ -1357,7 +1491,7 @@
             initMap() {
                 // Инициализация карты
                 const mapCenter = [this.spotLocation[0], this.spotLocation[1] - 0.002]; // Сдвиг влево
-                
+
                 this.map = L.map('windMap', {
                     center: mapCenter,
                     zoom: 14,
@@ -1369,6 +1503,23 @@
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: ''
                 }).addTo(this.map);
+
+                // Логирование событий масштабирования карты
+                this.map.on('zoomstart', (e) => {
+                    console.log('🔍 ZOOMSTART - Начало масштабирования карты');
+                    console.log('  - Текущий zoom:', this.map.getZoom());
+                });
+
+                this.map.on('zoom', (e) => {
+                    console.log('🔍 ZOOM - Процесс масштабирования');
+                    console.log('  - Текущий zoom:', this.map.getZoom());
+                });
+
+                this.map.on('zoomend', (e) => {
+                    console.log('🔍 ZOOMEND - Завершение масштабирования');
+                    console.log('  - Финальный zoom:', this.map.getZoom());
+                    console.log('  - Центр карты:', this.map.getCenter());
+                });
 
                 this.addMarkers();
                 return this.map;
@@ -1492,19 +1643,52 @@
             displayForecast(hoursData) {
                 if (!this.forecastContainer) return;
 
+                const getWindSafety = (direction, speed) => {
+                    const dir = parseInt(direction);
+                    const knots = parseFloat(speed) || 0;
+
+                    // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
+                    const isOffshore = (dir >= 225 && dir <= 315);
+                    // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
+                    const isOnshore = (dir >= 45 && dir <= 135);
+
+                    let safetyLevel = 'medium';
+                    let safetyColor = '#FFA500';
+                    let isGoodForKiting = false;
+
+                    if (knots < 5) {
+                        safetyLevel = 'low';
+                        safetyColor = '#87CEEB';
+                    } else if (isOnshore && knots >= 12 && knots <= 25) {
+                        // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
+                        safetyLevel = 'high';
+                        safetyColor = '#00FF00';
+                        isGoodForKiting = true;
+                    } else if (isOffshore || knots > 30) {
+                        // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
+                        safetyLevel = 'danger';
+                        safetyColor = '#FF4500';
+                    } else if (knots >= 8 && knots <= 15) {
+                        // Sideshore с умеренным ветром = ХОРОШО (желтый)
+                        safetyLevel = 'good';
+                        safetyColor = '#FFD700';
+                    }
+
+                    return {
+                        level: safetyLevel,
+                        color: safetyColor,
+                        isOffshore,
+                        isOnshore,
+                        isGoodForKiting
+                    };
+                };
+
                 const getWindIcon = (speed) => {
                     if (speed < 5) return '💨';
                     if (speed < 12) return '🌬️';
                     if (speed < 20) return '💨';
                     if (speed < 30) return '🌪️';
                     return '⚡';
-                };
-
-                const getTailwindWindClass = (speed) => {
-                    if (speed < 8) return 'bg-gradient-to-br from-blue-400/80 to-blue-600/80 border border-blue-300/50';
-                    if (speed < 15) return 'bg-gradient-to-br from-green-400/80 to-green-600/80 border border-green-300/50';
-                    if (speed < 25) return 'bg-gradient-to-br from-yellow-400/80 to-orange-500/80 border border-yellow-300/50';
-                    return 'bg-gradient-to-br from-red-500/80 to-red-700/80 border border-red-400/50';
                 };
 
                 const getCardinalDirection = (degrees) => {
@@ -1536,14 +1720,16 @@
                     `;
 
                     group.forEach(hour => {
-                        const windClass = getTailwindWindClass(hour.speed);
+                        const safety = getWindSafety(hour.direction, hour.speed);
                         const windIcon = getWindIcon(hour.speed);
                         const cardinalDir = getCardinalDirection(hour.direction);
+                        const kiteIcon = safety.isGoodForKiting ? '🪁' : '';
 
                         forecastHTML += `
-                            <div class="flex-1 min-w-[60px] ${windClass} rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl" 
+                            <div class="flex-1 min-w-[60px] rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                                 style="background: ${safety.color}; border: 2px solid ${safety.color}; box-shadow: 0 0 15px ${safety.color}40;"
                                  onclick="simulateWind(${hour.direction}, ${hour.speed})" title="Нажмите для симуляции">
-                                <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00</div>
+                                <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00 ${kiteIcon}</div>
                                 <div class="text-lg my-1 drop-shadow-md">${windIcon}</div>
                                 <div class="text-sm font-bold text-white drop-shadow-md">${hour.speed.toFixed(1)}</div>
                                 <div class="text-xs text-white/90 drop-shadow-sm">${cardinalDir}</div>
@@ -1604,12 +1790,13 @@
                 this.windArrowMarker = null;
                 this.windDirection = 0;
                 this.windSpeed = 0;
+                this.isInitialized = false; // Флаг для отслеживания первого обновления
             }
 
             createArrowSVG(safety) {
                 const color = safety.color;
                 const darkerColor = this.getDarkerColor(color);
-                
+
                 return `
                     <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
                         <defs>
@@ -1621,10 +1808,10 @@
                                 <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="black" flood-opacity="0.3"/>
                             </filter>
                         </defs>
-                        <path d="M 30 5 L 40 25 L 35 25 L 35 50 L 25 50 L 25 25 L 20 25 Z" 
-                              fill="url(#arrowGrad)" 
-                              stroke="${darkerColor}" 
-                              stroke-width="2" 
+                        <path d="M 30 5 L 40 25 L 35 25 L 35 50 L 25 50 L 25 25 L 20 25 Z"
+                              fill="url(#arrowGrad)"
+                              stroke="${darkerColor}"
+                              stroke-width="2"
                               filter="url(#shadow)"
                               style="animation: windPulse 2s ease-in-out infinite;">
                             <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
@@ -1646,21 +1833,132 @@
             }
 
             updateArrow() {
-                if (!this.mapController.map) return;
+                console.log('🎯 updateArrow() вызван');
+
+                if (!this.mapController.map) {
+                    console.log('❌ Карта не инициализирована');
+                    return;
+                }
+
+                // Не отображаем стрелку до первого обновления данных из API
+                if (!this.isInitialized) {
+                    console.log('⏳ Стрелка еще не инициализирована (ждем данных из API)');
+                    return;
+                }
 
                 const safety = this.windDataManager.getWindSafety(this.windDirection, this.windSpeed);
-                
-                // Используем фиксированные координаты кайтера
-                const kiterLocation = [12.3468, 100.0125]; // Фиксированные координаты кайтера
+                const kiterLocation = this.mapController.getKiterLocation();
 
-                // Создаем или обновляем стрелку
-                if (!this.windArrowMarker) {
-                    // Создаем стрелку в первый раз - фиксированная позиция рядом с кайтером
-                    const arrowPosition = [
-                        kiterLocation[0] + 0.005,  // Фиксированное смещение
-                        kiterLocation[1] + 0.005
-                    ];
+                console.log('📍 Данные для стрелки:');
+                console.log('  - Направление ветра:', this.windDirection + '°');
+                console.log('  - Скорость ветра:', this.windSpeed.toFixed(1), 'узлов');
+                console.log('  - Позиция кайтера:', kiterLocation);
+                console.log('  - Безопасность:', safety.text, '(' + safety.color + ')');
 
+                // НОВАЯ ЛОГИКА: Позиция стрелки с интерполяцией между 8 основными направлениями
+                const dir = this.windDirection;
+                let arrowPosition = [...kiterLocation]; // Копия координат
+
+                // Получаем смещения из глобальных настроек
+                const config = window.arrowOffsets || {
+                    globalAngle: 0,
+                    directions: {
+                        0: { x: -0.0043, y: 0.0006 },
+                        45: { x: -0.0004, y: 0.0041 },
+                        90: { x: -0.0004, y: 0.0041 },
+                        135: { x: 0.003, y: 0.0011 },
+                        180: { x: 0.003, y: 0.0011 },
+                        225: { x: -0.0005, y: 0.0036 },
+                        270: { x: -0.0005, y: 0.0036 },
+                        315: { x: -0.0005, y: 0.0036 }
+                    }
+                };
+
+                // Функция для получения офсета для конкретного направления с интерполяцией
+                const getOffsetForDirection = (angle) => {
+                    const directions = [0, 45, 90, 135, 180, 225, 270, 315];
+
+                    // Нормализуем угол (0-360)
+                    let normalizedAngle = angle % 360;
+                    if (normalizedAngle < 0) normalizedAngle += 360;
+
+                    // Ищем ближайшие направления
+                    let lowerDir = 0;
+                    let upperDir = 0;
+
+                    for (let i = 0; i < directions.length; i++) {
+                        if (normalizedAngle >= directions[i]) {
+                            lowerDir = directions[i];
+                            upperDir = directions[(i + 1) % directions.length];
+                        }
+                    }
+
+                    // Если угол между 315 и 360, верхнее направление - 0
+                    if (normalizedAngle > 315) {
+                        lowerDir = 315;
+                        upperDir = 0;
+                    }
+
+                    // Если точно совпадает с одним из 8 направлений
+                    if (directions.includes(normalizedAngle)) {
+                        return config.directions[normalizedAngle];
+                    }
+
+                    // Интерполяция между двумя ближайшими направлениями
+                    const lowerOffset = config.directions[lowerDir];
+                    const upperOffset = config.directions[upperDir];
+
+                    let angleDiff = upperDir - lowerDir;
+                    if (angleDiff < 0) angleDiff += 360; // Переход через 0
+
+                    let currentDiff = normalizedAngle - lowerDir;
+                    if (currentDiff < 0) currentDiff += 360;
+
+                    const ratio = currentDiff / angleDiff;
+
+                    return {
+                        x: lowerOffset.x + (upperOffset.x - lowerOffset.x) * ratio,
+                        y: lowerOffset.y + (upperOffset.y - lowerOffset.y) * ratio
+                    };
+                };
+
+                const offset = getOffsetForDirection(dir);
+                arrowPosition = [
+                    kiterLocation[0] + offset.x,
+                    kiterLocation[1] + offset.y
+                ];
+
+                console.log('  📐 Направление ветра: ' + dir + '°');
+                console.log('  📍 Смещение:', offset);
+
+                // Определяем тип ветра для отображения
+                if (dir >= 45 && dir <= 135) {
+                    console.log('  ✅ ONSHORE (БЕЗОПАСНО): Ветер с моря на берег');
+                } else if (dir >= 225 && dir <= 315) {
+                    console.log('  ⚠️ OFFSHORE (ОПАСНО): Ветер с берега в море');
+                } else {
+                    console.log('  🔄 SIDESHORE: Боковой ветер');
+                }
+
+                console.log('  - Позиция стрелки:', arrowPosition);
+
+                // Если маркер уже существует - обновляем только иконку и поворот
+                if (this.windArrowMarker) {
+                    console.log('🔄 Обновление существующего маркера');
+                    const currentPos = this.windArrowMarker.getLatLng();
+                    console.log('  - Текущая позиция маркера:', [currentPos.lat, currentPos.lng]);
+
+                    // КРИТИЧЕСКИЙ ФИКС: Принудительно устанавливаем позицию перед обновлением иконки
+                    this.windArrowMarker.setLatLng(arrowPosition);
+                    console.log('  🔧 Позиция принудительно установлена:', arrowPosition);
+
+                    // КРИТИЧЕСКИЙ ФИКС: Обновляем внутренние координаты маркера
+                    if (this.windArrowMarker.update) {
+                        this.windArrowMarker.update();
+                        console.log('  🔧 Вызван marker.update()');
+                    }
+
+                    // Обновляем иконку (цвет меняется в зависимости от безопасности)
                     const windArrowIcon = L.divIcon({
                         html: this.createArrowSVG(safety),
                         className: 'wind-arrow-container',
@@ -1668,41 +1966,122 @@
                         iconAnchor: [30, 30]
                     });
 
-                    this.windArrowMarker = L.marker(arrowPosition, { 
-                        icon: windArrowIcon
-                    });
+                    this.windArrowMarker.setIcon(windArrowIcon);
+                    console.log('  ✅ Иконка обновлена');
 
-                    this.mapController.addWindArrow(this.windArrowMarker);
+                    // КРИТИЧЕСКИЙ ФИКС: После смены иконки снова обновляем позицию
+                    if (this.windArrowMarker.update) {
+                        this.windArrowMarker.update();
+                        console.log('  🔧 Вызван marker.update() после setIcon()');
+                    }
+
+                    // Обновляем поворот (с учетом общей корректировки угла)
+                    const element = this.windArrowMarker.getElement();
+                    if (element) {
+                        // КРИТИЧЕСКИЙ ФИКС: НЕ перезаписываем transform, а добавляем rotate к существующему translate3d
+                        const currentTransform = element.style.transform;
+                        const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                        // Применяем общую корректировку угла
+                        const globalAngleOffset = config.globalAngle || 0;
+                        const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                        if (translateMatch) {
+                            // Сохраняем translate3d и добавляем rotate
+                            element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                            console.log('  🔧 Transform установлен:', element.style.transform);
+                        } else {
+                            // Если нет translate3d, просто устанавливаем rotate
+                            element.style.transform = `rotate(${finalRotation}deg)`;
+                        }
+
+                        element.style.transformOrigin = 'center';
+                        element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                        console.log('  ✅ Поворот: ' + this.windDirection + '° + корректировка ' + globalAngleOffset + '° = ' + finalRotation + '°');
+                    }
+
+                    const finalPos = this.windArrowMarker.getLatLng();
+                    console.log('  - Финальная позиция маркера:', [finalPos.lat, finalPos.lng]);
                 } else {
-                    // Обновляем только иконку (цвет) и поворот существующей стрелки
-                    const updatedIcon = L.divIcon({
+                    console.log('🆕 Создание нового маркера');
+                    console.log('  - Позиция для создания:', arrowPosition);
+
+                    // Создаем маркер в первый раз
+                    const windArrowIcon = L.divIcon({
                         html: this.createArrowSVG(safety),
                         className: 'wind-arrow-container',
                         iconSize: [60, 60],
                         iconAnchor: [30, 30]
                     });
-                    
-                    this.windArrowMarker.setIcon(updatedIcon);
-                }
 
-                // Поворот стрелки при каждом обновлении
-                setTimeout(() => {
-                    const element = this.windArrowMarker.getElement();
-                    if (element) {
-                        element.style.transform = `rotate(${this.windDirection}deg)`;
-                        element.style.transformOrigin = 'center';
-                        element.style.transition = 'transform 0.5s ease';
-                        
-                        // Обновляем информацию о ветре
-                        element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
-                    }
-                }, 100);
+                    this.windArrowMarker = L.marker(arrowPosition, {
+                        icon: windArrowIcon
+                    });
+                    console.log('  ✅ Маркер создан');
+
+                    // Добавляем маркер на карту
+                    this.mapController.addWindArrow(this.windArrowMarker);
+                    console.log('  ✅ Маркер добавлен на карту');
+
+                    // Принудительно обновляем позицию и поворот после добавления
+                    setTimeout(() => {
+                        if (this.windArrowMarker && this.mapController.map) {
+                            console.log('  🔧 setTimeout: принудительное обновление позиции');
+
+                            // Принудительно обновляем позицию маркера
+                            this.windArrowMarker.setLatLng(arrowPosition);
+
+                            // КЛЮЧЕВОЙ ФИКС: Принудительно обновляем позицию маркера через внутренний метод Leaflet
+                            if (this.windArrowMarker.update) {
+                                this.windArrowMarker.update();
+                                console.log('  🔧 Вызван marker.update()');
+                            }
+
+                            // Принудительно пересчитываем размеры карты
+                            this.mapController.map.invalidateSize(false);
+                            console.log('  🔧 Вызван map.invalidateSize()');
+
+                            const pos = this.windArrowMarker.getLatLng();
+                            console.log('  - Позиция после setLatLng:', [pos.lat, pos.lng]);
+
+                            const element = this.windArrowMarker.getElement();
+                            if (element) {
+                                // КРИТИЧЕСКИЙ ФИКС: НЕ перезаписываем transform, а добавляем rotate к существующему translate3d
+                                const currentTransform = element.style.transform;
+                                const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                                // Применяем общую корректировку угла
+                                const globalAngleOffset = config.globalAngle || 0;
+                                const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                                if (translateMatch) {
+                                    // Сохраняем translate3d и добавляем rotate
+                                    element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                                    console.log('  🔧 Transform установлен:', element.style.transform);
+                                } else {
+                                    // Если нет translate3d, просто устанавливаем rotate
+                                    element.style.transform = `rotate(${finalRotation}deg)`;
+                                }
+
+                                element.style.transformOrigin = 'center';
+                                element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                                console.log('  ✅ Поворот установлен на', this.windDirection + '°');
+                            }
+                        }
+                    }, 100);
+                }
             }
 
             updateWind(direction, speed) {
+                console.log('🌬️ updateWind() вызван с параметрами:', {direction: direction + '°', speed: speed.toFixed(1) + ' узлов'});
                 this.windDirection = direction;
                 this.windSpeed = speed;
+                this.isInitialized = true; // Помечаем, что данные получены
                 this.updateArrow();
+            }
+
+            getWindArrowMarker() {
+                return this.windArrowMarker;
             }
 
             clear() {
@@ -1713,6 +2092,202 @@
             }
         }
 
+        // WindStatistics Class
+        class WindStatistics {
+            constructor() {
+                this.windHistory = [];
+                this.maxHistoryMinutes = 60; // Храним историю за последний час
+                this.analysisIntervalMinutes = 5; // Анализируем за 5 минут (вместо 15)
+                this.storageKey = 'jolly-kite-wind-statistics';
+
+                // Восстанавливаем данные из localStorage при инициализации
+                this.loadFromStorage();
+            }
+
+            loadFromStorage() {
+                try {
+                    const stored = localStorage.getItem(this.storageKey);
+                    if (stored) {
+                        const data = JSON.parse(stored);
+                        // Восстанавливаем timestamp как объекты Date
+                        this.windHistory = data.map(m => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        }));
+
+                        // Очищаем устаревшие данные
+                        this.cleanOldData();
+
+                        console.log(`✓ Загружено ${this.windHistory.length} измерений из кеша`);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки статистики из кеша:', error);
+                    this.windHistory = [];
+                }
+            }
+
+            saveToStorage() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.windHistory));
+                } catch (error) {
+                    console.error('Ошибка сохранения статистики в кеш:', error);
+                }
+            }
+
+            addMeasurement(windData) {
+                const measurement = {
+                    speed: windData.windSpeedKnots,
+                    direction: windData.windDir,
+                    gust: windData.windGustKnots,
+                    timestamp: windData.timestamp || new Date()
+                };
+
+                this.windHistory.push(measurement);
+                this.cleanOldData();
+                this.saveToStorage();
+            }
+
+            cleanOldData() {
+                const now = new Date();
+                const cutoffTime = new Date(now.getTime() - this.maxHistoryMinutes * 60 * 1000);
+                const beforeCount = this.windHistory.length;
+                this.windHistory = this.windHistory.filter(m => m.timestamp >= cutoffTime);
+
+                // Если удалили записи, сохраняем обновленные данные
+                if (beforeCount !== this.windHistory.length) {
+                    this.saveToStorage();
+                }
+            }
+
+            getAverageSpeed(minutes) {
+                const now = new Date();
+                const cutoffTime = new Date(now.getTime() - minutes * 60 * 1000);
+                const recentMeasurements = this.windHistory.filter(m => m.timestamp >= cutoffTime);
+
+                if (recentMeasurements.length === 0) {
+                    return null;
+                }
+
+                const sum = recentMeasurements.reduce((acc, m) => acc + m.speed, 0);
+                return sum / recentMeasurements.length;
+            }
+
+            analyzeTrend() {
+                if (this.windHistory.length < 2) {
+                    return {
+                        trend: 'insufficient_data',
+                        text: 'Недостаточно данных',
+                        icon: '⏳',
+                        color: '#808080'
+                    };
+                }
+
+                const currentAverage = this.getAverageSpeed(this.analysisIntervalMinutes);
+                const previousAverage = this.getAverageInTimeRange(
+                    this.analysisIntervalMinutes,
+                    this.analysisIntervalMinutes * 2
+                );
+
+                if (currentAverage === null || previousAverage === null) {
+                    return {
+                        trend: 'insufficient_data',
+                        text: 'Накапливаем данные...',
+                        icon: '⏳',
+                        color: '#808080',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage
+                    };
+                }
+
+                const speedChange = currentAverage - previousAverage;
+                const percentChange = (speedChange / previousAverage) * 100;
+
+                if (Math.abs(percentChange) < 5) {
+                    return {
+                        trend: 'stable',
+                        text: 'Стабильный',
+                        icon: '➡️',
+                        color: '#4169E1',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                } else if (speedChange > 0) {
+                    return {
+                        trend: 'strengthening',
+                        text: 'Раздувает',
+                        icon: '↗️',
+                        color: '#FF8C00',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                } else {
+                    return {
+                        trend: 'weakening',
+                        text: 'Затихает',
+                        icon: '↘️',
+                        color: '#87CEEB',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                }
+            }
+
+            getAverageInTimeRange(startMinutes, endMinutes) {
+                const now = new Date();
+                const startTime = new Date(now.getTime() - endMinutes * 60 * 1000);
+                const endTime = new Date(now.getTime() - startMinutes * 60 * 1000);
+
+                const measurements = this.windHistory.filter(
+                    m => m.timestamp >= startTime && m.timestamp < endTime
+                );
+
+                if (measurements.length === 0) {
+                    return null;
+                }
+
+                const sum = measurements.reduce((acc, m) => acc + m.speed, 0);
+                return sum / measurements.length;
+            }
+
+            getMeasurementCount() {
+                return this.windHistory.length;
+            }
+
+            clearHistory() {
+                this.windHistory = [];
+                this.saveToStorage();
+                console.log('✓ История статистики очищена');
+            }
+
+            getCacheInfo() {
+                const oldest = this.windHistory.length > 0
+                    ? this.windHistory[0].timestamp
+                    : null;
+                const newest = this.windHistory.length > 0
+                    ? this.windHistory[this.windHistory.length - 1].timestamp
+                    : null;
+
+                const sizeInBytes = new Blob([JSON.stringify(this.windHistory)]).size;
+                const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
+                return {
+                    entries: this.windHistory.length,
+                    sizeKB: sizeInKB,
+                    sizeBytes: sizeInBytes,
+                    oldestEntry: oldest,
+                    newestEntry: newest,
+                    storageKey: this.storageKey,
+                    maxHistoryMinutes: this.maxHistoryMinutes
+                };
+            }
+        }
+
         // App Class
         class App {
             constructor() {
@@ -1720,7 +2295,8 @@
                 this.windDataManager = new WindDataManager();
                 this.mapController = new MapController();
                 this.forecastManager = new ForecastManager();
-                
+                this.windStatistics = new WindStatistics();
+
                 this.windArrowController = null; // Будет инициализирован после карты
                 this.updateInterval = null;
                 this.isInitialized = false;
@@ -1751,6 +2327,16 @@
                     // Настройка симуляции ветра для прогнозов
                     this.forecastManager.setupSimulation((direction, speed) => {
                         this.simulateWind(direction, speed);
+                    });
+
+                    // Настройка логирования позиции стрелки при зуме карты
+                    this.mapController.map.on('zoomend', () => {
+                        if (this.windArrowController && this.windArrowController.windArrowMarker) {
+                            const arrowPos = this.windArrowController.windArrowMarker.getLatLng();
+                            const kiterPos = this.mapController.getKiterLocation();
+                            console.log('🔍 После зума - позиция стрелки:', [arrowPos.lat, arrowPos.lng]);
+                            console.log('🔍 После зума - позиция кайтера:', kiterPos);
+                        }
                     });
 
                     // Загрузка первоначальных данных
@@ -1790,8 +2376,16 @@
             }
 
             async updateWindData() {
+                console.log('');
+                console.log('📡 ═══════════════════════════════════════════════════════');
+                console.log('📡 ПОЛУЧЕНИЕ ДАННЫХ О ВЕТРЕ ИЗ API');
+                console.log('📡 ═══════════════════════════════════════════════════════');
                 try {
                     const windData = await this.windDataManager.fetchCurrentWindData();
+                    console.log('📡 Данные получены из API:', {
+                        windDir: windData.windDir + '°',
+                        windSpeed: windData.windSpeedKnots.toFixed(1) + ' узлов'
+                    });
                     
                     // Получение информации о безопасности
                     const safety = this.windDataManager.getWindSafety(
@@ -1804,16 +2398,49 @@
                     
                     // Обновление UI
                     this.updateWindDisplay(windData);
-                    
+
                     // Обновление стрелки ветра
                     if (this.windArrowController) {
                         this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
                     }
-                    
+
+                    // Добавление измерения в статистику
+                    this.windStatistics.addMeasurement(windData);
+
+                    // Обновление тренда
+                    this.updateWindTrend();
+
                     return windData;
                 } catch (error) {
                     console.error('Ошибка обновления данных о ветре:', error);
                     throw error;
+                }
+            }
+
+            updateWindTrend() {
+                const trend = this.windStatistics.analyzeTrend();
+                const trendElement = document.getElementById('windTrend');
+
+                if (trendElement) {
+                    trendElement.innerHTML = `
+                        <span style="font-size: 1.5em;">${trend.icon}</span>
+                        <span style="margin-left: 5px; font-weight: bold;">${trend.text}</span>
+                    `;
+                    trendElement.style.color = trend.color;
+
+                    // Добавляем tooltip с подробной информацией
+                    if (trend.currentSpeed && trend.previousSpeed) {
+                        const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
+                        trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+                    } else {
+                        trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+                    }
+
+                    console.log('📊 Тренд обновлен:', {
+                        trend: trend.text,
+                        icon: trend.icon,
+                        measurements: this.windStatistics.getMeasurementCount()
+                    });
                 }
             }
 
@@ -1824,20 +2451,57 @@
                     windSpeedElement.textContent = windData.windSpeedKnots.toFixed(1);
                 }
 
+                // Обновление порывов
+                const windGustElement = document.getElementById('windGust');
+                if (windGustElement) {
+                    windGustElement.textContent = windData.windGustKnots ? windData.windGustKnots.toFixed(1) : '--';
+                }
+
+                // Обновление максимума за день
+                const maxGustElement = document.getElementById('maxGust');
+                if (maxGustElement) {
+                    maxGustElement.textContent = windData.maxGustKnots ? windData.maxGustKnots.toFixed(1) : '--';
+                }
+
                 // Обновление направления и описания ветра
                 this.updateWindDescription(windData);
             }
 
             updateWindDescription(windData) {
                 const windDesc = this.getWindDescription(windData.windSpeedKnots, windData.windDir);
-                
+
                 const windIcon = document.getElementById('windIcon');
                 const windTitle = document.getElementById('windTitle');
                 const windSubtitle = document.getElementById('windSubtitle');
+                const windCardinal = document.getElementById('windCardinal');
+                const windSafetyDesc = document.getElementById('windSafetyDesc');
 
                 if (windIcon) windIcon.textContent = windDesc.icon;
                 if (windTitle) windTitle.textContent = windDesc.title;
                 if (windSubtitle) windSubtitle.textContent = windDesc.subtitle;
+
+                // Обновление направления ветра (румб)
+                if (windCardinal) {
+                    windCardinal.textContent = this.degreesToCardinal(windData.windDir);
+                }
+
+                // Обновление описания безопасности
+                if (windSafetyDesc && windData.safety) {
+                    let safetyText = windData.safety.text;
+
+                    // Добавляем информацию о типе ветра (offshore/onshore)
+                    if (windData.safety.isOffshore) {
+                        safetyText += ' • Отжим (offshore)';
+                    } else if (windData.safety.isOnshore) {
+                        safetyText += ' • Прижим (onshore)';
+                    } else {
+                        safetyText += ' • Боковой (sideshore)';
+                    }
+
+                    windSafetyDesc.textContent = safetyText;
+                    windSafetyDesc.style.color = windData.safety.color;
+                    windSafetyDesc.style.fontWeight = '600';
+                }
 
                 // Обновление цвета на основе безопасности
                 const windButton = document.getElementById('windDescriptionButton');
@@ -1845,6 +2509,22 @@
                     windButton.style.borderColor = windData.safety.color;
                     windButton.style.boxShadow = `0 0 20px ${windData.safety.color}40`;
                 }
+            }
+
+            degreesToCardinal(degrees) {
+                const deg = parseFloat(degrees) || 0;
+                const normalized = ((deg % 360) + 360) % 360; // Нормализация к 0-360
+
+                // Определение направления с 8 румбами
+                if (normalized >= 337.5 || normalized < 22.5) return 'С';      // North
+                if (normalized >= 22.5 && normalized < 67.5) return 'СВ';      // Northeast
+                if (normalized >= 67.5 && normalized < 112.5) return 'В';      // East
+                if (normalized >= 112.5 && normalized < 157.5) return 'ЮВ';    // Southeast
+                if (normalized >= 157.5 && normalized < 202.5) return 'Ю';     // South
+                if (normalized >= 202.5 && normalized < 247.5) return 'ЮЗ';    // Southwest
+                if (normalized >= 247.5 && normalized < 292.5) return 'З';     // West
+                if (normalized >= 292.5 && normalized < 337.5) return 'СЗ';    // Northwest
+                return 'С'; // Fallback
             }
 
             getWindDescription(speedKnots, degrees) {
@@ -1896,8 +2576,12 @@
             }
 
             simulateWind(direction, speed) {
-                console.log(`Симуляция ветра: ${speed} узлов, направление ${direction}°`);
-                
+                console.log('');
+                console.log('🔘 ═══════════════════════════════════════════════════════');
+                console.log('🔘 КНОПКА СИМУЛЯЦИИ НАЖАТА');
+                console.log('🔘 Направление:', direction + '°', '| Скорость:', speed, 'узлов');
+                console.log('🔘 ═══════════════════════════════════════════════════════');
+
                 // Симуляция данных
                 const simulatedData = {
                     windSpeedKnots: speed,
@@ -1909,18 +2593,24 @@
                     pressure: 30.1,
                     timestamp: new Date()
                 };
-                
+
                 // Получение информации о безопасности
                 const safety = this.windDataManager.getWindSafety(direction, speed);
                 simulatedData.safety = safety;
-                
+
                 // Обновление отображения
                 this.updateWindDisplay(simulatedData);
-                
+
                 // Обновление стрелки
                 if (this.windArrowController) {
                     this.windArrowController.updateWind(direction, speed);
                 }
+
+                // Добавление измерения в статистику
+                this.windStatistics.addMeasurement(simulatedData);
+
+                // Обновление тренда
+                this.updateWindTrend();
             }
 
             showWindError(message) {
@@ -1956,22 +2646,43 @@
                 }
             }
 
+            // Методы для работы со статистикой
+            getStatisticsCacheInfo() {
+                return this.windStatistics.getCacheInfo();
+            }
+
+            clearStatisticsCache() {
+                this.windStatistics.clearHistory();
+                console.log('✓ Кеш статистики очищен');
+            }
+
+            // Методы для работы с историей (если есть historyManager)
+            exportHistoryJSON(hours = null) {
+                return this.historyManager ? this.historyManager.exportHistoryJSON(hours) : '{}';
+            }
+
+            clearHistory() {
+                if (this.historyManager) {
+                    return this.historyManager.clearHistory();
+                }
+            }
+
             destroy() {
                 console.log('Завершение работы JollyKite App...');
-                
+
                 // Остановка автообновления
                 this.stopAutoUpdate();
-                
+
                 // Очистка карты
                 this.mapController.destroy();
-                
+
                 // Очистка менеджеров
                 if (this.windArrowController) {
                     this.windArrowController.clear();
                 }
-                
+
                 this.forecastManager.clear();
-                
+
                 this.isInitialized = false;
                 console.log('✅ JollyKite App завершен');
             }
@@ -1990,10 +2701,46 @@
                 
                 if (success) {
                     console.log('JollyKite App initialized successfully!');
-                    
+
                     // Expose app to window for debugging
                     window.jollyKiteApp = jollyKiteApp;
-                    
+
+                    // Удобные команды для работы с кешем
+                    window.showCacheInfo = function() {
+                        const statsInfo = jollyKiteApp.getStatisticsCacheInfo();
+
+                        console.log('📊 Информация о кеше JollyKite:');
+                        console.log('');
+                        console.log('🌪️ Статистика ветра (для трендов):');
+                        console.log(`  - Записей: ${statsInfo.entries}`);
+                        console.log(`  - Размер: ${statsInfo.sizeKB} KB`);
+                        console.log(`  - Период хранения: ${statsInfo.maxHistoryMinutes} минут`);
+                        if (statsInfo.oldestEntry) {
+                            console.log(`  - Старейшая запись: ${new Date(statsInfo.oldestEntry).toLocaleString('ru-RU')}`);
+                            console.log(`  - Новейшая запись: ${new Date(statsInfo.newestEntry).toLocaleString('ru-RU')}`);
+                        }
+                        console.log('');
+                        console.log('💡 Команды:');
+                        console.log('  showCacheInfo() - показать эту информацию');
+                        console.log('  clearAllCache() - очистить весь кеш');
+
+                        return { statistics: statsInfo };
+                    };
+
+                    window.clearAllCache = function() {
+                        if (confirm('Вы уверены, что хотите очистить весь кеш? Все накопленные данные будут удалены.')) {
+                            jollyKiteApp.clearStatisticsCache();
+                            console.log('✅ Весь кеш очищен');
+                        }
+                    };
+
+                    // Показываем информацию о загруженном кеше при старте
+                    const statsInfo = jollyKiteApp.getStatisticsCacheInfo();
+                    if (statsInfo.entries > 0) {
+                        console.log(`✓ Загружено ${statsInfo.entries} измерений из кеша (${statsInfo.sizeKB} KB)`);
+                        console.log('💡 Введите showCacheInfo() для подробной информации');
+                    }
+
                     // Set up countdown timer
                     updateCountdown();
                     setInterval(updateCountdown, 1000);
@@ -2222,6 +2969,59 @@
             document.documentElement.classList.add('pwa-mode');
             console.log('Running as PWA');
         }
+
+        // Глобальные переменные для смещения стрелки
+        window.arrowOffsets = {
+            globalAngle: 0,  // Общая корректировка угла для всех стрелок
+            directions: {
+                0: { x: -0.0043, y: 0.0006 },     // С
+                45: { x: -0.0033, y: -0.0037 },   // СВ
+                90: { x: -0.0004, y: -0.0041 },   // В
+                135: { x: 0.004, y: -0.0037 },    // ЮВ
+                180: { x: 0.003, y: 0.0011 },     // Ю
+                225: { x: 0.0025, y: 0.0045 },    // ЮЗ
+                270: { x: -0.0006, y: 0.004 },    // З
+                315: { x: -0.0034, y: 0.004 }     // СЗ
+            }
+        };
+
+        // Функция применения настроек смещения стрелки
+        window.applyArrowOffsets = function() {
+            // Считываем общую корректировку угла
+            window.arrowOffsets.globalAngle = parseFloat(document.getElementById('globalAngleOffset').value) || 0;
+
+            // Считываем значения из полей для каждого направления
+            window.arrowOffsets.directions[0].x = parseFloat(document.getElementById('dir0OffsetX').value) || 0;
+            window.arrowOffsets.directions[0].y = parseFloat(document.getElementById('dir0OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[45].x = parseFloat(document.getElementById('dir45OffsetX').value) || 0;
+            window.arrowOffsets.directions[45].y = parseFloat(document.getElementById('dir45OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[90].x = parseFloat(document.getElementById('dir90OffsetX').value) || 0;
+            window.arrowOffsets.directions[90].y = parseFloat(document.getElementById('dir90OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[135].x = parseFloat(document.getElementById('dir135OffsetX').value) || 0;
+            window.arrowOffsets.directions[135].y = parseFloat(document.getElementById('dir135OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[180].x = parseFloat(document.getElementById('dir180OffsetX').value) || 0;
+            window.arrowOffsets.directions[180].y = parseFloat(document.getElementById('dir180OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[225].x = parseFloat(document.getElementById('dir225OffsetX').value) || 0;
+            window.arrowOffsets.directions[225].y = parseFloat(document.getElementById('dir225OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[270].x = parseFloat(document.getElementById('dir270OffsetX').value) || 0;
+            window.arrowOffsets.directions[270].y = parseFloat(document.getElementById('dir270OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[315].x = parseFloat(document.getElementById('dir315OffsetX').value) || 0;
+            window.arrowOffsets.directions[315].y = parseFloat(document.getElementById('dir315OffsetY').value) || 0;
+
+            console.log('✅ Смещения стрелки обновлены:', window.arrowOffsets);
+
+            // Перерисовываем стрелку с новыми настройками
+            if (window.app && window.app.windArrowController) {
+                window.app.windArrowController.updateArrow();
+            }
+        };
     </script>
 </body>
 </html>
