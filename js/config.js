@@ -174,6 +174,27 @@ const config = {
         statistics: 'jolly-kite-wind-statistics',
         history: 'jolly-kite-wind-history',
         preferences: 'jolly-kite-user-preferences'
+    },
+
+    // Wind Arrow Positioning Configuration
+    // These offsets position the wind arrow around the kiter based on wind direction
+    // Each direction (0°, 45°, 90°, etc.) has custom X and Y coordinate offsets
+    windArrow: {
+        // Global angle correction applied to all arrow rotations
+        globalAngle: 0,
+
+        // Directional offsets for 8 cardinal directions (in lat/lng degrees)
+        // Offsets are interpolated smoothly for angles between these directions
+        directions: {
+            0: { x: -0.0043, y: 0.0006 },     // North (С)
+            45: { x: -0.0033, y: -0.0037 },   // Northeast (СВ)
+            90: { x: -0.0004, y: -0.0041 },   // East (В)
+            135: { x: 0.004, y: -0.0037 },    // Southeast (ЮВ)
+            180: { x: 0.003, y: 0.0011 },     // South (Ю)
+            225: { x: 0.0025, y: 0.0045 },    // Southwest (ЮЗ)
+            270: { x: -0.0006, y: 0.004 },    // West (З)
+            315: { x: -0.0034, y: 0.004 }     // Northwest (СЗ)
+        }
     }
 };
 

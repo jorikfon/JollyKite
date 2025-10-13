@@ -1,3 +1,5 @@
+import config from './config.js';
+
 class WindArrowController {
     constructor(mapController, windDataManager) {
         this.mapController = mapController;
@@ -47,6 +49,66 @@ class WindArrowController {
         return colors[color] || color;
     }
 
+    /**
+     * Calculate arrow offset for given wind direction with smooth interpolation
+     * @param {number} angle - Wind direction in degrees (0-360)
+     * @returns {object} - {x, y} offset coordinates
+     */
+    getOffsetForDirection(angle) {
+        const directions = [0, 45, 90, 135, 180, 225, 270, 315];
+        const arrowConfig = config.windArrow;
+
+        // Normalize angle (0-360)
+        let normalizedAngle = angle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
+
+        // If angle exactly matches one of the 8 cardinal directions, return it directly
+        if (directions.includes(normalizedAngle)) {
+            return arrowConfig.directions[normalizedAngle];
+        }
+
+        // Find the two nearest directions for interpolation
+        let lowerDir = 315;  // Default to NW
+        let upperDir = 0;    // Default to N
+
+        for (let i = 0; i < directions.length; i++) {
+            const currentDir = directions[i];
+            const nextDir = directions[(i + 1) % directions.length];
+
+            // Handle wrap around at 360/0
+            if (currentDir === 315) {
+                if (normalizedAngle >= 315 || normalizedAngle < 45) {
+                    lowerDir = 315;
+                    upperDir = 0;
+                    break;
+                }
+            } else if (normalizedAngle >= currentDir && normalizedAngle < nextDir) {
+                lowerDir = currentDir;
+                upperDir = nextDir;
+                break;
+            }
+        }
+
+        // Get offsets for both directions
+        const lowerOffset = arrowConfig.directions[lowerDir];
+        const upperOffset = arrowConfig.directions[upperDir];
+
+        // Calculate angle difference and interpolation ratio
+        let angleDiff = upperDir - lowerDir;
+        if (angleDiff < 0) angleDiff += 360; // Handle wrap at 360/0
+
+        let currentDiff = normalizedAngle - lowerDir;
+        if (currentDiff < 0) currentDiff += 360; // Handle wrap at 360/0
+
+        const ratio = currentDiff / angleDiff;
+
+        // Linear interpolation between the two offsets
+        return {
+            x: lowerOffset.x + (upperOffset.x - lowerOffset.x) * ratio,
+            y: lowerOffset.y + (upperOffset.y - lowerOffset.y) * ratio
+        };
+    }
+
     updateArrow() {
         console.log('🎯 updateArrow() начало работы');
 
@@ -68,11 +130,24 @@ class WindArrowController {
         const kiterLocation = this.mapController.getKiterLocation();
         console.log('📍 Позиция кайтера:', kiterLocation);
 
-        // Стрелка всегда размещается строго в центре позиции кайтера
-        const arrowPosition = kiterLocation;
+        // Calculate directional offset based on wind direction
+        const offset = this.getOffsetForDirection(this.windDirection);
+        console.log(`📐 Направление ветра: ${this.windDirection}°, Смещение:`, offset);
 
-        // Если маркер уже существует - обновляем только иконку и поворот
+        // Position arrow around kiter with directional offset
+        const arrowPosition = [
+            kiterLocation[0] + offset.x,
+            kiterLocation[1] + offset.y
+        ];
+
+        // Если маркер уже существует - обновляем позицию, иконку и поворот
         if (this.windArrowMarker) {
+            console.log('🔄 Обновление существующего маркера');
+
+            // ВАЖНО: Обновляем позицию маркера с новым смещением
+            this.windArrowMarker.setLatLng(arrowPosition);
+            console.log('  🔧 Позиция обновлена:', arrowPosition);
+
             // Обновляем иконку (цвет меняется в зависимости от безопасности)
             const windArrowIcon = L.divIcon({
                 html: this.createArrowSVG(safety),
@@ -82,17 +157,34 @@ class WindArrowController {
             });
 
             this.windArrowMarker.setIcon(windArrowIcon);
+            console.log('  ✅ Иконка обновлена');
 
-            // Обновляем поворот
+            // Обновляем поворот с учетом globalAngle
             // +180° для корректного отображения направления (стрелка показывает ОТКУДА дует ветер)
             const element = this.windArrowMarker.getElement();
             if (element) {
-                element.style.transform = `rotate(${this.windDirection + 180}deg)`;
+                const globalAngleOffset = config.windArrow.globalAngle || 0;
+                const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                // Сохраняем translate3d от Leaflet и добавляем rotate
+                const currentTransform = element.style.transform;
+                const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                if (translateMatch) {
+                    element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                    console.log('  🔧 Transform установлен:', element.style.transform);
+                } else {
+                    element.style.transform = `rotate(${finalRotation}deg)`;
+                }
+
                 element.style.transformOrigin = 'center';
                 element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                console.log(`  ✅ Поворот: ${this.windDirection}° + 180° + globalAngle ${globalAngleOffset}° = ${finalRotation}°`);
             }
         } else {
             // Создаем маркер в первый раз
+            console.log('🆕 Создание нового маркера');
+
             const windArrowIcon = L.divIcon({
                 html: this.createArrowSVG(safety),
                 className: 'wind-arrow-container',
@@ -106,6 +198,7 @@ class WindArrowController {
 
             // Добавляем маркер на карту
             this.mapController.addWindArrow(this.windArrowMarker);
+            console.log('  ✅ Маркер добавлен на карту');
 
             // Принудительно обновляем позицию и поворот после добавления
             setTimeout(() => {
@@ -114,9 +207,22 @@ class WindArrowController {
 
                     const element = this.windArrowMarker.getElement();
                     if (element) {
-                        element.style.transform = `rotate(${this.windDirection + 180}deg)`;
+                        const globalAngleOffset = config.windArrow.globalAngle || 0;
+                        const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                        // Сохраняем translate3d от Leaflet и добавляем rotate
+                        const currentTransform = element.style.transform;
+                        const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                        if (translateMatch) {
+                            element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                        } else {
+                            element.style.transform = `rotate(${finalRotation}deg)`;
+                        }
+
                         element.style.transformOrigin = 'center';
                         element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                        console.log(`  ✅ Поворот установлен: ${finalRotation}°`);
                     }
                 }
             }, 100);
