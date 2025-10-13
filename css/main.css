@@ -826,6 +826,11 @@ footer {
         overflow-x: hidden;
     }
 
+    /* Для контейнера карты разрешаем overflow чтобы стрелка была видна */
+    .card:has(.map-container) {
+        overflow: visible;
+    }
+
     .map-container {
         margin-left: -50%;
         width: 170%;

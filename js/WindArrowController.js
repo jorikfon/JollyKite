@@ -48,15 +48,25 @@ class WindArrowController {
     }
 
     updateArrow() {
-        if (!this.mapController.map) return;
+        console.log('🎯 updateArrow() начало работы');
 
-        // Не отображаем стрелку до первого обновления данных из API
-        if (!this.isInitialized) {
+        if (!this.mapController.map) {
+            console.log('⚠️ Карта не инициализирована');
             return;
         }
 
+        // Не отображаем стрелку до первого обновления данных из API
+        if (!this.isInitialized) {
+            console.log('⚠️ Стрелка ещё не инициализирована (ожидаем данные из API)');
+            return;
+        }
+
+        console.log('📊 Получаем информацию о безопасности...');
         const safety = this.windDataManager.getWindSafety(this.windDirection, this.windSpeed);
+        console.log('✅ Безопасность:', safety);
+
         const kiterLocation = this.mapController.getKiterLocation();
+        console.log('📍 Позиция кайтера:', kiterLocation);
 
         // Стрелка всегда размещается строго в центре позиции кайтера
         const arrowPosition = kiterLocation;
@@ -114,10 +124,16 @@ class WindArrowController {
     }
 
     updateWind(direction, speed) {
+        console.log('🌬️ updateWind() вызван с параметрами:', {
+            direction: direction + '°',
+            speed: speed.toFixed(1) + ' узлов'
+        });
         this.windDirection = direction;
         this.windSpeed = speed;
         this.isInitialized = true; // Помечаем, что данные получены
+        console.log('📍 Вызываем updateArrow()...');
         this.updateArrow();
+        console.log('✅ updateArrow() завершён');
     }
 
     getWindArrowMarker() {
