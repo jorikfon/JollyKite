@@ -52,15 +52,19 @@ class ForecastManager {
             if (knots < 5) {
                 safetyLevel = 'low';
                 safetyColor = '#87CEEB';
+            } else if (isOffshore || knots > 30) {
+                // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
+                safetyLevel = 'danger';
+                safetyColor = '#FF4500';
             } else if (isOnshore && knots >= 12 && knots <= 25) {
                 // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
                 safetyLevel = 'high';
                 safetyColor = '#00FF00';
                 isGoodForKiting = true;
-            } else if (isOffshore || knots > 30) {
-                // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
-                safetyLevel = 'danger';
-                safetyColor = '#FF4500';
+            } else if (isOnshore && knots >= 5 && knots < 12) {
+                // Onshore (прижим) со слабым-средним ветром = БЕЗОПАСНО (желтый)
+                safetyLevel = 'good';
+                safetyColor = '#FFD700';
             } else if (knots >= 8 && knots <= 15) {
                 // Sideshore с умеренным ветром = ХОРОШО (желтый)
                 safetyLevel = 'good';
