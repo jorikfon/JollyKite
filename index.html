@@ -1036,20 +1036,9 @@
         </header>
 
         <div class="wind-dashboard">
-            <div class="card" style="padding: 0; overflow: hidden;">
-                <div class="map-container">
-                    <div id="windMap"></div>
-                    <!-- Контейнер для стрелки ветра будет через Leaflet маркер -->
-                    
-                    <!-- Индикатор LIVE с таймером -->
-                    <div class="live-indicator">
-                        <span class="live-dot"></span>
-                        <span>LIVE</span>
-                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">15с</span>
-                    </div>
-                    
-                    <!-- Единый блок информации о ветре -->
-                    <div class="map-overlay-speed">
+            <!-- Единый блок информации о ветре (перемещён над картой) -->
+            <div class="card" style="margin-bottom: 15px;">
+                <div class="map-overlay-speed" style="position: relative; top: auto; left: auto;">
                         <div style="text-align: center; margin-bottom: 10px;">
                             <div style="font-size: 0.85rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Сила ветра</div>
                             <div class="overlay-speed-value" id="windSpeed">--</div>
@@ -1082,6 +1071,21 @@
                             <div id="windSafety" style="font-size: 0.9rem; font-weight: 600; color: #fff; margin-top: 8px;">--</div>
                             <div id="windSafetyDesc" style="font-size: 0.75rem; color: #888; margin-top: 3px;">--</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карта -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="map-container">
+                    <div id="windMap"></div>
+                    <!-- Контейнер для стрелки ветра будет через Leaflet маркер -->
+
+                    <!-- Индикатор LIVE с таймером -->
+                    <div class="live-indicator">
+                        <span class="live-dot"></span>
+                        <span>LIVE</span>
+                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">15с</span>
                     </div>
                 </div>
             </div>
