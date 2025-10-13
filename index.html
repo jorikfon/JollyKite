@@ -368,6 +368,23 @@
             border-radius: 15px;
             margin: 20px 0;
             z-index: 1;
+            cursor: default !important;  /* Статичный курсор вместо grab */
+        }
+
+        /* Убираем курсор grab со всех элементов карты */
+        .leaflet-container {
+            cursor: default !important;
+        }
+
+        .leaflet-grab,
+        .leaflet-grab * {
+            cursor: default !important;
+        }
+
+        /* Блокируем события касания на карте */
+        .leaflet-container.leaflet-touch-drag {
+            -ms-touch-action: none;
+            touch-action: none;
         }
 
         .map-container {
@@ -1554,8 +1571,15 @@
                 this.map = L.map('windMap', {
                     center: mapCenter,
                     zoom: 14,
-                    zoomControl: true,
-                    attributionControl: false
+                    zoomControl: false,  // Убираем кнопки зума
+                    attributionControl: false,
+                    dragging: false,     // Запрет перетаскивания
+                    touchZoom: false,    // Запрет зума касанием (pinch)
+                    doubleClickZoom: false,  // Запрет зума двойным кликом
+                    scrollWheelZoom: false,  // Запрет зума колесом мыши
+                    boxZoom: false,      // Запрет зума выделением
+                    keyboard: false,     // Запрет управления клавиатурой
+                    tap: false           // Отключить tap handler (может вызывать проблемы на мобильных)
                 });
 
                 // Добавление тайлов карты

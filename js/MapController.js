@@ -20,8 +20,15 @@ class MapController {
         this.map = L.map('map', {
             center: mapCenter,
             zoom: 14,
-            zoomControl: true,
-            attributionControl: false
+            zoomControl: false,  // Убираем кнопки зума
+            attributionControl: false,
+            dragging: false,     // Запрет перетаскивания
+            touchZoom: false,    // Запрет зума касанием (pinch)
+            doubleClickZoom: false,  // Запрет зума двойным кликом
+            scrollWheelZoom: false,  // Запрет зума колесом мыши
+            boxZoom: false,      // Запрет зума выделением
+            keyboard: false,     // Запрет управления клавиатурой
+            tap: false           // Отключить tap handler (может вызывать проблемы на мобильных)
         });
 
         // Добавление тайлов карты
