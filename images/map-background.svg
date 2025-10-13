@@ -1,0 +1,36 @@
+<svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Land (left side - greenish) -->
+  <rect x="0" y="0" width="180" height="600" fill="#B8D4C8"/>
+
+  <!-- Beach transition -->
+  <rect x="180" y="0" width="40" height="600" fill="#D4E7D3"/>
+
+  <!-- Sandy beach -->
+  <rect x="220" y="0" width="30" height="600" fill="#F5E6D3"/>
+
+  <!-- Shallow water -->
+  <rect x="250" y="0" width="80" height="600" fill="#87CEEB"/>
+
+  <!-- Medium water -->
+  <rect x="330" y="0" width="140" height="600" fill="#4A90E2"/>
+
+  <!-- Deep water (right side) -->
+  <rect x="470" y="0" width="130" height="600" fill="#2171C9"/>
+
+  <!-- Add some texture with semi-transparent patterns -->
+  <g opacity="0.1">
+    <!-- Land texture -->
+    <circle cx="60" cy="150" r="80" fill="#5A8A6F"/>
+    <circle cx="120" cy="350" r="60" fill="#5A8A6F"/>
+    <circle cx="40" cy="500" r="70" fill="#5A8A6F"/>
+
+    <!-- Water ripples -->
+    <ellipse cx="400" cy="200" rx="50" ry="20" fill="#FFFFFF"/>
+    <ellipse cx="450" cy="350" rx="60" ry="25" fill="#FFFFFF"/>
+    <ellipse cx="380" cy="480" rx="45" ry="18" fill="#FFFFFF"/>
+  </g>
+
+  <!-- Roads/paths on land (subtle lines) -->
+  <line x1="100" y1="0" x2="100" y2="600" stroke="#8B9D8F" stroke-width="2" opacity="0.3"/>
+  <line x1="0" y1="300" x2="180" y2="300" stroke="#8B9D8F" stroke-width="2" opacity="0.3"/>
+</svg>
