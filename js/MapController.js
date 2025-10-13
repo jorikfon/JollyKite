@@ -35,24 +35,17 @@ class MapController {
     }
 
     addMarkers() {
-        // Иконка кайтсерфера
-        const kitesurferIcon = L.divIcon({
-            html: `
-                <div class="kitesurfer-icon">
-                    <div class="kitesurfer-animation">
-                        <div class="kite-icon">🪁</div>
-                        <div class="surfer-icon">🏄‍♂️</div>
-                    </div>
-                </div>
-            `,
-            className: 'kitesurfer-marker-icon',
-            iconSize: [60, 60],
-            iconAnchor: [30, 30]
+        // Иконка кайтсерфера (красивая PNG картинка)
+        const kitesurferIcon = L.icon({
+            iconUrl: 'kiter.png',
+            iconSize: [100, 100],
+            iconAnchor: [50, 50],
+            popupAnchor: [0, -50]
         });
 
         // Добавление маркера кайтсерфера
-        this.kitesurferMarker = L.marker(this.kiterLocation, { 
-            icon: kitesurferIcon 
+        this.kitesurferMarker = L.marker(this.kiterLocation, {
+            icon: kitesurferIcon
         }).addTo(this.map);
 
         // Маркер спота JollyKite
