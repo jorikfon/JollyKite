@@ -1,38 +1,32 @@
+import config from './config.js';
+
 class MapController {
     constructor() {
         this.map = null;
         this.kitesurferMarker = null;
         this.spotMarkers = [];
-        
-        // Координаты
-        this.spotLocation = [12.346596280786017, 99.99817902532192]; // JollyKite спот
-        this.kiterLocation = [12.3468, 100.0125]; // Кайтер в море
-        this.beachNorth = [12.350, 99.996];
-        this.beachSouth = [12.343, 100.001];
-        this.seaBearing = 90;
-        this.landBearing = 270;
+
+        // Координаты из конфигурации
+        this.spotLocation = config.locations.spot;
+        this.kiterLocation = config.locations.kiter;
+        this.beachNorth = config.locations.beachNorth;
+        this.beachSouth = config.locations.beachSouth;
+        this.seaBearing = config.bearings.sea;
+        this.landBearing = config.bearings.land;
     }
 
     initMap() {
         // Инициализация карты
-        const mapCenter = [this.spotLocation[0], this.spotLocation[1] - 0.002]; // Сдвиг влево
-        
+        const mapCenter = [this.spotLocation[0], this.spotLocation[1] + config.map.centerOffset];
+
         this.map = L.map('map', {
             center: mapCenter,
-            zoom: 14,
-            zoomControl: false,  // Убираем кнопки зума
-            attributionControl: false,
-            dragging: false,     // Запрет перетаскивания
-            touchZoom: false,    // Запрет зума касанием (pinch)
-            doubleClickZoom: false,  // Запрет зума двойным кликом
-            scrollWheelZoom: false,  // Запрет зума колесом мыши
-            boxZoom: false,      // Запрет зума выделением
-            keyboard: false,     // Запрет управления клавиатурой
-            tap: false           // Отключить tap handler (может вызывать проблемы на мобильных)
+            zoom: config.map.defaultZoom,
+            ...config.map.interactions // Spread all interaction settings
         });
 
         // Добавление тайлов карты
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer(config.map.tileServer, {
             attribution: ''
         }).addTo(this.map);
 
@@ -73,7 +67,7 @@ class MapController {
         spotMarker.bindPopup('<b>JollyKite Spot</b><br>Лучшее место для кайтсерфинга!');
 
         // Маркер пляжа
-        const beachMarker = L.marker([12.347, 99.998], {
+        const beachMarker = L.marker(config.locations.beach, {
             icon: L.divIcon({
                 html: '<div class="beach-marker">🏖️</div>',
                 className: 'beach-icon',
@@ -84,7 +78,7 @@ class MapController {
         beachMarker.bindPopup('Пляж Пак Нам Пран');
 
         // Маркер парковки
-        const parkingMarker = L.marker([12.3445, 99.9985], {
+        const parkingMarker = L.marker(config.locations.parking, {
             icon: L.divIcon({
                 html: '<div class="parking-marker">🅿️</div>',
                 className: 'parking-icon',

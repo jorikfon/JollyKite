@@ -9,10 +9,20 @@ const CORE_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/kiter.png',
+  '/css/main.css',
+  '/js/config.js',
+  '/js/utils/WindUtils.js',
+  '/js/App.js',
+  '/js/WindDataManager.js',
+  '/js/MapController.js',
+  '/js/ForecastManager.js',
+  '/js/WindArrowController.js',
+  '/js/WindStatistics.js',
+  '/js/HistoryManager.js',
   'https://cdn.tailwindcss.com/',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap'
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap'
 ];
 
 // API endpoints для кэширования

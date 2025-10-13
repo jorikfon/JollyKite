@@ -1,9 +1,12 @@
+import config from './config.js';
+import WindUtils from './utils/WindUtils.js';
+
 class WindStatistics {
     constructor() {
         this.windHistory = [];
-        this.maxHistoryMinutes = 60; // Храним историю за последний час
-        this.analysisIntervalMinutes = 5; // Анализируем за 5 минут (вместо 15)
-        this.storageKey = 'jolly-kite-wind-statistics';
+        this.maxHistoryMinutes = config.statistics.maxHistoryMinutes;
+        this.analysisIntervalMinutes = config.statistics.analysisIntervalMinutes;
+        this.storageKey = config.storage.statistics;
 
         // Восстанавливаем данные из localStorage при инициализации
         this.loadFromStorage();

@@ -1,3 +1,5 @@
+import config from './config.js';
+import WindUtils from './utils/WindUtils.js';
 import WindDataManager from './WindDataManager.js';
 import MapController from './MapController.js';
 import ForecastManager from './ForecastManager.js';
@@ -205,56 +207,11 @@ class App {
     }
 
     degreesToCardinal(degrees) {
-        const deg = parseFloat(degrees) || 0;
-        const normalized = ((deg % 360) + 360) % 360; // Нормализация к 0-360
-
-        // Определение направления с 8 румбами
-        if (normalized >= 337.5 || normalized < 22.5) return 'С';      // North
-        if (normalized >= 22.5 && normalized < 67.5) return 'СВ';      // Northeast
-        if (normalized >= 67.5 && normalized < 112.5) return 'В';      // East
-        if (normalized >= 112.5 && normalized < 157.5) return 'ЮВ';    // Southeast
-        if (normalized >= 157.5 && normalized < 202.5) return 'Ю';     // South
-        if (normalized >= 202.5 && normalized < 247.5) return 'ЮЗ';    // Southwest
-        if (normalized >= 247.5 && normalized < 292.5) return 'З';     // West
-        if (normalized >= 292.5 && normalized < 337.5) return 'СЗ';    // Northwest
-        return 'С'; // Fallback
+        return WindUtils.degreesToCardinal(degrees);
     }
 
     getWindDescription(speedKnots, degrees) {
-        // Это упрощенная версия, полную логику можно взять из оригинального файла
-        const speed = parseFloat(speedKnots) || 0;
-
-        if (speed < 5) {
-            return {
-                icon: '🍃',
-                title: 'Штиль',
-                subtitle: 'Ветра практически нет'
-            };
-        } else if (speed < 12) {
-            return {
-                icon: '💨',
-                title: 'Легкий ветер',
-                subtitle: `${speed.toFixed(1)} узлов`
-            };
-        } else if (speed < 20) {
-            return {
-                icon: '🌬️',
-                title: 'Умеренный ветер',
-                subtitle: `${speed.toFixed(1)} узлов - отличо для кайта!`
-            };
-        } else if (speed < 30) {
-            return {
-                icon: '💨',
-                title: 'Сильный ветер',
-                subtitle: `${speed.toFixed(1)} узлов - для опытных`
-            };
-        } else {
-            return {
-                icon: '⚡',
-                title: 'Экстремальный ветер',
-                subtitle: `${speed.toFixed(1)} узлов - осторожно!`
-            };
-        }
+        return WindUtils.getWindDescription(speedKnots, degrees);
     }
 
     async updateForecast() {
@@ -306,7 +263,7 @@ class App {
         if (windIcon) windIcon.textContent = '⚠️';
     }
 
-    startAutoUpdate(intervalMs = 30000) {
+    startAutoUpdate(intervalMs = config.intervals.autoUpdate) {
         if (this.updateInterval) {
             this.stopAutoUpdate();
         }

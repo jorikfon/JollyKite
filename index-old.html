@@ -1,0 +1,3177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JollyKite - Кайтсерфинг в Пак Нам Пран 🏄‍♂️</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд. Живые данные о ветре, безопасности и погоде для кайтеров.">
+    <meta name="keywords" content="кайтсерфинг, пак нам пран, таиланд, ветер, прогноз, kite, kitesurfing, wind forecast">
+    <meta name="author" content="JollyKite">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- PWA Theme Colors -->
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="msapplication-TileColor" content="#1e293b">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png">
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png">
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JollyKite">
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png">
+    <meta name="msapplication-square70x70logo" content="/icons/icon-72x72.png">
+    <meta name="msapplication-square150x150logo" content="/icons/icon-144x144.png">
+    <meta name="msapplication-wide310x150logo" content="/icons/icon-384x384.png">
+    <meta name="msapplication-square310x310logo" content="/icons/icon-384x384.png">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="shortcut icon" href="/favicon.ico">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
+    <meta property="og:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
+    <meta property="og:image" content="/icons/icon-512x512.png">
+    <meta property="og:url" content="https://jollykite.com">
+    <meta property="og:site_name" content="JollyKite">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
+    <meta name="twitter:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
+    <meta name="twitter:image" content="/icons/icon-512x512.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'ocean': {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    fontFamily: {
+                        'poppins': ['Poppins', 'sans-serif'],
+                        'dancing': ['Dancing Script', 'cursive'],
+                        'pacifico': ['Pacifico', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(180deg, #2C5F7E 0%, #1E4A66 50%, #1A3A52 100%) !important;
+            background-attachment: fixed !important;
+            min-height: 100vh;
+            color: #FFFFFF;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.1) 100%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%23ffffff" fill-opacity="0.03" d="M0,160L48,144C96,128,192,96,288,106.7C384,117,480,171,576,181.3C672,192,768,160,864,138.7C960,117,1056,107,1152,112C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: bottom;
+            opacity: 0.3;
+            animation: waves 25s ease-in-out infinite;
+            z-index: -2;
+        }
+
+        /* Анимированные кайты на фоне */
+        .kite-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .flying-kite {
+            position: absolute;
+            opacity: 0.15;
+        }
+
+        .flying-kite svg {
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+        }
+
+        .kite-1 {
+            top: 10%;
+            left: 10%;
+            animation: floatKite1 30s ease-in-out infinite;
+        }
+
+        .kite-2 {
+            top: 20%;
+            right: 15%;
+            animation: floatKite2 35s ease-in-out infinite;
+            animation-delay: 5s;
+        }
+
+        .kite-3 {
+            top: 5%;
+            left: 50%;
+            animation: floatKite3 40s ease-in-out infinite;
+            animation-delay: 10s;
+        }
+
+        .kite-4 {
+            bottom: 40%;
+            right: 30%;
+            animation: floatKite1 45s ease-in-out infinite;
+            animation-delay: 15s;
+        }
+
+        .kite-5 {
+            top: 35%;
+            left: 25%;
+            animation: floatKite2 38s ease-in-out infinite;
+            animation-delay: 20s;
+        }
+
+        @keyframes floatKite1 {
+            0%, 100% {
+                transform: translate(0, 0) rotate(-5deg) scale(1);
+            }
+            25% {
+                transform: translate(50px, -30px) rotate(5deg) scale(1.1);
+            }
+            50% {
+                transform: translate(100px, 20px) rotate(-3deg) scale(0.95);
+            }
+            75% {
+                transform: translate(30px, -20px) rotate(3deg) scale(1.05);
+            }
+        }
+
+        @keyframes floatKite2 {
+            0%, 100% {
+                transform: translate(0, 0) rotate(3deg) scale(1);
+            }
+            25% {
+                transform: translate(-40px, 40px) rotate(-8deg) scale(0.9);
+            }
+            50% {
+                transform: translate(-80px, -30px) rotate(6deg) scale(1.15);
+            }
+            75% {
+                transform: translate(-20px, 10px) rotate(-2deg) scale(1);
+            }
+        }
+
+        @keyframes floatKite3 {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            33% {
+                transform: translate(60px, 50px) rotate(10deg) scale(1.2);
+            }
+            66% {
+                transform: translate(-40px, 30px) rotate(-7deg) scale(0.85);
+            }
+        }
+
+        /* Облака */
+        .cloud {
+            position: absolute;
+            opacity: 0.4;
+            fill: white;
+        }
+
+        .cloud-1 {
+            top: 15%;
+            animation: drift 60s linear infinite;
+        }
+
+        .cloud-2 {
+            top: 25%;
+            animation: drift 80s linear infinite;
+            animation-delay: 20s;
+        }
+
+        @keyframes drift {
+            from {
+                left: -200px;
+            }
+            to {
+                left: 100%;
+            }
+        }
+
+        @keyframes waves {
+            0%, 100% { transform: translateY(0) scaleX(1); }
+            50% { transform: translateY(-20px) scaleX(1.05); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 20px 30px;
+            animation: fadeInDown 1s ease;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .site-title {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, #00E0FF 0%, #157CFF 50%, #7C3AED 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+            margin: 0;
+            padding: 10px 0;
+            animation: shimmer 3s ease-in-out infinite;
+            letter-spacing: 2px;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { 
+                filter: brightness(1) drop-shadow(0 4px 8px rgba(0, 160, 255, 0.3)); 
+            }
+            50% { 
+                filter: brightness(1.2) drop-shadow(0 4px 12px rgba(124, 58, 237, 0.4)); 
+            }
+        }
+
+
+        .tagline {
+            font-size: 1.1rem;
+            opacity: 0.95;
+            margin-top: 10px;
+            font-weight: 300;
+        }
+
+        .wind-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+            animation: fadeIn 1.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            animation: slideUp 0.8s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .compass-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .compass-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+        }
+
+        #windMap {
+            height: 500px;
+            width: 100%;
+            border-radius: 15px;
+            margin: 20px 0;
+            z-index: 1;
+            cursor: default !important;  /* Статичный курсор вместо grab */
+        }
+
+        /* Убираем курсор grab со всех элементов карты */
+        .leaflet-container {
+            cursor: default !important;
+        }
+
+        .leaflet-grab,
+        .leaflet-grab * {
+            cursor: default !important;
+        }
+
+        /* Блокируем события касания на карте */
+        .leaflet-container.leaflet-touch-drag {
+            -ms-touch-action: none;
+            touch-action: none;
+        }
+
+        .map-container {
+            position: relative;
+        }
+
+        .wind-arrow-icon {
+            transition: transform 1s ease-in-out;
+        }
+
+
+        /* Единый блок информации о ветре */
+        .map-overlay-speed {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            min-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .overlay-speed-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1A3A52;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .overlay-speed-unit {
+            font-size: 0.9rem;
+            color: #333;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .overlay-speed-condition {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Индикатор онлайн-статуса */
+        .live-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 5px 15px;
+            border-radius: 20px;
+            z-index: 1001;
+            font-size: 0.85rem;
+            color: #1A3A52;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.6;
+            }
+        }
+
+        .wind-speed-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .speed-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .speed-unit {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .wind-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .detail-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .detail-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-label {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .detail-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeIn 2s ease;
+        }
+
+        .price-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .price-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .price-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+
+        .price-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .price-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffd700;
+        }
+
+        .telegram-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #00a8e8 0%, #0077be 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 168, 232, 0.3);
+            margin: 20px 0;
+        }
+
+        .telegram-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 168, 232, 0.5);
+        }
+
+
+        footer {
+            text-align: center;
+            padding: 30px 20px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .wind-dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            /* Сдвиг карты влево на 50% для лучшей видимости стрелки на мобильных */
+            .card {
+                overflow-x: hidden;
+            }
+
+            .map-container {
+                margin-left: -50%;
+                width: 170%;
+            }
+
+            #windMap {
+                width: 100%;
+            }
+
+            .compass-container {
+                width: 200px;
+                height: 200px;
+            }
+
+            .price-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .forecast-slider {
+                padding: 20px 10px 10px;
+                min-height: 120px;
+            }
+
+            .forecast-hour-slot {
+                min-width: 45px;
+                padding: 6px 1px;
+            }
+
+            .forecast-hour-time {
+                font-size: 0.65rem;
+            }
+
+            .forecast-hour-wind-icon {
+                font-size: 1rem;
+            }
+
+            .forecast-hour-speed {
+                font-size: 0.75rem;
+            }
+
+            .forecast-hour-dir {
+                font-size: 0.6rem;
+            }
+        }
+
+        .wind-condition {
+            text-align: center;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .condition-perfect { background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%); }
+        .condition-good { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); }
+        .condition-light { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
+        .condition-no-wind { background: linear-gradient(135deg, #f87171 0%, #ef4444 100%); }
+
+        .wind-description-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 25px 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+
+        .wind-description-icon {
+            font-size: 3rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .wind-description-text {
+            text-align: left;
+            flex: 1;
+        }
+
+        .wind-description-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            background: linear-gradient(45deg, #fff, #e0f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .wind-description-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0%, 100% { 
+                filter: brightness(1) drop-shadow(0 4px 8px rgba(0, 160, 255, 0.3)); 
+            }
+            50% { 
+                filter: brightness(1.2) drop-shadow(0 4px 12px rgba(124, 58, 237, 0.4)); 
+            }
+        }
+
+        .animate-fadeInDown {
+            animation: fadeInDown 1s ease;
+        }
+
+        .animate-shimmer {
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        /* Стили для стрелки ветра */
+        .wind-arrow-container {
+            pointer-events: none;
+        }
+
+        @keyframes arrowPulse {
+            0%, 100% { 
+                opacity: 0.9;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes windParticle {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            10% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            90% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+
+        /* Стили для блока прогноза ветра */
+        .forecast-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 20px 15px;
+            margin: 25px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeIn 2s ease;
+        }
+
+        .forecast-slider {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px 15px 15px;
+            margin-top: 15px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            min-height: 140px;
+        }
+
+        .forecast-timeline {
+            display: flex;
+            min-width: 100%;
+            height: 100px;
+            position: relative;
+            gap: 2px;
+        }
+
+        .forecast-hour-slot {
+            flex: 1;
+            min-width: 60px;
+            position: relative;
+            border-radius: 8px;
+            margin: 0 1px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px 2px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .forecast-hour-slot:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .forecast-hour-time {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #FFFFFF;
+            text-align: center;
+            margin-bottom: 5px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .forecast-hour-wind-icon {
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 3px 0;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+        }
+
+        .forecast-hour-speed {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            text-align: center;
+            margin: 2px 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .forecast-hour-dir {
+            font-size: 0.7rem;
+            color: #FFFFFF;
+            text-align: center;
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        /* Цветовая схема по силе ветра */
+        .wind-calm {
+            background: linear-gradient(180deg, #9CA3AF 0%, #6B7280 100%);
+        }
+
+        .wind-light {
+            background: linear-gradient(180deg, #34D399 0%, #10B981 100%);
+        }
+
+        .wind-moderate {
+            background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+        }
+
+        .wind-fresh {
+            background: linear-gradient(180deg, #FBBF24 0%, #F59E0B 100%);
+        }
+
+        .wind-strong {
+            background: linear-gradient(180deg, #F87171 0%, #EF4444 100%);
+        }
+
+        .wind-gale {
+            background: linear-gradient(180deg, #A855F7 0%, #9333EA 100%);
+        }
+
+        .forecast-loading {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .forecast-details {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px -5px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .forecast-details.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .forecast-hours {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(65px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .forecast-hour {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+
+        .forecast-hour-time {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #87CEEB;
+        }
+
+        .forecast-hour-wind {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .forecast-hour-dir {
+            opacity: 0.7;
+            font-size: 0.7rem;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Анимированный фон с кайтами -->
+    <div class="kite-background">
+        <!-- Облака -->
+        <svg class="cloud cloud-1" width="100" height="60" viewBox="0 0 100 60">
+            <ellipse cx="25" cy="35" rx="25" ry="20"/>
+            <ellipse cx="45" cy="30" rx="30" ry="25"/>
+            <ellipse cx="70" cy="35" rx="25" ry="20"/>
+        </svg>
+        <svg class="cloud cloud-2" width="120" height="70" viewBox="0 0 120 70">
+            <ellipse cx="30" cy="40" rx="30" ry="25"/>
+            <ellipse cx="60" cy="35" rx="35" ry="30"/>
+            <ellipse cx="90" cy="40" rx="28" ry="23"/>
+        </svg>
+
+        <!-- Летающие кайты -->
+        <div class="flying-kite kite-1">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="kite1Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FF6B6B;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FF8E53;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M50,10 Q70,30 50,50 Q30,30 50,10" fill="url(#kite1Grad)"/>
+                <path d="M50,50 Q55,70 50,90" stroke="#333" stroke-width="1" fill="none" opacity="0.3"/>
+                <path d="M45,85 Q50,87 55,85" stroke="#333" stroke-width="0.5" fill="none" opacity="0.3"/>
+            </svg>
+        </div>
+
+        <div class="flying-kite kite-2">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+                <defs>
+                    <linearGradient id="kite2Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4ECDC4;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#44A08D;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M55,15 Q75,35 55,55 Q35,35 55,15" fill="url(#kite2Grad)"/>
+                <path d="M55,55 Q60,75 55,95" stroke="#333" stroke-width="1" fill="none" opacity="0.3"/>
+            </svg>
+        </div>
+
+        <div class="flying-kite kite-3">
+            <svg width="90" height="90" viewBox="0 0 90 90">
+                <defs>
+                    <linearGradient id="kite3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#667EEA;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#764BA2;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M45,8 Q65,28 45,45 Q25,28 45,8" fill="url(#kite3Grad)"/>
+                <path d="M45,45 Q48,65 45,85" stroke="#333" stroke-width="1" fill="none" opacity="0.3"/>
+            </svg>
+        </div>
+
+        <div class="flying-kite kite-4">
+            <svg width="95" height="95" viewBox="0 0 95 95">
+                <defs>
+                    <linearGradient id="kite4Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#F093FB;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#F5576C;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M47.5,12 Q67,32 47.5,50 Q28,32 47.5,12" fill="url(#kite4Grad)"/>
+                <path d="M47.5,50 Q52,70 47.5,90" stroke="#333" stroke-width="1" fill="none" opacity="0.3"/>
+            </svg>
+        </div>
+
+        <div class="flying-kite kite-5">
+            <svg width="105" height="105" viewBox="0 0 105 105">
+                <defs>
+                    <linearGradient id="kite5Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FDBB2D;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#22C1C3;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <path d="M52.5,13 Q72,33 52.5,52 Q33,33 52.5,13" fill="url(#kite5Grad)"/>
+                <path d="M52.5,52 Q57,72 52.5,92" stroke="#333" stroke-width="1" fill="none" opacity="0.3"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header class="text-center py-8 sm:py-12 animate-fadeInDown">
+            <h1 class="font-dancing text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-lg mb-4 tracking-wide animate-shimmer">
+                JollyKite
+            </h1>
+            <p class="text-white/95 text-lg sm:text-xl font-light">Кайтсерфинг в Пак Нам Пран 🏄‍♂️</p>
+        </header>
+
+        <div class="wind-dashboard">
+            <!-- Единый блок информации о ветре (перемещён над картой) -->
+            <div class="card" style="margin-bottom: 15px;">
+                <div class="map-overlay-speed" style="position: relative; top: auto; left: auto;">
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="font-size: 0.85rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Сила ветра</div>
+                            <div class="overlay-speed-value" id="windSpeed">--</div>
+                            <div class="overlay-speed-unit">узлов</div>
+                            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 10px; font-size: 0.8rem;">
+                                <div style="text-align: center;">
+                                    <div style="color: #555; text-transform: uppercase; font-size: 0.7rem;">Порывы</div>
+                                    <div id="windGust" style="color: #333; font-weight: 600;">--</div>
+                                </div>
+                                <div style="text-align: center;">
+                                    <div style="color: #555; text-transform: uppercase; font-size: 0.7rem;">Макс сегодня</div>
+                                    <div id="maxGust" style="color: #333; font-weight: 600;">--</div>
+                                </div>
+                            </div>
+                            <!-- Тренд ветра -->
+                            <div style="margin-top: 15px; padding: 10px; background: rgba(255,255,255,0.8); border-radius: 8px; text-align: center;">
+                                <div style="color: #555; text-transform: uppercase; font-size: 0.7rem; margin-bottom: 5px;">Тренд</div>
+                                <div id="windTrend" style="color: #808080; font-weight: 600; font-size: 0.9rem;">
+                                    <span style="font-size: 1.5em;">⏳</span>
+                                    <span style="margin-left: 5px; font-weight: bold;">Накапливаем данные...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); text-align: center;">
+                            <div style="font-size: 0.85rem; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Направление ветра</div>
+                            <div style="display: flex; align-items: center; justify-content: center;">
+                                <span id="windCardinal" style="font-size: 1.8rem; font-weight: 700; color: #1A3A52;">С</span>
+                            </div>
+                            <div id="windSafety" style="font-size: 0.9rem; font-weight: 600; color: #fff; margin-top: 8px;">--</div>
+                            <div id="windSafetyDesc" style="font-size: 0.75rem; color: #888; margin-top: 3px;">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Карта -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="map-container">
+                    <div id="windMap"></div>
+                    <!-- Контейнер для стрелки ветра будет через Leaflet маркер -->
+
+                    <!-- Индикатор LIVE с таймером -->
+                    <div class="live-indicator">
+                        <span class="live-dot"></span>
+                        <span>LIVE</span>
+                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">15с</span>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <!-- Кнопка с описанием ветра под картой -->
+        <div style="text-align: center; margin: 40px 0;">
+            <div id="windDescriptionButton" class="wind-description-block">
+                <div class="wind-description-icon" id="windIcon">🍃</div>
+                <div class="wind-description-text">
+                    <div class="wind-description-title" id="windTitle">Загружаем данные...</div>
+                    <div class="wind-description-subtitle" id="windSubtitle">Подождите немного</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Симулятор направлений ветра для отладки -->
+        <div style="text-align: center; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+            <h3 style="margin-bottom: 15px;">🔧 Симулятор ветра (отладка)</h3>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                <button onclick="simulateWind(0, 15)" style="padding: 8px 12px; border-radius: 8px; background: #f59e0b; color: white; border: none; cursor: pointer;">С (0°) 🌊</button>
+                <button onclick="simulateWind(45, 15)" style="padding: 8px 12px; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer;">СВ (45°) ✅</button>
+                <button onclick="simulateWind(90, 15)" style="padding: 8px 12px; border-radius: 8px; background: #059669; color: white; border: none; cursor: pointer;">В (90°) ✅</button>
+                <button onclick="simulateWind(135, 15)" style="padding: 8px 12px; border-radius: 8px; background: #10b981; color: white; border: none; cursor: pointer;">ЮВ (135°) ✅</button>
+                <button onclick="simulateWind(180, 15)" style="padding: 8px 12px; border-radius: 8px; background: #f59e0b; color: white; border: none; cursor: pointer;">Ю (180°) 🌊</button>
+                <button onclick="simulateWind(225, 15)" style="padding: 8px 12px; border-radius: 8px; background: #dc2626; color: white; border: none; cursor: pointer;">ЮЗ (225°) ⚠️</button>
+                <button onclick="simulateWind(270, 15)" style="padding: 8px 12px; border-radius: 8px; background: #b91c1c; color: white; border: none; cursor: pointer;">З (270°) ⚠️</button>
+                <button onclick="simulateWind(315, 15)" style="padding: 8px 12px; border-radius: 8px; background: #dc2626; color: white; border: none; cursor: pointer;">СЗ (315°) ⚠️</button>
+            </div>
+            <div id="debugInfo" style="margin-top: 15px; font-family: monospace; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; font-size: 0.9rem;">
+                Направление: -- | Стрелка: -- | Позиция: [--]
+            </div>
+        </div>
+
+        <!-- Форма настройки масштаба карты для мобильных -->
+        <div style="text-align: center; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+            <h3 style="margin-bottom: 15px;">📱 Настройка карты для мобильных (отладка)</h3>
+            <p style="font-size: 0.85rem; margin-bottom: 15px; opacity: 0.8;">Работает только на экранах до 768px ширины</p>
+
+            <div style="max-width: 400px; margin: 0 auto;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">Масштаб карты (%):</label>
+                    <input type="range" id="mapScaleInput" min="100" max="200" value="170" step="10"
+                           style="width: 100%;" oninput="updateMapScale(this.value)">
+                    <div style="font-size: 0.85rem; margin-top: 5px;">
+                        <span id="mapScaleValue">170</span>%
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 5px;">Сдвиг влево (%):</label>
+                    <input type="range" id="mapShiftInput" min="0" max="50" value="50" step="5"
+                           style="width: 100%;" oninput="updateMapShift(this.value)">
+                    <div style="font-size: 0.85rem; margin-top: 5px;">
+                        <span id="mapShiftValue">50</span>%
+                    </div>
+                </div>
+
+                <button onclick="applyMapSettings()"
+                        style="margin-top: 10px; padding: 10px 20px; border-radius: 8px; background: #3b82f6; color: white; border: none; cursor: pointer; font-weight: bold;">
+                    ✅ Применить и скопировать CSS
+                </button>
+
+                <div id="mapSettingsCode" style="margin-top: 15px; display: none; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; text-align: left; font-family: monospace; font-size: 0.8rem; overflow-x: auto;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма настройки смещения стрелки -->
+        <div style="text-align: center; margin: 20px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+            <h3 style="margin-bottom: 15px;">⚙️ Настройка позиции стрелки</h3>
+
+            <!-- Общая корректировка угла -->
+            <div style="background: rgba(138,43,226,0.1); padding: 15px; border-radius: 10px; border: 2px solid #8b5cf6; max-width: 400px; margin: 0 auto 20px;">
+                <h4 style="color: #8b5cf6; margin-bottom: 10px;">🧭 Общая корректировка угла</h4>
+                <p style="font-size: 0.85rem; margin-bottom: 10px; opacity: 0.8;">Поворот всех стрелок относительно берега</p>
+                <div>
+                    <label style="display: block; font-size: 0.9rem; margin-bottom: 3px;">Корректировка угла (градусы):</label>
+                    <input type="number" id="globalAngleOffset" step="1" value="0" min="-180" max="180" oninput="applyArrowOffsets()"
+                           style="width: 100%; padding: 8px; border-radius: 5px; background: rgba(0,0,0,0.3); border: 1px solid #8b5cf6; color: white; text-align: center; font-size: 1.1rem;">
+                    <p style="font-size: 0.75rem; margin-top: 5px; opacity: 0.7;">Положительные значения - по часовой стрелке</p>
+                </div>
+            </div>
+
+            <h4 style="margin-bottom: 15px; color: #94a3b8;">Настройка позиции для каждого направления</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; max-width: 1200px; margin: 0 auto;">
+
+                <!-- С (0°) -->
+                <div style="background: rgba(135,206,250,0.15); padding: 12px; border-radius: 8px; border: 2px solid #60a5fa;">
+                    <h4 style="color: #60a5fa; margin-bottom: 8px; font-size: 0.95rem;">⬆️ С (0°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir0OffsetX" step="0.0001" value="-0.0043" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #60a5fa; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir0OffsetY" step="0.0001" value="0.0006" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #60a5fa; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- СВ (45°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">↗️ СВ (45°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir45OffsetX" step="0.0001" value="-0.0033" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir45OffsetY" step="0.0001" value="-0.0037" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- В (90°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">➡️ В (90°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir90OffsetX" step="0.0001" value="-0.0004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir90OffsetY" step="0.0001" value="-0.0041" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ЮВ (135°) -->
+                <div style="background: rgba(16,185,129,0.15); padding: 12px; border-radius: 8px; border: 2px solid #10b981;">
+                    <h4 style="color: #10b981; margin-bottom: 8px; font-size: 0.95rem;">↘️ ЮВ (135°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir135OffsetX" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir135OffsetY" step="0.0001" value="-0.0037" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #10b981; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ю (180°) -->
+                <div style="background: rgba(245,158,11,0.15); padding: 12px; border-radius: 8px; border: 2px solid #f59e0b;">
+                    <h4 style="color: #f59e0b; margin-bottom: 8px; font-size: 0.95rem;">⬇️ Ю (180°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir180OffsetX" step="0.0001" value="0.003" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #f59e0b; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir180OffsetY" step="0.0001" value="0.0011" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #f59e0b; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ЮЗ (225°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">↙️ ЮЗ (225°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir225OffsetX" step="0.0001" value="0.0025" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir225OffsetY" step="0.0001" value="0.0045" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- З (270°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">⬅️ З (270°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir270OffsetX" step="0.0001" value="-0.0006" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir270OffsetY" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- СЗ (315°) -->
+                <div style="background: rgba(220,38,38,0.15); padding: 12px; border-radius: 8px; border: 2px solid #dc2626;">
+                    <h4 style="color: #dc2626; margin-bottom: 8px; font-size: 0.95rem;">↖️ СЗ (315°)</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">X:</label>
+                            <input type="number" id="dir315OffsetX" step="0.0001" value="-0.0034" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-size: 0.8rem; margin-bottom: 2px;">Y:</label>
+                            <input type="number" id="dir315OffsetY" step="0.0001" value="0.004" oninput="applyArrowOffsets()"
+                                   style="width: 100%; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid #dc2626; color: white; text-align: center; font-size: 0.85rem;">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <button onclick="applyArrowOffsets()" style="margin-top: 15px; padding: 10px 20px; border-radius: 8px; background: #3b82f6; color: white; border: none; cursor: pointer; font-weight: bold;">
+                ✅ Применить настройки
+            </button>
+        </div>
+
+        <!-- Блок прогноза ветра -->
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-6 my-8 border border-white/20 animate-fadeIn">
+            <h2 class="text-center text-2xl font-semibold text-white mb-6">
+                🌪️ Прогноз ветра на 3 дня
+            </h2>
+            <div id="windForecast" class="bg-white/10 rounded-xl p-6 overflow-x-auto min-h-[150px]">
+                <div class="text-center py-8">
+                    <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p class="text-white/80">Загружаем прогноз ветра...</p>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+        <!-- Блок контактов -->
+        <div class="text-center my-12">
+            <h3 class="text-white text-2xl font-semibold mb-6">Присоединяйтесь к нашему сообществу!</h3>
+            <a href="https://t.me/gypsy_mermaid" class="inline-flex items-center gap-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:-translate-y-1 shadow-lg hover:shadow-xl">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.135-.954l11.566-4.458c.538-.196 1.006.128.828.941z" fill="white"/>
+                </svg>
+                Связаться с @gypsy_mermaid
+            </a>
+        </div>
+
+        <footer class="text-center py-8 text-white/80">
+            <p class="text-sm">© 2024 JollyKite | Данные обновляются автоматически каждые 30 секунд</p>
+            <p class="text-sm mt-2 text-white/60">Сделано с ❤️ для кайтеров Пак Нам Прана</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <script>
+        // WindDataManager Class
+        class WindDataManager {
+            constructor() {
+                this.apiUrl = 'https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504';
+                this.forecastApiUrl = 'https://api.open-meteo.com/v1/forecast';
+                this.spotLocation = [12.346596280786017, 99.99817902532192];
+                this.updateInterval = null;
+            }
+
+            mphToMs(mph) {
+                return mph * 0.44704;
+            }
+
+            mphToKnots(mph) {
+                return mph * 0.868976;
+            }
+
+            async fetchCurrentWindData() {
+                try {
+                    const response = await fetch(this.apiUrl);
+                    const result = await response.json();
+                    
+                    if (result.data && result.data.length > 0) {
+                        const device = result.data[0];
+                        const lastData = device.lastData;
+                        
+                        return {
+                            windSpeedKnots: this.mphToKnots(lastData.windspeedmph || 0),
+                            windGustKnots: this.mphToKnots(lastData.windgustmph || 0),
+                            maxGustKnots: this.mphToKnots(lastData.maxdailygust || 0),
+                            windDir: lastData.winddir || 0,
+                            windDirAvg: lastData.winddir_avg10m || 0,
+                            temperature: lastData.tempf || 0,
+                            humidity: lastData.humidity || 0,
+                            pressure: lastData.baromrelin || 0,
+                            timestamp: new Date(lastData.dateutc)
+                        };
+                    }
+                    throw new Error('Нет данных от устройства');
+                } catch (error) {
+                    console.error('Ошибка загрузки данных о ветре:', error);
+                    throw error;
+                }
+            }
+
+            async fetchWindForecast() {
+                const lat = this.spotLocation[0];
+                const lon = this.spotLocation[1];
+                
+                try {
+                    const url = `${this.forecastApiUrl}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Asia/Bangkok&forecast_days=3`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data && data.hourly) {
+                        return this.processForcastData(data);
+                    }
+                    throw new Error('Ошибка получения прогноза');
+                } catch (error) {
+                    console.error('Ошибка загрузки прогноза:', error);
+                    throw error;
+                }
+            }
+
+            processForcastData(data) {
+                const hourly = data.hourly;
+                const hoursToShow = [];
+                const now = new Date();
+                const startHour = 6; // начинаем с 6 утра
+
+                for (let day = 0; day < 3; day++) {
+                    for (let hour = startHour; hour <= 20; hour += 2) {
+                        const hourIndex = day * 24 + hour;
+                        if (hourIndex < hourly.time.length) {
+                            const datetime = new Date(hourly.time[hourIndex]);
+                            const windSpeed = (hourly.wind_speed_10m[hourIndex] * 1.944); // м/с в узлы
+                            const windDir = hourly.wind_direction_10m[hourIndex];
+                            const windGust = (hourly.wind_gusts_10m[hourIndex] * 1.944);
+
+                            hoursToShow.push({
+                                date: datetime,
+                                time: hour,
+                                speed: windSpeed,
+                                direction: windDir,
+                                gust: windGust
+                            });
+                        }
+                    }
+                }
+
+                return hoursToShow;
+            }
+
+            getWindSafety(direction, speed) {
+                const dir = parseInt(direction);
+                const knots = parseFloat(speed) || 0;
+
+                // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
+                const isOffshore = (dir >= 225 && dir <= 315);
+                // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
+                const isOnshore = (dir >= 45 && dir <= 135);
+
+                let safetyLevel = 'medium';
+                let safetyText = 'Умеренно';
+                let safetyColor = '#FFA500';
+
+                if (knots < 5) {
+                    // Слабый ветер
+                    safetyLevel = 'low';
+                    safetyText = 'Слабый ветер';
+                    safetyColor = '#87CEEB';
+                } else if (isOffshore || knots > 30) {
+                    // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
+                    safetyLevel = 'danger';
+                    safetyText = 'Опасно!';
+                    safetyColor = '#FF4500';
+                } else if (isOnshore && knots >= 12 && knots <= 25) {
+                    // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
+                    safetyLevel = 'high';
+                    safetyText = 'Отличные условия!';
+                    safetyColor = '#00FF00';
+                } else if (isOnshore && knots >= 5 && knots < 12) {
+                    // Onshore (прижим) со слабым-средним ветром = БЕЗОПАСНО (желтый)
+                    safetyLevel = 'good';
+                    safetyText = 'Безопасно';
+                    safetyColor = '#FFD700';
+                } else if (knots >= 8 && knots <= 15) {
+                    // Sideshore с умеренным ветром = ХОРОШО (желтый)
+                    safetyLevel = 'good';
+                    safetyText = 'Хорошие условия';
+                    safetyColor = '#FFD700';
+                }
+
+                return {
+                    level: safetyLevel,
+                    text: safetyText,
+                    color: safetyColor,
+                    isOffshore,
+                    isOnshore,
+                    windSpeed: knots,
+                    windDirection: dir
+                };
+            }
+
+            startAutoUpdate(callback, intervalMs = 30000) {
+                this.updateInterval = setInterval(async () => {
+                    try {
+                        const data = await this.fetchCurrentWindData();
+                        callback(data);
+                    } catch (error) {
+                        console.error('Ошибка автообновления:', error);
+                    }
+                }, intervalMs);
+            }
+
+            stopAutoUpdate() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
+            }
+        }
+
+        // MapController Class  
+        class MapController {
+            constructor() {
+                this.map = null;
+                this.kitesurferMarker = null;
+                this.spotMarkers = [];
+                
+                // Координаты
+                this.spotLocation = [12.346596280786017, 99.99817902532192]; // JollyKite спот
+                this.kiterLocation = [12.3468, 100.0125]; // Кайтер в море
+                this.beachNorth = [12.350, 99.996];
+                this.beachSouth = [12.343, 100.001];
+                this.seaBearing = 90;
+                this.landBearing = 270;
+            }
+
+            initMap() {
+                // Инициализация карты
+                const mapCenter = [this.spotLocation[0], this.spotLocation[1] - 0.002]; // Сдвиг влево
+
+                this.map = L.map('windMap', {
+                    center: mapCenter,
+                    zoom: 14,
+                    zoomControl: false,  // Убираем кнопки зума
+                    attributionControl: false,
+                    dragging: false,     // Запрет перетаскивания
+                    touchZoom: false,    // Запрет зума касанием (pinch)
+                    doubleClickZoom: false,  // Запрет зума двойным кликом
+                    scrollWheelZoom: false,  // Запрет зума колесом мыши
+                    boxZoom: false,      // Запрет зума выделением
+                    keyboard: false,     // Запрет управления клавиатурой
+                    tap: false           // Отключить tap handler (может вызывать проблемы на мобильных)
+                });
+
+                // Добавление тайлов карты
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: ''
+                }).addTo(this.map);
+
+                // Логирование событий масштабирования карты
+                this.map.on('zoomstart', (e) => {
+                    console.log('🔍 ZOOMSTART - Начало масштабирования карты');
+                    console.log('  - Текущий zoom:', this.map.getZoom());
+                });
+
+                this.map.on('zoom', (e) => {
+                    console.log('🔍 ZOOM - Процесс масштабирования');
+                    console.log('  - Текущий zoom:', this.map.getZoom());
+                });
+
+                this.map.on('zoomend', (e) => {
+                    console.log('🔍 ZOOMEND - Завершение масштабирования');
+                    console.log('  - Финальный zoom:', this.map.getZoom());
+                    console.log('  - Центр карты:', this.map.getCenter());
+                });
+
+                this.addMarkers();
+                return this.map;
+            }
+
+            addMarkers() {
+                // Иконка кайтсерфера
+                const kitesurferIcon = L.icon({
+                    iconUrl: 'kiter.png',
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 30],
+                    popupAnchor: [0, -30]
+                });
+
+                // Добавление маркера кайтсерфера
+                this.kitesurferMarker = L.marker(this.kiterLocation, { 
+                    icon: kitesurferIcon 
+                }).addTo(this.map);
+
+                // Маркер спота JollyKite
+                const spotMarker = L.marker(this.spotLocation, {
+                    icon: L.divIcon({
+                        html: '<div class="spot-marker">🏖️</div>',
+                        className: 'spot-icon',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(this.map);
+                spotMarker.bindPopup('<b>JollyKite Spot</b><br>Лучшее место для кайтсерфинга!');
+
+                // Маркер пляжа
+                const beachMarker = L.marker([12.347, 99.998], {
+                    icon: L.divIcon({
+                        html: '<div class="beach-marker">🏖️</div>',
+                        className: 'beach-icon',
+                        iconSize: [25, 25],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(this.map);
+                beachMarker.bindPopup('Пляж Пак Нам Пран');
+
+                // Маркер парковки
+                const parkingMarker = L.marker([12.3445, 99.9985], {
+                    icon: L.divIcon({
+                        html: '<div class="parking-marker">🅿️</div>',
+                        className: 'parking-icon',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(this.map);
+                parkingMarker.bindPopup('Парковка');
+
+                // Сохранение маркеров для управления
+                this.spotMarkers = [spotMarker, beachMarker, parkingMarker];
+            }
+
+            getKiterLocation() {
+                return this.kiterLocation;
+            }
+
+            getSpotLocation() {
+                return this.spotLocation;
+            }
+
+            addWindArrow(windArrowMarker) {
+                if (windArrowMarker && this.map) {
+                    windArrowMarker.addTo(this.map);
+                }
+            }
+
+            removeWindArrow(windArrowMarker) {
+                if (windArrowMarker && this.map) {
+                    this.map.removeLayer(windArrowMarker);
+                }
+            }
+
+            destroy() {
+                if (this.map) {
+                    this.map.remove();
+                    this.map = null;
+                }
+            }
+        }
+
+        // ForecastManager Class
+        class ForecastManager {
+            constructor() {
+                this.forecastContainer = null;
+            }
+
+            init() {
+                this.forecastContainer = document.getElementById('windForecast');
+                if (!this.forecastContainer) {
+                    console.error('Forecast container not found');
+                    return false;
+                }
+                return true;
+            }
+
+            showLoading() {
+                if (this.forecastContainer) {
+                    this.forecastContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                            <p class="text-white/80">Загружаем прогноз ветра...</p>
+                        </div>
+                    `;
+                }
+            }
+
+            showError(error) {
+                if (this.forecastContainer) {
+                    this.forecastContainer.innerHTML = `
+                        <div class="forecast-loading">
+                            <p class="text-red-400">Ошибка загрузки прогноза: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            displayForecast(hoursData) {
+                if (!this.forecastContainer) return;
+
+                const getWindSafety = (direction, speed) => {
+                    const dir = parseInt(direction);
+                    const knots = parseFloat(speed) || 0;
+
+                    // ОПАСНЫЙ offshore (отжим): 225°-315° (ЮЗ-СЗ) - ветер дует С БЕРЕГА В МОРЕ
+                    const isOffshore = (dir >= 225 && dir <= 315);
+                    // БЕЗОПАСНЫЙ onshore (прижим): 45°-135° (СВ-ЮВ) - ветер дует С МОРЯ НА БЕРЕГ
+                    const isOnshore = (dir >= 45 && dir <= 135);
+
+                    let safetyLevel = 'medium';
+                    let safetyColor = '#FFA500';
+                    let isGoodForKiting = false;
+
+                    if (knots < 5) {
+                        // Слабый ветер
+                        safetyLevel = 'low';
+                        safetyColor = '#87CEEB';
+                    } else if (isOffshore || knots > 30) {
+                        // Offshore (отжим) или слишком сильный ветер = ОПАСНО (красный)
+                        safetyLevel = 'danger';
+                        safetyColor = '#FF4500';
+                    } else if (isOnshore && knots >= 12 && knots <= 25) {
+                        // Onshore (прижим) с хорошим ветром = ОТЛИЧНО (зеленый)
+                        safetyLevel = 'high';
+                        safetyColor = '#00FF00';
+                        isGoodForKiting = true;
+                    } else if (isOnshore && knots >= 5 && knots < 12) {
+                        // Onshore (прижим) со слабым-средним ветром = БЕЗОПАСНО (желтый)
+                        safetyLevel = 'good';
+                        safetyColor = '#FFD700';
+                    } else if (knots >= 8 && knots <= 15) {
+                        // Sideshore с умеренным ветром = ХОРОШО (желтый)
+                        safetyLevel = 'good';
+                        safetyColor = '#FFD700';
+                    }
+
+                    return {
+                        level: safetyLevel,
+                        color: safetyColor,
+                        isOffshore,
+                        isOnshore,
+                        isGoodForKiting
+                    };
+                };
+
+                const getWindIcon = (speed) => {
+                    if (speed < 5) return '💨';
+                    if (speed < 12) return '🌬️';
+                    if (speed < 20) return '💨';
+                    if (speed < 30) return '🌪️';
+                    return '⚡';
+                };
+
+                const getCardinalDirection = (degrees) => {
+                    const directions = ['С', 'СВ', 'В', 'ЮВ', 'Ю', 'ЮЗ', 'З', 'СЗ'];
+                    const index = Math.round(degrees / 45) % 8;
+                    return directions[index];
+                };
+
+                // Группировка по дням
+                const dayGroups = {};
+                hoursData.forEach(hour => {
+                    const dayKey = hour.date.toDateString();
+                    if (!dayGroups[dayKey]) {
+                        dayGroups[dayKey] = [];
+                    }
+                    dayGroups[dayKey].push(hour);
+                });
+
+                let forecastHTML = '';
+                Object.entries(dayGroups).forEach(([dayKey, group]) => {
+                    const dayName = this.getDayName(new Date(dayKey));
+                    
+                    forecastHTML += `
+                        <div class="mb-6">
+                            <div class="text-sm font-semibold text-white mb-3 text-center bg-white/10 rounded-lg py-2">
+                                ${dayName}
+                            </div>
+                            <div class="flex gap-1 min-w-full">
+                    `;
+
+                    group.forEach(hour => {
+                        const safety = getWindSafety(hour.direction, hour.speed);
+                        const windIcon = getWindIcon(hour.speed);
+                        const cardinalDir = getCardinalDirection(hour.direction);
+                        const kiteIcon = safety.isGoodForKiting ? '🪁' : '';
+
+                        forecastHTML += `
+                            <div class="flex-1 min-w-[60px] rounded-lg p-2 flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                                 style="background: ${safety.color}; border: 2px solid ${safety.color}; box-shadow: 0 0 15px ${safety.color}40;"
+                                 onclick="simulateWind(${hour.direction}, ${hour.speed})" title="Нажмите для симуляции">
+                                <div class="text-xs font-semibold text-white drop-shadow-md">${hour.time}:00 ${kiteIcon}</div>
+                                <div class="text-lg my-1 drop-shadow-md">${windIcon}</div>
+                                <div class="text-sm font-bold text-white drop-shadow-md">${hour.speed.toFixed(1)}</div>
+                                <div class="text-xs text-white/90 drop-shadow-sm">${cardinalDir}</div>
+                            </div>
+                        `;
+                    });
+
+                    forecastHTML += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                this.forecastContainer.innerHTML = forecastHTML;
+            }
+
+            getDayName(date) {
+                const today = new Date();
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const dayAfterTomorrow = new Date(today);
+                dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+                const targetDate = new Date(date);
+                
+                if (targetDate.toDateString() === today.toDateString()) {
+                    return 'Сегодня';
+                } else if (targetDate.toDateString() === tomorrow.toDateString()) {
+                    return 'Завтра';
+                } else if (targetDate.toDateString() === dayAfterTomorrow.toDateString()) {
+                    return 'Послезавтра';
+                } else {
+                    const options = { 
+                        weekday: 'long', 
+                        day: 'numeric', 
+                        month: 'short' 
+                    };
+                    return targetDate.toLocaleDateString('ru-RU', options);
+                }
+            }
+
+            setupSimulation(simulateCallback) {
+                window.simulateWind = simulateCallback;
+            }
+
+            clear() {
+                if (this.forecastContainer) {
+                    this.forecastContainer.innerHTML = '';
+                }
+            }
+        }
+
+        // WindArrowController Class
+        class WindArrowController {
+            constructor(mapController, windDataManager) {
+                this.mapController = mapController;
+                this.windDataManager = windDataManager;
+                this.windArrowMarker = null;
+                this.windDirection = 0;
+                this.windSpeed = 0;
+                this.isInitialized = false; // Флаг для отслеживания первого обновления
+            }
+
+            createArrowSVG(safety) {
+                const color = safety.color;
+                const darkerColor = this.getDarkerColor(color);
+
+                return `
+                    <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:${darkerColor};stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                                <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="black" flood-opacity="0.3"/>
+                            </filter>
+                        </defs>
+                        <path d="M 30 5 L 40 25 L 35 25 L 35 50 L 25 50 L 25 25 L 20 25 Z"
+                              fill="url(#arrowGrad)"
+                              stroke="${darkerColor}"
+                              stroke-width="2"
+                              filter="url(#shadow)"
+                              style="animation: windPulse 2s ease-in-out infinite;">
+                            <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+                        </path>
+                    </svg>
+                `;
+            }
+
+            getDarkerColor(color) {
+                const colors = {
+                    '#00FF00': '#00CC00',
+                    '#FFD700': '#DAA520',
+                    '#FFA500': '#FF8C00',
+                    '#FF4500': '#DC143C',
+                    '#87CEEB': '#4682B4',
+                    '#4169E1': '#0000CD'
+                };
+                return colors[color] || color;
+            }
+
+            updateArrow() {
+                console.log('🎯 updateArrow() вызван');
+
+                if (!this.mapController.map) {
+                    console.log('❌ Карта не инициализирована');
+                    return;
+                }
+
+                // Не отображаем стрелку до первого обновления данных из API
+                if (!this.isInitialized) {
+                    console.log('⏳ Стрелка еще не инициализирована (ждем данных из API)');
+                    return;
+                }
+
+                const safety = this.windDataManager.getWindSafety(this.windDirection, this.windSpeed);
+                const kiterLocation = this.mapController.getKiterLocation();
+
+                console.log('📍 Данные для стрелки:');
+                console.log('  - Направление ветра:', this.windDirection + '°');
+                console.log('  - Скорость ветра:', this.windSpeed.toFixed(1), 'узлов');
+                console.log('  - Позиция кайтера:', kiterLocation);
+                console.log('  - Безопасность:', safety.text, '(' + safety.color + ')');
+
+                // НОВАЯ ЛОГИКА: Позиция стрелки с интерполяцией между 8 основными направлениями
+                const dir = this.windDirection;
+                let arrowPosition = [...kiterLocation]; // Копия координат
+
+                // Получаем смещения из глобальных настроек
+                const config = window.arrowOffsets || {
+                    globalAngle: 0,
+                    directions: {
+                        0: { x: -0.0043, y: 0.0006 },
+                        45: { x: -0.0004, y: 0.0041 },
+                        90: { x: -0.0004, y: 0.0041 },
+                        135: { x: 0.003, y: 0.0011 },
+                        180: { x: 0.003, y: 0.0011 },
+                        225: { x: -0.0005, y: 0.0036 },
+                        270: { x: -0.0005, y: 0.0036 },
+                        315: { x: -0.0005, y: 0.0036 }
+                    }
+                };
+
+                // Функция для получения офсета для конкретного направления с интерполяцией
+                const getOffsetForDirection = (angle) => {
+                    const directions = [0, 45, 90, 135, 180, 225, 270, 315];
+
+                    // Нормализуем угол (0-360)
+                    let normalizedAngle = angle % 360;
+                    if (normalizedAngle < 0) normalizedAngle += 360;
+
+                    // Ищем ближайшие направления
+                    let lowerDir = 0;
+                    let upperDir = 0;
+
+                    for (let i = 0; i < directions.length; i++) {
+                        if (normalizedAngle >= directions[i]) {
+                            lowerDir = directions[i];
+                            upperDir = directions[(i + 1) % directions.length];
+                        }
+                    }
+
+                    // Если угол между 315 и 360, верхнее направление - 0
+                    if (normalizedAngle > 315) {
+                        lowerDir = 315;
+                        upperDir = 0;
+                    }
+
+                    // Если точно совпадает с одним из 8 направлений
+                    if (directions.includes(normalizedAngle)) {
+                        return config.directions[normalizedAngle];
+                    }
+
+                    // Интерполяция между двумя ближайшими направлениями
+                    const lowerOffset = config.directions[lowerDir];
+                    const upperOffset = config.directions[upperDir];
+
+                    let angleDiff = upperDir - lowerDir;
+                    if (angleDiff < 0) angleDiff += 360; // Переход через 0
+
+                    let currentDiff = normalizedAngle - lowerDir;
+                    if (currentDiff < 0) currentDiff += 360;
+
+                    const ratio = currentDiff / angleDiff;
+
+                    return {
+                        x: lowerOffset.x + (upperOffset.x - lowerOffset.x) * ratio,
+                        y: lowerOffset.y + (upperOffset.y - lowerOffset.y) * ratio
+                    };
+                };
+
+                const offset = getOffsetForDirection(dir);
+                arrowPosition = [
+                    kiterLocation[0] + offset.x,
+                    kiterLocation[1] + offset.y
+                ];
+
+                console.log('  📐 Направление ветра: ' + dir + '°');
+                console.log('  📍 Смещение:', offset);
+
+                // Определяем тип ветра для отображения
+                if (dir >= 45 && dir <= 135) {
+                    console.log('  ✅ ONSHORE (БЕЗОПАСНО): Ветер с моря на берег');
+                } else if (dir >= 225 && dir <= 315) {
+                    console.log('  ⚠️ OFFSHORE (ОПАСНО): Ветер с берега в море');
+                } else {
+                    console.log('  🔄 SIDESHORE: Боковой ветер');
+                }
+
+                console.log('  - Позиция стрелки:', arrowPosition);
+
+                // Если маркер уже существует - обновляем только иконку и поворот
+                if (this.windArrowMarker) {
+                    console.log('🔄 Обновление существующего маркера');
+                    const currentPos = this.windArrowMarker.getLatLng();
+                    console.log('  - Текущая позиция маркера:', [currentPos.lat, currentPos.lng]);
+
+                    // КРИТИЧЕСКИЙ ФИКС: Принудительно устанавливаем позицию перед обновлением иконки
+                    this.windArrowMarker.setLatLng(arrowPosition);
+                    console.log('  🔧 Позиция принудительно установлена:', arrowPosition);
+
+                    // КРИТИЧЕСКИЙ ФИКС: Обновляем внутренние координаты маркера
+                    if (this.windArrowMarker.update) {
+                        this.windArrowMarker.update();
+                        console.log('  🔧 Вызван marker.update()');
+                    }
+
+                    // Обновляем иконку (цвет меняется в зависимости от безопасности)
+                    const windArrowIcon = L.divIcon({
+                        html: this.createArrowSVG(safety),
+                        className: 'wind-arrow-container',
+                        iconSize: [60, 60],
+                        iconAnchor: [30, 30]
+                    });
+
+                    this.windArrowMarker.setIcon(windArrowIcon);
+                    console.log('  ✅ Иконка обновлена');
+
+                    // КРИТИЧЕСКИЙ ФИКС: После смены иконки снова обновляем позицию
+                    if (this.windArrowMarker.update) {
+                        this.windArrowMarker.update();
+                        console.log('  🔧 Вызван marker.update() после setIcon()');
+                    }
+
+                    // Обновляем поворот (с учетом общей корректировки угла)
+                    const element = this.windArrowMarker.getElement();
+                    if (element) {
+                        // КРИТИЧЕСКИЙ ФИКС: НЕ перезаписываем transform, а добавляем rotate к существующему translate3d
+                        const currentTransform = element.style.transform;
+                        const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                        // Применяем общую корректировку угла
+                        const globalAngleOffset = config.globalAngle || 0;
+                        const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                        if (translateMatch) {
+                            // Сохраняем translate3d и добавляем rotate
+                            element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                            console.log('  🔧 Transform установлен:', element.style.transform);
+                        } else {
+                            // Если нет translate3d, просто устанавливаем rotate
+                            element.style.transform = `rotate(${finalRotation}deg)`;
+                        }
+
+                        element.style.transformOrigin = 'center';
+                        element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                        console.log('  ✅ Поворот: ' + this.windDirection + '° + корректировка ' + globalAngleOffset + '° = ' + finalRotation + '°');
+                    }
+
+                    const finalPos = this.windArrowMarker.getLatLng();
+                    console.log('  - Финальная позиция маркера:', [finalPos.lat, finalPos.lng]);
+                } else {
+                    console.log('🆕 Создание нового маркера');
+                    console.log('  - Позиция для создания:', arrowPosition);
+
+                    // Создаем маркер в первый раз
+                    const windArrowIcon = L.divIcon({
+                        html: this.createArrowSVG(safety),
+                        className: 'wind-arrow-container',
+                        iconSize: [60, 60],
+                        iconAnchor: [30, 30]
+                    });
+
+                    this.windArrowMarker = L.marker(arrowPosition, {
+                        icon: windArrowIcon
+                    });
+                    console.log('  ✅ Маркер создан');
+
+                    // Добавляем маркер на карту
+                    this.mapController.addWindArrow(this.windArrowMarker);
+                    console.log('  ✅ Маркер добавлен на карту');
+
+                    // Принудительно обновляем позицию и поворот после добавления
+                    setTimeout(() => {
+                        if (this.windArrowMarker && this.mapController.map) {
+                            console.log('  🔧 setTimeout: принудительное обновление позиции');
+
+                            // Принудительно обновляем позицию маркера
+                            this.windArrowMarker.setLatLng(arrowPosition);
+
+                            // КЛЮЧЕВОЙ ФИКС: Принудительно обновляем позицию маркера через внутренний метод Leaflet
+                            if (this.windArrowMarker.update) {
+                                this.windArrowMarker.update();
+                                console.log('  🔧 Вызван marker.update()');
+                            }
+
+                            // Принудительно пересчитываем размеры карты
+                            this.mapController.map.invalidateSize(false);
+                            console.log('  🔧 Вызван map.invalidateSize()');
+
+                            const pos = this.windArrowMarker.getLatLng();
+                            console.log('  - Позиция после setLatLng:', [pos.lat, pos.lng]);
+
+                            const element = this.windArrowMarker.getElement();
+                            if (element) {
+                                // КРИТИЧЕСКИЙ ФИКС: НЕ перезаписываем transform, а добавляем rotate к существующему translate3d
+                                const currentTransform = element.style.transform;
+                                const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+
+                                // Применяем общую корректировку угла
+                                const globalAngleOffset = config.globalAngle || 0;
+                                const finalRotation = this.windDirection + 180 + globalAngleOffset;
+
+                                if (translateMatch) {
+                                    // Сохраняем translate3d и добавляем rotate
+                                    element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                                    console.log('  🔧 Transform установлен:', element.style.transform);
+                                } else {
+                                    // Если нет translate3d, просто устанавливаем rotate
+                                    element.style.transform = `rotate(${finalRotation}deg)`;
+                                }
+
+                                element.style.transformOrigin = 'center';
+                                element.title = `Ветер: ${this.windSpeed.toFixed(1)} узлов, ${this.windDirection}°\n${safety.text}`;
+                                console.log('  ✅ Поворот установлен на', this.windDirection + '°');
+                            }
+                        }
+                    }, 100);
+                }
+            }
+
+            updateWind(direction, speed) {
+                console.log('🌬️ updateWind() вызван с параметрами:', {direction: direction + '°', speed: speed.toFixed(1) + ' узлов'});
+                this.windDirection = direction;
+                this.windSpeed = speed;
+                this.isInitialized = true; // Помечаем, что данные получены
+                this.updateArrow();
+            }
+
+            getWindArrowMarker() {
+                return this.windArrowMarker;
+            }
+
+            clear() {
+                if (this.windArrowMarker) {
+                    this.mapController.removeWindArrow(this.windArrowMarker);
+                    this.windArrowMarker = null;
+                }
+            }
+        }
+
+        // WindStatistics Class
+        class WindStatistics {
+            constructor() {
+                this.windHistory = [];
+                this.maxHistoryMinutes = 60; // Храним историю за последний час
+                this.analysisIntervalMinutes = 5; // Анализируем за 5 минут (вместо 15)
+                this.storageKey = 'jolly-kite-wind-statistics';
+
+                // Восстанавливаем данные из localStorage при инициализации
+                this.loadFromStorage();
+            }
+
+            loadFromStorage() {
+                try {
+                    const stored = localStorage.getItem(this.storageKey);
+                    if (stored) {
+                        const data = JSON.parse(stored);
+                        // Восстанавливаем timestamp как объекты Date
+                        this.windHistory = data.map(m => ({
+                            ...m,
+                            timestamp: new Date(m.timestamp)
+                        }));
+
+                        // Очищаем устаревшие данные
+                        this.cleanOldData();
+
+                        console.log(`✓ Загружено ${this.windHistory.length} измерений из кеша`);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки статистики из кеша:', error);
+                    this.windHistory = [];
+                }
+            }
+
+            saveToStorage() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.windHistory));
+                } catch (error) {
+                    console.error('Ошибка сохранения статистики в кеш:', error);
+                }
+            }
+
+            addMeasurement(windData) {
+                const measurement = {
+                    speed: windData.windSpeedKnots,
+                    direction: windData.windDir,
+                    gust: windData.windGustKnots,
+                    timestamp: windData.timestamp || new Date()
+                };
+
+                this.windHistory.push(measurement);
+                this.cleanOldData();
+                this.saveToStorage();
+            }
+
+            cleanOldData() {
+                const now = new Date();
+                const cutoffTime = new Date(now.getTime() - this.maxHistoryMinutes * 60 * 1000);
+                const beforeCount = this.windHistory.length;
+                this.windHistory = this.windHistory.filter(m => m.timestamp >= cutoffTime);
+
+                // Если удалили записи, сохраняем обновленные данные
+                if (beforeCount !== this.windHistory.length) {
+                    this.saveToStorage();
+                }
+            }
+
+            getAverageSpeed(minutes) {
+                const now = new Date();
+                const cutoffTime = new Date(now.getTime() - minutes * 60 * 1000);
+                const recentMeasurements = this.windHistory.filter(m => m.timestamp >= cutoffTime);
+
+                if (recentMeasurements.length === 0) {
+                    return null;
+                }
+
+                const sum = recentMeasurements.reduce((acc, m) => acc + m.speed, 0);
+                return sum / recentMeasurements.length;
+            }
+
+            analyzeTrend() {
+                if (this.windHistory.length < 2) {
+                    return {
+                        trend: 'insufficient_data',
+                        text: 'Недостаточно данных',
+                        icon: '⏳',
+                        color: '#808080'
+                    };
+                }
+
+                const currentAverage = this.getAverageSpeed(this.analysisIntervalMinutes);
+                const previousAverage = this.getAverageInTimeRange(
+                    this.analysisIntervalMinutes,
+                    this.analysisIntervalMinutes * 2
+                );
+
+                if (currentAverage === null || previousAverage === null) {
+                    return {
+                        trend: 'insufficient_data',
+                        text: 'Накапливаем данные...',
+                        icon: '⏳',
+                        color: '#808080',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage
+                    };
+                }
+
+                const speedChange = currentAverage - previousAverage;
+                const percentChange = (speedChange / previousAverage) * 100;
+
+                if (Math.abs(percentChange) < 5) {
+                    return {
+                        trend: 'stable',
+                        text: 'Стабильный',
+                        icon: '➡️',
+                        color: '#4169E1',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                } else if (speedChange > 0) {
+                    return {
+                        trend: 'strengthening',
+                        text: 'Раздувает',
+                        icon: '↗️',
+                        color: '#FF8C00',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                } else {
+                    return {
+                        trend: 'weakening',
+                        text: 'Затихает',
+                        icon: '↘️',
+                        color: '#87CEEB',
+                        currentSpeed: currentAverage,
+                        previousSpeed: previousAverage,
+                        change: speedChange,
+                        percentChange: percentChange
+                    };
+                }
+            }
+
+            getAverageInTimeRange(startMinutes, endMinutes) {
+                const now = new Date();
+                const startTime = new Date(now.getTime() - endMinutes * 60 * 1000);
+                const endTime = new Date(now.getTime() - startMinutes * 60 * 1000);
+
+                const measurements = this.windHistory.filter(
+                    m => m.timestamp >= startTime && m.timestamp < endTime
+                );
+
+                if (measurements.length === 0) {
+                    return null;
+                }
+
+                const sum = measurements.reduce((acc, m) => acc + m.speed, 0);
+                return sum / measurements.length;
+            }
+
+            getMeasurementCount() {
+                return this.windHistory.length;
+            }
+
+            clearHistory() {
+                this.windHistory = [];
+                this.saveToStorage();
+                console.log('✓ История статистики очищена');
+            }
+
+            getCacheInfo() {
+                const oldest = this.windHistory.length > 0
+                    ? this.windHistory[0].timestamp
+                    : null;
+                const newest = this.windHistory.length > 0
+                    ? this.windHistory[this.windHistory.length - 1].timestamp
+                    : null;
+
+                const sizeInBytes = new Blob([JSON.stringify(this.windHistory)]).size;
+                const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+
+                return {
+                    entries: this.windHistory.length,
+                    sizeKB: sizeInKB,
+                    sizeBytes: sizeInBytes,
+                    oldestEntry: oldest,
+                    newestEntry: newest,
+                    storageKey: this.storageKey,
+                    maxHistoryMinutes: this.maxHistoryMinutes
+                };
+            }
+        }
+
+        // App Class
+        class App {
+            constructor() {
+                // Инициализация всех менеджеров
+                this.windDataManager = new WindDataManager();
+                this.mapController = new MapController();
+                this.forecastManager = new ForecastManager();
+                this.windStatistics = new WindStatistics();
+
+                this.windArrowController = null; // Будет инициализирован после карты
+                this.updateInterval = null;
+                this.isInitialized = false;
+            }
+
+            async init() {
+                try {
+                    console.log('Инициализация JollyKite App...');
+                    
+                    // Инициализация карты
+                    this.mapController.initMap();
+                    console.log('✓ Карта инициализирована');
+
+                    // Инициализация контроллера стрелки ветра
+                    this.windArrowController = new WindArrowController(
+                        this.mapController, 
+                        this.windDataManager
+                    );
+                    console.log('✓ Контроллер стрелки ветра создан');
+
+                    // Инициализация менеджера прогнозов
+                    if (!this.forecastManager.init()) {
+                        console.warn('⚠ Не удалось инициализировать менеджер прогнозов');
+                    } else {
+                        console.log('✓ Менеджер прогнозов инициализирован');
+                    }
+
+                    // Настройка симуляции ветра для прогнозов
+                    this.forecastManager.setupSimulation((direction, speed) => {
+                        this.simulateWind(direction, speed);
+                    });
+
+                    // Настройка логирования позиции стрелки при зуме карты
+                    this.mapController.map.on('zoomend', () => {
+                        if (this.windArrowController && this.windArrowController.windArrowMarker) {
+                            const arrowPos = this.windArrowController.windArrowMarker.getLatLng();
+                            const kiterPos = this.mapController.getKiterLocation();
+                            console.log('🔍 После зума - позиция стрелки:', [arrowPos.lat, arrowPos.lng]);
+                            console.log('🔍 После зума - позиция кайтера:', kiterPos);
+                        }
+                    });
+
+                    // Загрузка первоначальных данных
+                    await this.loadInitialData();
+                    
+                    // Запуск автообновления
+                    this.startAutoUpdate();
+                    
+                    this.isInitialized = true;
+                    console.log('✅ JollyKite App успешно инициализирован');
+                    
+                    return true;
+                } catch (error) {
+                    console.error('❌ Ошибка инициализации приложения:', error);
+                    return false;
+                }
+            }
+
+            async loadInitialData() {
+                // Загрузка текущих данных о ветре
+                try {
+                    await this.updateWindData();
+                    console.log('✓ Данные о ветре загружены');
+                } catch (error) {
+                    console.error('⚠ Ошибка загрузки данных о ветре:', error);
+                    this.showWindError('Ошибка загрузки данных о ветре');
+                }
+
+                // Загрузка прогноза
+                try {
+                    await this.updateForecast();
+                    console.log('✓ Прогноз загружен');
+                } catch (error) {
+                    console.error('⚠ Ошибка загрузки прогноза:', error);
+                    this.forecastManager.showError(error);
+                }
+            }
+
+            async updateWindData() {
+                console.log('');
+                console.log('📡 ═══════════════════════════════════════════════════════');
+                console.log('📡 ПОЛУЧЕНИЕ ДАННЫХ О ВЕТРЕ ИЗ API');
+                console.log('📡 ═══════════════════════════════════════════════════════');
+                try {
+                    const windData = await this.windDataManager.fetchCurrentWindData();
+                    console.log('📡 Данные получены из API:', {
+                        windDir: windData.windDir + '°',
+                        windSpeed: windData.windSpeedKnots.toFixed(1) + ' узлов'
+                    });
+                    
+                    // Получение информации о безопасности
+                    const safety = this.windDataManager.getWindSafety(
+                        windData.windDir, 
+                        windData.windSpeedKnots
+                    );
+                    
+                    // Обновление данных с информацией о безопасности
+                    windData.safety = safety;
+                    
+                    // Обновление UI
+                    this.updateWindDisplay(windData);
+
+                    // Обновление стрелки ветра
+                    if (this.windArrowController) {
+                        this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
+                    }
+
+                    // Добавление измерения в статистику
+                    this.windStatistics.addMeasurement(windData);
+
+                    // Обновление тренда
+                    this.updateWindTrend();
+
+                    return windData;
+                } catch (error) {
+                    console.error('Ошибка обновления данных о ветре:', error);
+                    throw error;
+                }
+            }
+
+            updateWindTrend() {
+                const trend = this.windStatistics.analyzeTrend();
+                const trendElement = document.getElementById('windTrend');
+
+                if (trendElement) {
+                    trendElement.innerHTML = `
+                        <span style="font-size: 1.5em;">${trend.icon}</span>
+                        <span style="margin-left: 5px; font-weight: bold;">${trend.text}</span>
+                    `;
+                    trendElement.style.color = trend.color;
+
+                    // Добавляем tooltip с подробной информацией
+                    if (trend.currentSpeed && trend.previousSpeed) {
+                        const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
+                        trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+                    } else {
+                        trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+                    }
+
+                    console.log('📊 Тренд обновлен:', {
+                        trend: trend.text,
+                        icon: trend.icon,
+                        measurements: this.windStatistics.getMeasurementCount()
+                    });
+                }
+            }
+
+            updateWindDisplay(windData) {
+                // Обновление скорости ветра
+                const windSpeedElement = document.getElementById('windSpeed');
+                if (windSpeedElement) {
+                    windSpeedElement.textContent = windData.windSpeedKnots.toFixed(1);
+                }
+
+                // Обновление порывов
+                const windGustElement = document.getElementById('windGust');
+                if (windGustElement) {
+                    windGustElement.textContent = windData.windGustKnots ? windData.windGustKnots.toFixed(1) : '--';
+                }
+
+                // Обновление максимума за день
+                const maxGustElement = document.getElementById('maxGust');
+                if (maxGustElement) {
+                    maxGustElement.textContent = windData.maxGustKnots ? windData.maxGustKnots.toFixed(1) : '--';
+                }
+
+                // Обновление направления и описания ветра
+                this.updateWindDescription(windData);
+            }
+
+            updateWindDescription(windData) {
+                const windDesc = this.getWindDescription(windData.windSpeedKnots, windData.windDir);
+
+                const windIcon = document.getElementById('windIcon');
+                const windTitle = document.getElementById('windTitle');
+                const windSubtitle = document.getElementById('windSubtitle');
+                const windCardinal = document.getElementById('windCardinal');
+                const windSafetyDesc = document.getElementById('windSafetyDesc');
+
+                if (windIcon) windIcon.textContent = windDesc.icon;
+                if (windTitle) windTitle.textContent = windDesc.title;
+                if (windSubtitle) windSubtitle.textContent = windDesc.subtitle;
+
+                // Обновление направления ветра (румб)
+                if (windCardinal) {
+                    windCardinal.textContent = this.degreesToCardinal(windData.windDir);
+                }
+
+                // Обновление описания безопасности
+                if (windSafetyDesc && windData.safety) {
+                    let safetyText = windData.safety.text;
+
+                    // Добавляем информацию о типе ветра (offshore/onshore)
+                    if (windData.safety.isOffshore) {
+                        safetyText += ' • Отжим (offshore)';
+                    } else if (windData.safety.isOnshore) {
+                        safetyText += ' • Прижим (onshore)';
+                    } else {
+                        safetyText += ' • Боковой (sideshore)';
+                    }
+
+                    windSafetyDesc.textContent = safetyText;
+                    windSafetyDesc.style.color = windData.safety.color;
+                    windSafetyDesc.style.fontWeight = '600';
+                }
+
+                // Обновление цвета на основе безопасности
+                const windButton = document.getElementById('windDescriptionButton');
+                if (windButton && windData.safety) {
+                    windButton.style.borderColor = windData.safety.color;
+                    windButton.style.boxShadow = `0 0 20px ${windData.safety.color}40`;
+                }
+            }
+
+            degreesToCardinal(degrees) {
+                const deg = parseFloat(degrees) || 0;
+                const normalized = ((deg % 360) + 360) % 360; // Нормализация к 0-360
+
+                // Определение направления с 8 румбами
+                if (normalized >= 337.5 || normalized < 22.5) return 'С';      // North
+                if (normalized >= 22.5 && normalized < 67.5) return 'СВ';      // Northeast
+                if (normalized >= 67.5 && normalized < 112.5) return 'В';      // East
+                if (normalized >= 112.5 && normalized < 157.5) return 'ЮВ';    // Southeast
+                if (normalized >= 157.5 && normalized < 202.5) return 'Ю';     // South
+                if (normalized >= 202.5 && normalized < 247.5) return 'ЮЗ';    // Southwest
+                if (normalized >= 247.5 && normalized < 292.5) return 'З';     // West
+                if (normalized >= 292.5 && normalized < 337.5) return 'СЗ';    // Northwest
+                return 'С'; // Fallback
+            }
+
+            getWindDescription(speedKnots, degrees) {
+                // Упрощенная версия описания ветра
+                const speed = parseFloat(speedKnots) || 0;
+                
+                if (speed < 5) {
+                    return {
+                        icon: '🍃',
+                        title: 'Штиль',
+                        subtitle: 'Ветра практически нет'
+                    };
+                } else if (speed < 12) {
+                    return {
+                        icon: '💨',
+                        title: 'Легкий ветер',
+                        subtitle: `${speed.toFixed(1)} узлов`
+                    };
+                } else if (speed < 20) {
+                    return {
+                        icon: '🌬️',
+                        title: 'Умеренный ветер',
+                        subtitle: `${speed.toFixed(1)} узлов - отлично для кайта!`
+                    };
+                } else if (speed < 30) {
+                    return {
+                        icon: '💨',
+                        title: 'Сильный ветер',
+                        subtitle: `${speed.toFixed(1)} узлов - для опытных`
+                    };
+                } else {
+                    return {
+                        icon: '⚡',
+                        title: 'Экстремальный ветер',
+                        subtitle: `${speed.toFixed(1)} узлов - осторожно!`
+                    };
+                }
+            }
+
+            async updateForecast() {
+                try {
+                    this.forecastManager.showLoading();
+                    const forecastData = await this.windDataManager.fetchWindForecast();
+                    this.forecastManager.displayForecast(forecastData);
+                } catch (error) {
+                    this.forecastManager.showError(error);
+                    throw error;
+                }
+            }
+
+            simulateWind(direction, speed) {
+                console.log('');
+                console.log('🔘 ═══════════════════════════════════════════════════════');
+                console.log('🔘 КНОПКА СИМУЛЯЦИИ НАЖАТА');
+                console.log('🔘 Направление:', direction + '°', '| Скорость:', speed, 'узлов');
+                console.log('🔘 ═══════════════════════════════════════════════════════');
+
+                // Симуляция данных
+                const simulatedData = {
+                    windSpeedKnots: speed,
+                    windDir: direction,
+                    windGustKnots: speed * 1.2,
+                    windDirAvg: direction,
+                    temperature: 85, // Фиксированная температура для симуляции
+                    humidity: 65,
+                    pressure: 30.1,
+                    timestamp: new Date()
+                };
+
+                // Получение информации о безопасности
+                const safety = this.windDataManager.getWindSafety(direction, speed);
+                simulatedData.safety = safety;
+
+                // Обновление отображения
+                this.updateWindDisplay(simulatedData);
+
+                // Обновление стрелки
+                if (this.windArrowController) {
+                    this.windArrowController.updateWind(direction, speed);
+                }
+
+                // Добавление измерения в статистику
+                this.windStatistics.addMeasurement(simulatedData);
+
+                // Обновление тренда
+                this.updateWindTrend();
+            }
+
+            showWindError(message) {
+                const windTitle = document.getElementById('windTitle');
+                const windSubtitle = document.getElementById('windSubtitle');
+                const windIcon = document.getElementById('windIcon');
+                
+                if (windTitle) windTitle.textContent = 'Ошибка загрузки';
+                if (windSubtitle) windSubtitle.textContent = message;
+                if (windIcon) windIcon.textContent = '⚠️';
+            }
+
+            startAutoUpdate(intervalMs = 30000) {
+                if (this.updateInterval) {
+                    this.stopAutoUpdate();
+                }
+                
+                console.log(`Запуск автообновления каждые ${intervalMs/1000} сек`);
+                this.updateInterval = setInterval(async () => {
+                    try {
+                        await this.updateWindData();
+                    } catch (error) {
+                        console.error('Ошибка автообновления:', error);
+                    }
+                }, intervalMs);
+            }
+
+            stopAutoUpdate() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                    console.log('Автообновление остановлено');
+                }
+            }
+
+            // Методы для работы со статистикой
+            getStatisticsCacheInfo() {
+                return this.windStatistics.getCacheInfo();
+            }
+
+            clearStatisticsCache() {
+                this.windStatistics.clearHistory();
+                console.log('✓ Кеш статистики очищен');
+            }
+
+            // Методы для работы с историей (если есть historyManager)
+            exportHistoryJSON(hours = null) {
+                return this.historyManager ? this.historyManager.exportHistoryJSON(hours) : '{}';
+            }
+
+            clearHistory() {
+                if (this.historyManager) {
+                    return this.historyManager.clearHistory();
+                }
+            }
+
+            destroy() {
+                console.log('Завершение работы JollyKite App...');
+
+                // Остановка автообновления
+                this.stopAutoUpdate();
+
+                // Очистка карты
+                this.mapController.destroy();
+
+                // Очистка менеджеров
+                if (this.windArrowController) {
+                    this.windArrowController.clear();
+                }
+
+                this.forecastManager.clear();
+
+                this.isInitialized = false;
+                console.log('✅ JollyKite App завершен');
+            }
+        }
+        
+        // Global app instance
+        let jollyKiteApp;
+        
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Initializing JollyKite App...');
+            
+            try {
+                jollyKiteApp = new App();
+                const success = await jollyKiteApp.init();
+                
+                if (success) {
+                    console.log('JollyKite App initialized successfully!');
+
+                    // Expose app to window for debugging
+                    window.jollyKiteApp = jollyKiteApp;
+
+                    // Удобные команды для работы с кешем
+                    window.showCacheInfo = function() {
+                        const statsInfo = jollyKiteApp.getStatisticsCacheInfo();
+
+                        console.log('📊 Информация о кеше JollyKite:');
+                        console.log('');
+                        console.log('🌪️ Статистика ветра (для трендов):');
+                        console.log(`  - Записей: ${statsInfo.entries}`);
+                        console.log(`  - Размер: ${statsInfo.sizeKB} KB`);
+                        console.log(`  - Период хранения: ${statsInfo.maxHistoryMinutes} минут`);
+                        if (statsInfo.oldestEntry) {
+                            console.log(`  - Старейшая запись: ${new Date(statsInfo.oldestEntry).toLocaleString('ru-RU')}`);
+                            console.log(`  - Новейшая запись: ${new Date(statsInfo.newestEntry).toLocaleString('ru-RU')}`);
+                        }
+                        console.log('');
+                        console.log('💡 Команды:');
+                        console.log('  showCacheInfo() - показать эту информацию');
+                        console.log('  clearAllCache() - очистить весь кеш');
+
+                        return { statistics: statsInfo };
+                    };
+
+                    window.clearAllCache = function() {
+                        if (confirm('Вы уверены, что хотите очистить весь кеш? Все накопленные данные будут удалены.')) {
+                            jollyKiteApp.clearStatisticsCache();
+                            console.log('✅ Весь кеш очищен');
+                        }
+                    };
+
+                    // Показываем информацию о загруженном кеше при старте
+                    const statsInfo = jollyKiteApp.getStatisticsCacheInfo();
+                    if (statsInfo.entries > 0) {
+                        console.log(`✓ Загружено ${statsInfo.entries} измерений из кеша (${statsInfo.sizeKB} KB)`);
+                        console.log('💡 Введите showCacheInfo() для подробной информации');
+                    }
+
+                    // Set up countdown timer
+                    updateCountdown();
+                    setInterval(updateCountdown, 1000);
+                } else {
+                    console.error('Failed to initialize JollyKite App');
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+            }
+        });
+        
+        // Countdown function
+        function updateCountdown() {
+            const now = new Date();
+            const nextUpdate = new Date(now);
+            nextUpdate.setSeconds(nextUpdate.getSeconds() + (30 - (now.getSeconds() % 30)));
+            
+            const diff = nextUpdate - now;
+            const seconds = Math.floor(diff / 1000) % 30;
+            
+            document.querySelectorAll('.countdown').forEach(element => {
+                element.textContent = seconds;
+            });
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (jollyKiteApp) {
+                jollyKiteApp.destroy();
+            }
+        });
+
+        // PWA Functionality
+        let deferredPrompt;
+        let installButton;
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        showUpdateNotification();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // Handle PWA install prompt
+        window.addEventListener('beforeinstallprompt', function(e) {
+            console.log('PWA install prompt triggered');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button
+            showInstallButton();
+        });
+
+        // Handle PWA installation
+        window.addEventListener('appinstalled', function(evt) {
+            console.log('PWA installed successfully');
+            hideInstallButton();
+            
+            // Track installation
+            if (window.gtag) {
+                gtag('event', 'pwa_install', {
+                    event_category: 'PWA',
+                    event_label: 'User installed PWA'
+                });
+            }
+        });
+
+        // Show install button
+        function showInstallButton() {
+            if (!installButton) {
+                installButton = document.createElement('button');
+                installButton.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        <span>Установить приложение</span>
+                    </div>
+                `;
+                installButton.className = 'fixed top-4 right-4 z-50 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-300 flex items-center gap-2 text-sm font-medium';
+                installButton.style.display = 'block';
+                
+                installButton.addEventListener('click', handleInstall);
+                document.body.appendChild(installButton);
+                
+                // Auto hide after 10 seconds
+                setTimeout(() => {
+                    if (installButton) {
+                        installButton.style.opacity = '0.7';
+                    }
+                }, 10000);
+            }
+        }
+
+        // Hide install button
+        function hideInstallButton() {
+            if (installButton) {
+                installButton.remove();
+                installButton = null;
+            }
+        }
+
+        // Handle install button click
+        async function handleInstall() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                
+                if (outcome === 'accepted') {
+                    console.log('User accepted PWA installation');
+                } else {
+                    console.log('User dismissed PWA installation');
+                }
+                
+                deferredPrompt = null;
+                hideInstallButton();
+            }
+        }
+
+        // Show update notification
+        function showUpdateNotification() {
+            const notification = document.createElement('div');
+            notification.innerHTML = `
+                <div class="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between">
+                    <span>Доступно обновление приложения</span>
+                    <button id="update-btn" class="bg-blue-700 hover:bg-blue-800 px-3 py-1 rounded text-sm">
+                        Обновить
+                    </button>
+                </div>
+            `;
+            notification.className = 'fixed bottom-4 right-4 z-50';
+            
+            document.body.appendChild(notification);
+            
+            notification.querySelector('#update-btn').addEventListener('click', () => {
+                window.location.reload();
+            });
+            
+            // Auto remove after 10 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 10000);
+        }
+
+        // Handle offline/online status
+        window.addEventListener('online', function() {
+            console.log('App is online');
+            if (jollyKiteApp) {
+                jollyKiteApp.refreshData();
+            }
+            showOnlineStatus();
+        });
+
+        window.addEventListener('offline', function() {
+            console.log('App is offline');
+            showOfflineStatus();
+        });
+
+        function showOnlineStatus() {
+            const status = document.createElement('div');
+            status.innerHTML = `
+                <div class="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+                    <span>Подключение восстановлено</span>
+                </div>
+            `;
+            status.className = 'fixed bottom-4 left-4 z-50';
+            
+            document.body.appendChild(status);
+            
+            setTimeout(() => {
+                if (status.parentNode) {
+                    status.remove();
+                }
+            }, 3000);
+        }
+
+        function showOfflineStatus() {
+            const status = document.createElement('div');
+            status.innerHTML = `
+                <div class="bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                    <div class="w-2 h-2 bg-orange-300 rounded-full"></div>
+                    <span>Работа в офлайн режиме</span>
+                </div>
+            `;
+            status.className = 'fixed bottom-4 left-4 z-50';
+            
+            document.body.appendChild(status);
+            
+            setTimeout(() => {
+                if (status.parentNode) {
+                    status.remove();
+                }
+            }, 5000);
+        }
+
+        // Check if running as PWA
+        function isPWA() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone ||
+                   document.referrer.includes('android-app://');
+        }
+
+        // Add PWA-specific styling if running as PWA
+        if (isPWA()) {
+            document.documentElement.classList.add('pwa-mode');
+            console.log('Running as PWA');
+        }
+
+        // Глобальные переменные для смещения стрелки
+        window.arrowOffsets = {
+            globalAngle: 0,  // Общая корректировка угла для всех стрелок
+            directions: {
+                0: { x: -0.0043, y: 0.0006 },     // С
+                45: { x: -0.0033, y: -0.0037 },   // СВ
+                90: { x: -0.0004, y: -0.0041 },   // В
+                135: { x: 0.004, y: -0.0037 },    // ЮВ
+                180: { x: 0.003, y: 0.0011 },     // Ю
+                225: { x: 0.0025, y: 0.0045 },    // ЮЗ
+                270: { x: -0.0006, y: 0.004 },    // З
+                315: { x: -0.0034, y: 0.004 }     // СЗ
+            }
+        };
+
+        // Функция применения настроек смещения стрелки
+        window.applyArrowOffsets = function() {
+            // Считываем общую корректировку угла
+            window.arrowOffsets.globalAngle = parseFloat(document.getElementById('globalAngleOffset').value) || 0;
+
+            // Считываем значения из полей для каждого направления
+            window.arrowOffsets.directions[0].x = parseFloat(document.getElementById('dir0OffsetX').value) || 0;
+            window.arrowOffsets.directions[0].y = parseFloat(document.getElementById('dir0OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[45].x = parseFloat(document.getElementById('dir45OffsetX').value) || 0;
+            window.arrowOffsets.directions[45].y = parseFloat(document.getElementById('dir45OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[90].x = parseFloat(document.getElementById('dir90OffsetX').value) || 0;
+            window.arrowOffsets.directions[90].y = parseFloat(document.getElementById('dir90OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[135].x = parseFloat(document.getElementById('dir135OffsetX').value) || 0;
+            window.arrowOffsets.directions[135].y = parseFloat(document.getElementById('dir135OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[180].x = parseFloat(document.getElementById('dir180OffsetX').value) || 0;
+            window.arrowOffsets.directions[180].y = parseFloat(document.getElementById('dir180OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[225].x = parseFloat(document.getElementById('dir225OffsetX').value) || 0;
+            window.arrowOffsets.directions[225].y = parseFloat(document.getElementById('dir225OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[270].x = parseFloat(document.getElementById('dir270OffsetX').value) || 0;
+            window.arrowOffsets.directions[270].y = parseFloat(document.getElementById('dir270OffsetY').value) || 0;
+
+            window.arrowOffsets.directions[315].x = parseFloat(document.getElementById('dir315OffsetX').value) || 0;
+            window.arrowOffsets.directions[315].y = parseFloat(document.getElementById('dir315OffsetY').value) || 0;
+
+            console.log('✅ Смещения стрелки обновлены:', window.arrowOffsets);
+
+            // Перерисовываем стрелку с новыми настройками
+            if (window.app && window.app.windArrowController) {
+                window.app.windArrowController.updateArrow();
+            }
+        };
+
+        // Функции для настройки масштаба карты на мобильных
+        window.updateMapScale = function(value) {
+            document.getElementById('mapScaleValue').textContent = value;
+            applyMapSettingsLive();
+        };
+
+        window.updateMapShift = function(value) {
+            document.getElementById('mapShiftValue').textContent = value;
+            applyMapSettingsLive();
+        };
+
+        function applyMapSettingsLive() {
+            const scale = document.getElementById('mapScaleInput').value;
+            const shift = document.getElementById('mapShiftInput').value;
+
+            // Применяем стили динамически (только на мобильных)
+            if (window.innerWidth <= 768) {
+                const mapContainer = document.querySelector('.map-container');
+                if (mapContainer) {
+                    mapContainer.style.width = scale + '%';
+                    mapContainer.style.marginLeft = '-' + shift + '%';
+                }
+            }
+        }
+
+        window.applyMapSettings = function() {
+            const scale = document.getElementById('mapScaleInput').value;
+            const shift = document.getElementById('mapShiftInput').value;
+
+            // Генерируем CSS код
+            const cssCode = `@media (max-width: 768px) {
+    .map-container {
+        margin-left: -${shift}%;
+        width: ${scale}%;
+    }
+}`;
+
+            // Показываем код
+            const codeDiv = document.getElementById('mapSettingsCode');
+            codeDiv.textContent = cssCode;
+            codeDiv.style.display = 'block';
+
+            // Копируем в буфер обмена
+            navigator.clipboard.writeText(cssCode).then(() => {
+                console.log('✅ CSS код скопирован в буфер обмена');
+                alert('✅ CSS код скопирован!\n\nВставьте его в медиа-запрос @media (max-width: 768px) в index.html');
+            }).catch(err => {
+                console.error('Ошибка копирования:', err);
+                alert('CSS код сгенерирован. Скопируйте его вручную из поля ниже.');
+            });
+
+            console.log('📱 Настройки карты для мобильных:');
+            console.log(`  - Масштаб: ${scale}%`);
+            console.log(`  - Сдвиг влево: ${shift}%`);
+            console.log('');
+            console.log('CSS код:');
+            console.log(cssCode);
+        };
+
+        // Применяем текущие настройки при изменении размера окна
+        window.addEventListener('resize', applyMapSettingsLive);
+    </script>
+</body>
+</html>
