@@ -603,12 +603,26 @@
             .wind-dashboard {
                 grid-template-columns: 1fr;
             }
-            
+
+            /* Сдвиг карты влево на 25% для лучшей видимости стрелки на мобильных */
+            .card {
+                overflow-x: hidden;
+            }
+
+            .map-container {
+                margin-left: -25%;
+                width: 150%;
+            }
+
+            #windMap {
+                width: 100%;
+            }
+
             .compass-container {
                 width: 200px;
                 height: 200px;
             }
-            
+
             .price-grid {
                 grid-template-columns: 1fr;
             }
