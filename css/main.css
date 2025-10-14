@@ -17,7 +17,6 @@ html {
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(180deg, #2C5F7E 0%, #1E4A66 50%, #1A3A52 100%);
     min-height: 100vh;
     min-height: -webkit-fill-available;
     color: #FFFFFF;
@@ -825,23 +824,6 @@ footer {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-    /* iOS Background Fix */
-    body {
-        background: linear-gradient(180deg, #2C5F7E 0%, #1E4A66 50%, #1A3A52 100%);
-        background-repeat: no-repeat;
-        background-size: 100% 100%;
-    }
-
-    body::before {
-        position: absolute;
-        min-height: 100%;
-    }
-
-    .kite-background {
-        position: absolute;
-        min-height: 100%;
-    }
-
     .wind-dashboard {
         grid-template-columns: 1fr;
     }
