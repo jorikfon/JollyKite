@@ -1,6 +1,7 @@
 class ForecastManager {
-    constructor() {
+    constructor(languageManager = null) {
         this.forecastContainer = null;
+        this.languageManager = languageManager;
     }
 
     init() {
@@ -87,14 +88,16 @@ class ForecastManager {
                 const color = getWindColor(hour.speed);
                 const cardinalDir = getCardinalDirection(hour.direction);
                 const offshore = isOffshore(hour.direction);
-                const offshoreWarning = offshore ? '⚠️ ОТЖИМ!' : '';
+                const currentLang = this.languageManager?.getCurrentLanguage() || 'ru';
+                const knotsText = currentLang === 'ru' ? 'узлов' : 'knots';
+                const offshoreWarning = offshore ? (currentLang === 'ru' ? '⚠️ ОТЖИМ!' : '⚠️ OFFSHORE!') : '';
 
                 forecastHTML += `
                     <div style="flex: 1; background: ${color}; position: relative; cursor: pointer; transition: all 0.2s ease;"
                          onclick="simulateWind(${hour.direction}, ${hour.speed})"
                          onmouseover="this.style.transform='scaleY(1.2)'; this.style.zIndex='10';"
                          onmouseout="this.style.transform='scaleY(1)'; this.style.zIndex='1';"
-                         title="${hour.time}:00 - ${hour.speed.toFixed(1)} узлов ${cardinalDir} ${offshoreWarning}">
+                         title="${hour.time}:00 - ${hour.speed.toFixed(1)} ${knotsText} ${cardinalDir} ${offshoreWarning}">
                     </div>
                 `;
             });
@@ -137,20 +140,31 @@ class ForecastManager {
         dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
         const targetDate = new Date(date);
-        
+
+        const currentLang = this.languageManager?.getCurrentLanguage() || 'ru';
+
         if (targetDate.toDateString() === today.toDateString()) {
-            return 'Сегодня';
+            return currentLang === 'ru' ? 'Сегодня' : 'Today';
         } else if (targetDate.toDateString() === tomorrow.toDateString()) {
-            return 'Завтра';
+            return currentLang === 'ru' ? 'Завтра' : 'Tomorrow';
         } else if (targetDate.toDateString() === dayAfterTomorrow.toDateString()) {
-            return 'Послезавтра';
+            return currentLang === 'ru' ? 'Послезавтра' : 'Day after tomorrow';
         } else {
-            const options = { 
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'short' 
-            };
-            return targetDate.toLocaleDateString('ru-RU', options);
+            // Use LanguageManager to get localized day name
+            if (this.languageManager) {
+                const dayName = this.languageManager.getDayName(targetDate.getDay());
+                const day = targetDate.getDate();
+                const month = this.languageManager.getMonthName(targetDate.getMonth());
+                return `${dayName}, ${day} ${month}`;
+            } else {
+                const options = {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'short'
+                };
+                const locale = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+                return targetDate.toLocaleDateString(locale, options);
+            }
         }
     }
 

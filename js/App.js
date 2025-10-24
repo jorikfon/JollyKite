@@ -6,32 +6,42 @@ import ForecastManager from './ForecastManager.js';
 import WindArrowController from './WindArrowController.js';
 import HistoryManager from './HistoryManager.js';
 import WindStatistics from './WindStatistics.js';
+import LanguageManager from './LanguageManager.js';
 
 class App {
     constructor() {
+        // Инициализация языка первым
+        this.languageManager = new LanguageManager();
+
         // Инициализация всех менеджеров
         this.windDataManager = new WindDataManager();
         this.mapController = new MapController();
-        this.forecastManager = new ForecastManager();
+        this.forecastManager = new ForecastManager(this.languageManager);
         this.historyManager = new HistoryManager();
         this.windStatistics = new WindStatistics();
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
         this.isInitialized = false;
+        this.lastWindData = null; // Store last wind data for language switching
     }
 
     async init() {
         try {
             console.log('Инициализация JollyKite App...');
-            
+
+            // Инициализация языка
+            this.initLanguageToggle();
+            this.updateUILanguage();
+            console.log('✓ Язык инициализирован:', this.languageManager.getCurrentLanguage());
+
             // Инициализация карты
             this.mapController.initMap();
             console.log('✓ Карта инициализирована');
 
             // Инициализация контроллера стрелки ветра
             this.windArrowController = new WindArrowController(
-                this.mapController, 
+                this.mapController,
                 this.windDataManager
             );
             console.log('✓ Контроллер стрелки ветра создан');
@@ -94,16 +104,19 @@ class App {
     async updateWindData() {
         try {
             const windData = await this.windDataManager.fetchCurrentWindData();
-            
+
             // Получение информации о безопасности
             const safety = this.windDataManager.getWindSafety(
-                windData.windDir, 
+                windData.windDir,
                 windData.windSpeedKnots
             );
-            
+
             // Обновление данных с информацией о безопасности
             windData.safety = safety;
-            
+
+            // Store last wind data for language switching
+            this.lastWindData = windData;
+
             // Обновление UI
             this.updateWindDisplay(windData);
 
@@ -122,7 +135,7 @@ class App {
             if (this.historyManager.isStorageAvailable()) {
                 this.historyManager.saveWindData(windData);
             }
-            
+
             return windData;
         } catch (error) {
             console.error('Ошибка обновления данных о ветре:', error);
@@ -133,20 +146,37 @@ class App {
     updateWindTrend() {
         const trend = this.windStatistics.analyzeTrend();
         const trendElement = document.getElementById('windTrend');
+        const t = (key) => this.languageManager.t(key);
 
         if (trendElement) {
+            // Translate trend text
+            let trendText = trend.text;
+            if (trend.trend === 'strengthening') trendText = t('strengthening');
+            else if (trend.trend === 'weakening') trendText = t('weakening');
+            else if (trend.trend === 'stable') trendText = t('stable');
+            else if (trend.trend === 'insufficient_data') trendText = t('insufficientData');
+
             trendElement.innerHTML = `
                 <span style="font-size: 1.5em;">${trend.icon}</span>
-                <span style="margin-left: 5px; font-weight: bold;">${trend.text}</span>
+                <span style="margin-left: 5px; font-weight: bold;">${trendText}</span>
             `;
             trendElement.style.color = trend.color;
 
             // Добавляем tooltip с подробной информацией
             if (trend.currentSpeed && trend.previousSpeed) {
                 const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
-                trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+                const currentLang = this.languageManager.getCurrentLanguage();
+                if (currentLang === 'ru') {
+                    trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+                } else {
+                    trendElement.title = `Now: ${trend.currentSpeed.toFixed(1)} knots\nBefore: ${trend.previousSpeed.toFixed(1)} knots\nChange: ${changeText} knots (${trend.percentChange.toFixed(1)}%)`;
+                }
             } else {
-                trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+                if (this.languageManager.getCurrentLanguage() === 'ru') {
+                    trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+                } else {
+                    trendElement.title = 'Accumulating data for trend analysis (requires 10 minutes)';
+                }
             }
         }
     }
@@ -190,6 +220,7 @@ class App {
 
     updateWindDescription(windData) {
         const windDesc = this.getWindDescription(windData.windSpeedKnots, windData.windDir);
+        const t = (key) => this.languageManager.t(key);
 
         const windIcon = document.getElementById('windIcon');
         const windTitle = document.getElementById('windTitle');
@@ -201,17 +232,25 @@ class App {
 
         // windSubtitle показывает только статус безопасности и тип ветра (без скорости)
         if (windSubtitle && windData.safety) {
-            let safetyText = windData.safety.text + ' • ';
+            let safetyText = '';
             let textColor = windData.safety.color;
+
+            // Translate safety level
+            let safetyLevel = windData.safety.text;
+            if (windData.safety.level === 'low') safetyLevel = t('weakWind');
+            else if (windData.safety.level === 'danger') safetyLevel = t('danger');
+            else if (windData.safety.level === 'high') safetyLevel = t('excellentConditions');
+            else if (windData.safety.level === 'good') safetyLevel = t('goodConditions');
+            else if (windData.safety.level === 'medium') safetyLevel = t('moderate');
 
             // Добавляем информацию о типе ветра (offshore/onshore)
             if (windData.safety.isOffshore) {
-                safetyText = '⚠️ ОПАСНО • Отжим (offshore)';
+                safetyText = t('dangerOffshore');
                 textColor = '#FF4500'; // Красный для offshore - это всегда опасно!
             } else if (windData.safety.isOnshore) {
-                safetyText += 'Прижим (onshore)';
+                safetyText = `${safetyLevel} • ${t('onshore')}`;
             } else {
-                safetyText += 'Боковой (sideshore)';
+                safetyText = `${safetyLevel} • ${t('sideshore')}`;
             }
 
             windSubtitle.textContent = safetyText;
@@ -231,7 +270,41 @@ class App {
     }
 
     getWindDescription(speedKnots, degrees) {
-        return WindUtils.getWindDescription(speedKnots, degrees);
+        const t = (key) => this.languageManager.t(key);
+        const speed = parseFloat(speedKnots) || 0;
+
+        // Wind categories based on speed (in knots)
+        if (speed < 5) {
+            return {
+                icon: '🍃',
+                title: t('calm'),
+                subtitle: t('calmSubtitle')
+            };
+        } else if (speed < 12) {
+            return {
+                icon: '💨',
+                title: t('lightWind'),
+                subtitle: `${speed.toFixed(1)} ${t('knots')}`
+            };
+        } else if (speed < 20) {
+            return {
+                icon: '🌬️',
+                title: t('moderateWind'),
+                subtitle: `${speed.toFixed(1)} ${t('knots')} - ${t('moderateSubtitle')}`
+            };
+        } else if (speed < 30) {
+            return {
+                icon: '💨',
+                title: t('strongWind'),
+                subtitle: `${speed.toFixed(1)} ${t('knots')} - ${t('strongSubtitle')}`
+            };
+        } else {
+            return {
+                icon: '⚡',
+                title: t('extremeWind'),
+                subtitle: `${speed.toFixed(1)} ${t('knots')} - ${t('extremeSubtitle')}`
+            };
+        }
     }
 
     async updateForecast() {
@@ -353,22 +426,116 @@ class App {
 
     destroy() {
         console.log('Завершение работы JollyKite App...');
-        
+
         // Остановка автообновления
         this.stopAutoUpdate();
-        
+
         // Очистка карты
         this.mapController.destroy();
-        
+
         // Очистка менеджеров
         if (this.windArrowController) {
             this.windArrowController.clear();
         }
-        
+
         this.forecastManager.clear();
-        
+
         this.isInitialized = false;
         console.log('✅ JollyKite App завершен');
+    }
+
+    // Language Management Methods
+
+    /**
+     * Initialize language toggle button
+     */
+    initLanguageToggle() {
+        const toggle = document.getElementById('languageToggle');
+        if (!toggle) return;
+
+        const currentLang = this.languageManager.getCurrentLanguage();
+        this.updateLanguageToggleUI(currentLang);
+
+        // Add click handlers to language options
+        const langOptions = toggle.querySelectorAll('.lang-option');
+        langOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const lang = e.target.dataset.lang;
+                if (lang) {
+                    this.switchLanguage(lang);
+                }
+            });
+        });
+    }
+
+    /**
+     * Switch to specified language
+     */
+    switchLanguage(lang) {
+        if (this.languageManager.setLanguage(lang)) {
+            this.updateLanguageToggleUI(lang);
+            this.updateUILanguage();
+
+            // Refresh wind data display with new language
+            if (this.lastWindData) {
+                this.updateWindDisplay(this.lastWindData);
+            }
+
+            // Refresh wind trend with new language
+            this.updateWindTrend();
+
+            // Refresh forecast with new language
+            if (this.forecastManager) {
+                this.updateForecast();
+            }
+
+            console.log('✓ Language switched to:', lang);
+        }
+    }
+
+    /**
+     * Update language toggle UI
+     */
+    updateLanguageToggleUI(currentLang) {
+        const langOptions = document.querySelectorAll('.lang-option');
+        langOptions.forEach(option => {
+            if (option.dataset.lang === currentLang) {
+                option.classList.add('active');
+            } else {
+                option.classList.remove('active');
+            }
+        });
+    }
+
+    /**
+     * Update all UI text with current language
+     */
+    updateUILanguage() {
+        const t = (key) => this.languageManager.t(key);
+
+        // Update static text elements
+        const elements = {
+            'windSpeed': null, // Will be updated by wind data
+            'windCardinal': null, // Will be updated by wind data
+            'windGust': null, // Will be updated by wind data
+            'maxGust': null, // Will be updated by wind data
+        };
+
+        // Update labels
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.dataset.i18n;
+            el.textContent = t(key);
+        });
+
+        // Update footer
+        const footer = document.querySelector('footer p');
+        if (footer) {
+            footer.innerHTML = `&copy; 2024 Pak Nam Pran. ${t('footer')}`;
+        }
+    }
+
+    getCurrentWindData() {
+        return this.lastWindData || {};
     }
 }
 

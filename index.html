@@ -100,6 +100,13 @@
     </script>
 </head>
 <body>
+    <!-- Language Toggle -->
+    <div class="language-toggle" id="languageToggle">
+        <span class="lang-option active" data-lang="ru">РУС</span>
+        <span class="lang-separator">|</span>
+        <span class="lang-option" data-lang="en">ENG</span>
+    </div>
+
     <!-- Основной синий градиентный фон (iOS compatible) -->
     <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, #2C5F7E 0%, #1E4A66 50%, #1A3A52 100%); z-index: -3;"></div>
 
@@ -199,11 +206,11 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div style="text-align: center; flex: 1;">
                         <div style="font-size: 3rem; font-weight: 700; color: #fff; line-height: 1;" id="windSpeed">--</div>
-                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;">узлов</div>
+                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;" data-i18n="knots">узлов</div>
                     </div>
                     <div style="text-align: center; flex: 1;">
                         <div style="font-size: 3rem; font-weight: 700; color: #fff;" id="windCardinal">С</div>
-                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;">направление</div>
+                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;" data-i18n="direction">направление</div>
                     </div>
                 </div>
 
@@ -228,15 +235,15 @@
                 <!-- Компактная информация -->
                 <div style="display: flex; gap: 15px; justify-content: space-around; margin-top: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.9);">
                     <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Порывы</div>
+                        <div style="opacity: 0.7;" data-i18n="gusts">Порывы</div>
                         <div style="font-weight: 600; font-size: 1.1rem;" id="windGust">--</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Макс сегодня</div>
+                        <div style="opacity: 0.7;" data-i18n="maxToday">Макс сегодня</div>
                         <div style="font-weight: 600; font-size: 1.1rem;" id="maxGust">--</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Тренд</div>
+                        <div style="opacity: 0.7;" data-i18n="trend">Тренд</div>
                         <div id="windTrend" style="font-weight: 600; font-size: 1.1rem;">
                             <span>⏳</span>
                         </div>
@@ -248,8 +255,8 @@
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div id="windIcon" style="font-size: 2.5rem; line-height: 1;">🍃</div>
                         <div style="flex: 1; text-align: left;">
-                            <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;">Загружаем данные...</div>
-                            <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;">Подождите немного</div>
+                            <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;" data-i18n="loadingData">Загружаем данные...</div>
+                            <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;" data-i18n="pleaseWait">Подождите немного</div>
                         </div>
                     </div>
                 </div>
@@ -263,7 +270,7 @@
                     <!-- Индикатор LIVE с таймером -->
                     <div class="live-indicator">
                         <span class="live-dot"></span>
-                        <span>LIVE</span>
+                        <span data-i18n="live">LIVE</span>
                         <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">15с</span>
                     </div>
                 </div>
@@ -272,13 +279,13 @@
 
         <!-- Блок прогноза ветра -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6" data-i18n="forecastTitle">
                 🌪️ Прогноз ветра на 3 дня
             </h2>
             <div id="windForecast" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем прогноз ветра...</p>
+                    <p class="text-white/80 text-sm" data-i18n="loadingForecast">Загружаем прогноз ветра...</p>
                 </div>
             </div>
         </div>
