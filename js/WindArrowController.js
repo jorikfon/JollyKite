@@ -10,8 +10,19 @@ class WindArrowController {
         this.isInitialized = false; // Флаг для отслеживания первого обновления
     }
 
-    createArrowSVG(safety) {
-        const color = safety.color;
+    getWindSpeedColor(speed) {
+        const knots = parseFloat(speed) || 0;
+        if (knots < 5) return '#87CEEB';      // Голубой - слабый (0-5 узлов)
+        if (knots < 10) return '#00CED1';     // Бирюзовый (5-10 узлов)
+        if (knots < 15) return '#00FF00';     // Зелёный - отлично (10-15 узлов)
+        if (knots < 20) return '#FFD700';     // Жёлтый - хорошо (15-20 узлов)
+        if (knots < 25) return '#FFA500';     // Оранжевый (20-25 узлов)
+        if (knots < 30) return '#FF4500';     // Красно-оранжевый (25-30 узлов)
+        return '#8B0000';                      // Тёмно-красный - опасно (30+ узлов)
+    }
+
+    createArrowSVG(speed) {
+        const color = this.getWindSpeedColor(speed);
         const darkerColor = this.getDarkerColor(color);
         
         return `
@@ -39,12 +50,14 @@ class WindArrowController {
 
     getDarkerColor(color) {
         const colors = {
-            '#00FF00': '#00CC00',
-            '#FFD700': '#DAA520',
-            '#FFA500': '#FF8C00',
-            '#FF4500': '#DC143C',
-            '#87CEEB': '#4682B4',
-            '#4169E1': '#0000CD'
+            '#87CEEB': '#4682B4',  // Голубой → Стальной синий
+            '#00CED1': '#008B8B',  // Бирюзовый → Темный бирюзовый
+            '#00FF00': '#00CC00',  // Зеленый → Темно-зеленый
+            '#FFD700': '#DAA520',  // Желтый → Золотистый
+            '#FFA500': '#FF8C00',  // Оранжевый → Темно-оранжевый
+            '#FF4500': '#DC143C',  // Красно-оранжевый → Малиновый
+            '#8B0000': '#660000',  // Темно-красный → Очень темно-красный
+            '#4169E1': '#0000CD'   // Старый цвет для совместимости
         };
         return colors[color] || color;
     }
@@ -116,9 +129,9 @@ class WindArrowController {
             this.windArrowMarker.setLatLng(arrowPosition);
             console.log('  🔧 Позиция обновлена:', arrowPosition);
 
-            // Обновляем иконку (цвет меняется в зависимости от безопасности)
+            // Обновляем иконку (цвет меняется в зависимости от скорости ветра)
             const windArrowIcon = L.divIcon({
-                html: this.createArrowSVG(safety),
+                html: this.createArrowSVG(this.windSpeed),
                 className: 'wind-arrow-container',
                 iconSize: [60, 60],
                 iconAnchor: [30, 30]
@@ -154,7 +167,7 @@ class WindArrowController {
             console.log('🆕 Создание нового маркера');
 
             const windArrowIcon = L.divIcon({
-                html: this.createArrowSVG(safety),
+                html: this.createArrowSVG(this.windSpeed),
                 className: 'wind-arrow-container',
                 iconSize: [60, 60],
                 iconAnchor: [30, 30]
