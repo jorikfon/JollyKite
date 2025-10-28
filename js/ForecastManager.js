@@ -58,9 +58,15 @@ class ForecastManager {
             return (dir >= 225 && dir <= 315);
         };
 
+        // Включаем все часы с 6:00 до 19:00 включительно
+        const filteredHours = hoursData.filter(hour => {
+            const hourTime = hour.time;
+            return hourTime >= 6 && hourTime <= 19;
+        });
+
         // Группировка по дням
         const dayGroups = {};
-        hoursData.forEach(hour => {
+        filteredHours.forEach(hour => {
             const dayKey = hour.date.toDateString();
             if (!dayGroups[dayKey]) {
                 dayGroups[dayKey] = [];
@@ -78,7 +84,7 @@ class ForecastManager {
                         ${dayName}
                     </div>
                     <div style="position: relative;">
-                        <!-- Градиентная шкала ветра -->
+                        <!-- Плавная градиентная шкала ветра -->
                         <div style="display: flex; height: 50px; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
             `;
 
@@ -88,13 +94,16 @@ class ForecastManager {
                 const cardinalDir = getCardinalDirection(hour.direction);
                 const offshore = isOffshore(hour.direction);
                 const offshoreWarning = offshore ? '⚠️ ОТЖИМ!' : '';
+                const waveInfo = hour.waveHeight !== undefined
+                    ? `\n🌊 Волны: ${hour.waveHeight.toFixed(1)}м`
+                    : '';
 
                 forecastHTML += `
                     <div style="flex: 1; background: ${color}; position: relative; cursor: pointer; transition: all 0.2s ease;"
                          onclick="simulateWind(${hour.direction}, ${hour.speed})"
                          onmouseover="this.style.transform='scaleY(1.2)'; this.style.zIndex='10';"
                          onmouseout="this.style.transform='scaleY(1)'; this.style.zIndex='1';"
-                         title="${hour.time}:00 - ${hour.speed.toFixed(1)} узлов ${cardinalDir} ${offshoreWarning}">
+                         title="${hour.time}:00 - ${hour.speed.toFixed(1)} узлов ${cardinalDir} ${offshoreWarning}${waveInfo}">
                     </div>
                 `;
             });
@@ -108,10 +117,15 @@ class ForecastManager {
             // Добавляем метки времени
             group.forEach((hour, index) => {
                 if (index % 2 === 0 || index === group.length - 1) {
+                    const waveInfo = hour.waveHeight !== undefined
+                        ? `<div style="font-size: 0.6rem; margin-top: 2px; color: rgba(135,206,235,0.9);">🌊 ${hour.waveHeight.toFixed(1)}м</div>`
+                        : '';
+
                     forecastHTML += `
                         <div style="text-align: center; flex: 1;">
                             <div style="font-weight: 600; color: rgba(255,255,255,0.9);">${hour.time}:00</div>
                             <div style="font-size: 0.65rem; margin-top: 2px;">${hour.speed.toFixed(1)}</div>
+                            ${waveInfo}
                         </div>
                     `;
                 } else {

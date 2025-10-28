@@ -1,23 +1,34 @@
-import config from './config.js';
-import WindUtils from './utils/WindUtils.js';
-import WindDataManager from './WindDataManager.js';
-import MapController from './MapController.js';
-import ForecastManager from './ForecastManager.js';
-import WindArrowController from './WindArrowController.js';
-import HistoryManager from './HistoryManager.js';
-import WindStatistics from './WindStatistics.js';
+import config from './config.js?v=1.7.0';
+import WindUtils from './utils/WindUtils.js?v=1.7.0';
+import WindDataManager from './WindDataManager.js?v=1.7.0';
+import WindStreamManager from './WindStreamManager.js?v=1.7.0';
+import MapController from './MapController.js?v=1.7.0';
+import ForecastManager from './ForecastManager.js?v=1.7.0';
+import WindArrowController from './WindArrowController.js?v=1.7.0';
+import HistoryManager from './HistoryManager.js?v=1.7.0';
+import WindStatistics from './WindStatistics.js?v=1.7.0';
+import WindHistoryDisplay from './WindHistoryDisplay.js?v=1.7.0';
+import NotificationManager from './NotificationManager.js?v=1.7.0';
+import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=1.7.0';
 
 class App {
     constructor() {
         // Инициализация всех менеджеров
         this.windDataManager = new WindDataManager();
+        this.windStreamManager = new WindStreamManager('/api');
         this.mapController = new MapController();
         this.forecastManager = new ForecastManager();
         this.historyManager = new HistoryManager();
         this.windStatistics = new WindStatistics();
+        this.windHistoryDisplay = new WindHistoryDisplay();
+        this.notificationManager = new NotificationManager();
+        this.kiteSizeRecommendation = new KiteSizeRecommendation();
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
+        this.historyUpdateInterval = null;
+        this.liveCounterInterval = null;
+        this.lastUpdateTime = null;
         this.isInitialized = false;
     }
 
@@ -43,6 +54,20 @@ class App {
                 console.log('✓ Менеджер прогнозов инициализирован');
             }
 
+            // Инициализация отображения истории ветра
+            if (!this.windHistoryDisplay.init()) {
+                console.warn('⚠ Не удалось инициализировать отображение истории');
+            } else {
+                console.log('✓ Отображение истории инициализировано');
+            }
+
+            // Инициализация рекомендаций по размеру кайта
+            if (!this.kiteSizeRecommendation.init()) {
+                console.warn('⚠ Не удалось инициализировать рекомендации по размеру кайта');
+            } else {
+                console.log('✓ Рекомендации по размеру кайта инициализированы');
+            }
+
             // Настройка симуляции ветра для прогнозов
             this.forecastManager.setupSimulation((direction, speed) => {
                 this.simulateWind(direction, speed);
@@ -57,13 +82,16 @@ class App {
 
             // Загрузка первоначальных данных
             await this.loadInitialData();
-            
-            // Запуск автообновления
-            this.startAutoUpdate();
-            
+
+            // Подключение к SSE для real-time обновлений
+            this.connectToWindStream();
+
+            // Запуск обновления истории (forecast обновляется по-прежнему по таймеру)
+            this.startHistoryUpdate();
+
             this.isInitialized = true;
             console.log('✅ JollyKite App успешно инициализирован');
-            
+
             return true;
         } catch (error) {
             console.error('❌ Ошибка инициализации приложения:', error);
@@ -89,21 +117,119 @@ class App {
             console.error('⚠ Ошибка загрузки прогноза:', error);
             this.forecastManager.showError(error);
         }
+
+        // Загрузка истории ветра
+        try {
+            await this.windHistoryDisplay.displayHistory();
+            console.log('✓ История ветра загружена');
+        } catch (error) {
+            console.error('⚠ Ошибка загрузки истории:', error);
+        }
+
+        // Инициализация кнопки уведомлений
+        this.setupNotificationButton();
+    }
+
+    setupNotificationButton() {
+        const button = document.getElementById('notificationButton');
+        if (!button) return;
+
+        // Update button state
+        this.notificationManager.updateUI(button);
+
+        // Handle button click
+        button.addEventListener('click', async () => {
+            try {
+                button.disabled = true;
+                const isSubscribed = await this.notificationManager.isSubscribed();
+
+                if (isSubscribed) {
+                    await this.notificationManager.unsubscribe();
+                    alert('✓ Вы отписались от уведомлений');
+                } else {
+                    await this.notificationManager.subscribe();
+                    alert('✓ Вы подписались на уведомления о ветре! Вы получите уведомление когда ветер усилится выше 10 узлов (не чаще 1 раза в день)');
+                }
+
+                // Update button state
+                await this.notificationManager.updateUI(button);
+            } catch (error) {
+                console.error('Error toggling notifications:', error);
+                alert('❌ Ошибка: ' + error.message);
+                button.disabled = false;
+            }
+        });
+    }
+
+    /**
+     * Connect to SSE stream for real-time wind updates
+     */
+    connectToWindStream() {
+        console.log('🔄 Подключение к потоку real-time обновлений...');
+
+        this.windStreamManager.connect((windData, trend) => {
+            try {
+                // Обновление времени последнего обновления из timestamp данных с сервера
+                if (windData.timestamp) {
+                    this.lastUpdateTime = new Date(windData.timestamp);
+                    console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
+                }
+
+                // Получение информации о безопасности
+                const safety = this.windDataManager.getWindSafety(
+                    windData.windDir,
+                    windData.windSpeedKnots
+                );
+
+                // Обновление данных с информацией о безопасности
+                windData.safety = safety;
+
+                // Обновление UI
+                this.updateWindDisplay(windData);
+
+                // Обновление стрелки ветра
+                if (this.windArrowController) {
+                    this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
+                }
+
+                // Добавление измерения в статистику
+                this.windStatistics.addMeasurement(windData);
+
+                // Обновление тренда с данными из backend
+                this.updateWindTrendFromBackend(trend);
+
+                // Сохранение в историю
+                if (this.historyManager.isStorageAvailable()) {
+                    this.historyManager.saveWindData(windData);
+                }
+            } catch (error) {
+                console.error('Ошибка обработки SSE обновления:', error);
+            }
+        });
+
+        // Запуск счетчика времени с последнего обновления
+        this.startLiveCounter();
     }
 
     async updateWindData() {
         try {
             const windData = await this.windDataManager.fetchCurrentWindData();
-            
+
+            // Обновление времени последнего обновления из timestamp данных с сервера
+            if (windData.timestamp) {
+                this.lastUpdateTime = new Date(windData.timestamp);
+                console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
+            }
+
             // Получение информации о безопасности
             const safety = this.windDataManager.getWindSafety(
-                windData.windDir, 
+                windData.windDir,
                 windData.windSpeedKnots
             );
-            
+
             // Обновление данных с информацией о безопасности
             windData.safety = safety;
-            
+
             // Обновление UI
             this.updateWindDisplay(windData);
 
@@ -122,7 +248,7 @@ class App {
             if (this.historyManager.isStorageAvailable()) {
                 this.historyManager.saveWindData(windData);
             }
-            
+
             return windData;
         } catch (error) {
             console.error('Ошибка обновления данных о ветре:', error);
@@ -130,25 +256,47 @@ class App {
         }
     }
 
-    updateWindTrend() {
-        const trend = this.windStatistics.analyzeTrend();
+    /**
+     * Update wind trend with data from SSE (faster than API call)
+     */
+    updateWindTrendFromBackend(trend) {
+        const trendIconElement = document.getElementById('trendIcon');
+        const trendTextElement = document.getElementById('trendText');
         const trendElement = document.getElementById('windTrend');
 
-        if (trendElement) {
-            trendElement.innerHTML = `
-                <span style="font-size: 1.5em;">${trend.icon}</span>
-                <span style="margin-left: 5px; font-weight: bold;">${trend.text}</span>
-            `;
-            trendElement.style.color = trend.color;
+        if (trendIconElement && trendTextElement && trend) {
+            // Иконка тренда
+            trendIconElement.textContent = trend.icon;
+            trendIconElement.style.color = trend.color;
 
-            // Добавляем tooltip с подробной информацией
-            if (trend.currentSpeed && trend.previousSpeed) {
-                const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
-                trendElement.title = `Сейчас: ${trend.currentSpeed.toFixed(1)} узлов\nБыло: ${trend.previousSpeed.toFixed(1)} узлов\nИзменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)`;
+            // Текст с названием, процентами и периодом в одну строку
+            if (trend.percentChange !== undefined && trend.percentChange !== 0) {
+                const percentText = trend.percentChange > 0 ?
+                    `+${Math.abs(trend.percentChange).toFixed(1)}%` :
+                    `-${Math.abs(trend.percentChange).toFixed(1)}%`;
+                trendTextElement.innerHTML = `<span style="font-weight: 600;">${trend.text}</span> ${percentText} <span style="opacity: 0.7;">(за 30 мин)</span>`;
+                trendTextElement.style.color = trend.color;
             } else {
-                trendElement.title = 'Накапливаем данные для анализа тренда (требуется 10 минут)';
+                trendTextElement.innerHTML = '<span style="opacity: 0.7;">Накапливаем данные...</span>';
+                trendTextElement.style.color = '#808080';
+            }
+
+            // Tooltip с подробной информацией о методе скользящего окна
+            if (trendElement) {
+                if (trend.currentSpeed && trend.previousSpeed) {
+                    const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
+                    trendElement.title = `${trend.text}\n\nМетод скользящего окна:\n• Последние 30 мин: ${trend.currentSpeed.toFixed(1)} узлов\n• Предыдущие 30 мин: ${trend.previousSpeed.toFixed(1)} узлов\n• Изменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)\n\nАнализ обновляется каждые 5 минут`;
+                } else {
+                    trendElement.title = 'Накапливаем данные для анализа тренда\n(требуется 60 минут данных с интервалом 5 мин)';
+                }
             }
         }
+    }
+
+    async updateWindTrend() {
+        // Fetch trend from backend instead of calculating on frontend
+        const trend = await this.windDataManager.fetchWindTrend();
+        this.updateWindTrendFromBackend(trend);
     }
 
     updateWindDisplay(windData) {
@@ -156,6 +304,11 @@ class App {
         const windSpeedElement = document.getElementById('windSpeed');
         if (windSpeedElement) {
             windSpeedElement.textContent = windData.windSpeedKnots.toFixed(1);
+        }
+
+        // Обновление рекомендаций по размеру кайта
+        if (this.kiteSizeRecommendation) {
+            this.kiteSizeRecommendation.updateRecommendations(windData.windSpeedKnots);
         }
 
         // Обновление индикатора на градиентном баре
@@ -283,26 +436,83 @@ class App {
         if (windIcon) windIcon.textContent = '⚠️';
     }
 
-    startAutoUpdate(intervalMs = config.intervals.autoUpdate) {
-        if (this.updateInterval) {
-            this.stopAutoUpdate();
-        }
-        
-        console.log(`Запуск автообновления каждые ${intervalMs/1000} сек`);
-        this.updateInterval = setInterval(async () => {
+    /**
+     * Start periodic history update (wind updates come via SSE)
+     */
+    startHistoryUpdate() {
+        // Обновление истории ветра и прогноза каждые 5 минут
+        this.historyUpdateInterval = setInterval(async () => {
             try {
-                await this.updateWindData();
+                await this.windHistoryDisplay.displayHistory();
+                console.log('✓ История ветра обновлена');
             } catch (error) {
-                console.error('Ошибка автообновления:', error);
+                console.error('Ошибка обновления истории:', error);
             }
-        }, intervalMs);
+        }, 5 * 60 * 1000); // 5 минут
+
+        console.log('✓ Периодическое обновление истории запущено (каждые 5 минут)');
+    }
+
+    /**
+     * Start LIVE counter showing data timestamp
+     */
+    startLiveCounter() {
+        const counterElement = document.getElementById('updateCountdown');
+        if (!counterElement) return;
+
+        // Don't initialize lastUpdateTime here - it will be set from server data
+
+        // Update counter every second
+        this.liveCounterInterval = setInterval(() => {
+            if (!this.lastUpdateTime) {
+                counterElement.textContent = 'загрузка...';
+                return;
+            }
+
+            // Calculate seconds ago
+            const now = new Date();
+            const secondsAgo = Math.floor((now - this.lastUpdateTime) / 1000);
+
+            // Format time as HH:MM
+            const hours = this.lastUpdateTime.getHours().toString().padStart(2, '0');
+            const minutes = this.lastUpdateTime.getMinutes().toString().padStart(2, '0');
+
+            // Show different messages based on how long ago
+            let displayText;
+            if (secondsAgo < 60) {
+                displayText = `${secondsAgo}с назад`;
+            } else if (secondsAgo < 3600) {
+                const minutesAgo = Math.floor(secondsAgo / 60);
+                displayText = `${minutesAgo}м назад`;
+            } else {
+                displayText = `в ${hours}:${minutes}`;
+            }
+
+            counterElement.textContent = displayText;
+        }, 1000);
+
+        console.log('✓ LIVE счетчик запущен');
     }
 
     stopAutoUpdate() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-            this.updateInterval = null;
-            console.log('Автообновление остановлено');
+        // Disconnect from SSE stream
+        if (this.windStreamManager) {
+            this.windStreamManager.disconnect();
+            console.log('SSE соединение закрыто');
+        }
+
+        // Stop history updates
+        if (this.historyUpdateInterval) {
+            clearInterval(this.historyUpdateInterval);
+            this.historyUpdateInterval = null;
+            console.log('Обновление истории остановлено');
+        }
+
+        // Stop LIVE counter
+        if (this.liveCounterInterval) {
+            clearInterval(this.liveCounterInterval);
+            this.liveCounterInterval = null;
+            console.log('LIVE счетчик остановлен');
         }
     }
 

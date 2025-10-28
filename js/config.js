@@ -5,9 +5,9 @@
 
 const config = {
     // API Endpoints
+    // Note: All API calls now go through the backend
     api: {
-        ambientWeather: 'https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504',
-        openMeteo: 'https://api.open-meteo.com/v1/forecast'
+        backend: '/api' // Backend API endpoint (proxied through nginx)
     },
 
     // Geographical Locations
@@ -91,9 +91,11 @@ const config = {
     forecast: {
         daysToShow: 3,      // Show 3 days forecast
         startHour: 6,       // Start from 6 AM
-        endHour: 20,        // End at 8 PM
+        endHour: 19,        // End at 7 PM
         hourInterval: 2,    // Show every 2 hours
-        timezone: 'Asia/Bangkok'
+        timezone: 'Asia/Bangkok',
+        weatherModel: '',   // Empty = use default model (best_match)
+        marineParams: 'wave_height,wave_direction,wave_period' // Marine parameters to fetch
     },
 
     // Map Configuration

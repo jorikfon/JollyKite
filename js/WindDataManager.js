@@ -3,34 +3,28 @@ import WindUtils from './utils/WindUtils.js';
 
 class WindDataManager {
     constructor() {
-        this.apiUrl = config.api.ambientWeather;
-        this.forecastApiUrl = config.api.openMeteo;
+        this.backendApiUrl = config.api.backend || '/api';
         this.spotLocation = config.locations.spot;
         this.updateInterval = null;
     }
 
     async fetchCurrentWindData() {
         try {
-            const response = await fetch(this.apiUrl);
-            const result = await response.json();
-            
-            if (result.data && result.data.length > 0) {
-                const device = result.data[0];
-                const lastData = device.lastData;
-                
-                return {
-                    windSpeedKnots: WindUtils.mphToKnots(lastData.windspeedmph || 0),
-                    windGustKnots: WindUtils.mphToKnots(lastData.windgustmph || 0),
-                    maxGustKnots: WindUtils.mphToKnots(lastData.maxdailygust || 0),
-                    windDir: lastData.winddir || 0,
-                    windDirAvg: lastData.winddir_avg10m || 0,
-                    temperature: lastData.tempf || 0,
-                    humidity: lastData.humidity || 0,
-                    pressure: lastData.baromrelin || 0,
-                    timestamp: new Date(lastData.dateutc)
-                };
+            // Fetch current wind data from backend API
+            const response = await fetch(`${this.backendApiUrl}/wind/current`);
+
+            if (!response.ok) {
+                throw new Error(`Backend returned ${response.status}`);
             }
-            throw new Error('Нет данных от устройства');
+
+            const data = await response.json();
+
+            // Backend already returns data in the correct format
+            // Just convert timestamp string to Date object
+            return {
+                ...data,
+                timestamp: new Date(data.timestamp)
+            };
         } catch (error) {
             console.error('Ошибка загрузки данных о ветре:', error);
             throw error;
@@ -38,51 +32,28 @@ class WindDataManager {
     }
 
     async fetchWindForecast() {
-        const [lat, lon] = this.spotLocation;
-        const { timezone, daysToShow } = config.forecast;
-
         try {
-            const url = `${this.forecastApiUrl}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=${timezone}&forecast_days=${daysToShow}`;
-            const response = await fetch(url);
-            const data = await response.json();
+            // Fetch forecast from backend API
+            const response = await fetch(`${this.backendApiUrl}/wind/forecast`);
 
-            if (data && data.hourly) {
-                return this.processForecastData(data);
+            if (!response.ok) {
+                throw new Error(`Backend returned ${response.status}`);
             }
-            throw new Error('Ошибка получения прогноза');
+
+            const forecastData = await response.json();
+
+            // Backend already returns processed data in the correct format
+            // Convert date strings back to Date objects for compatibility
+            return forecastData.map(hour => ({
+                ...hour,
+                date: new Date(hour.date)
+            }));
         } catch (error) {
             console.error('Ошибка загрузки прогноза:', error);
             throw error;
         }
     }
 
-    processForecastData(data) {
-        const hourly = data.hourly;
-        const hoursToShow = [];
-        const { startHour, endHour, hourInterval, daysToShow } = config.forecast;
-
-        for (let day = 0; day < daysToShow; day++) {
-            for (let hour = startHour; hour <= endHour; hour += hourInterval) {
-                const hourIndex = day * 24 + hour;
-                if (hourIndex < hourly.time.length) {
-                    const datetime = new Date(hourly.time[hourIndex]);
-                    const windSpeed = WindUtils.kmhToKnots(hourly.wind_speed_10m[hourIndex]);
-                    const windDir = hourly.wind_direction_10m[hourIndex];
-                    const windGust = WindUtils.kmhToKnots(hourly.wind_gusts_10m[hourIndex]);
-
-                    hoursToShow.push({
-                        date: datetime,
-                        time: hour,
-                        speed: windSpeed,
-                        direction: windDir,
-                        gust: windGust
-                    });
-                }
-            }
-        }
-
-        return hoursToShow;
-    }
 
     getWindSafety(direction, speed) {
         // Delegate to the centralized WindUtils
@@ -104,6 +75,32 @@ class WindDataManager {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+    }
+
+    /**
+     * Fetch wind trend from backend
+     * Returns trend data based on last 30 minutes of measurements
+     */
+    async fetchWindTrend() {
+        try {
+            const response = await fetch(`${this.backendApiUrl}/wind/trend`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch trend: ${response.status}`);
+            }
+            const trend = await response.json();
+            return trend;
+        } catch (error) {
+            console.error('Ошибка загрузки тренда:', error);
+            // Return default "insufficient data" trend on error
+            return {
+                trend: 'insufficient_data',
+                text: 'Недостаточно данных',
+                icon: '⏳',
+                color: '#808080',
+                change: 0,
+                percentChange: 0
+            };
         }
     }
 }

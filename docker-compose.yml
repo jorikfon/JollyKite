@@ -1,0 +1,62 @@
+services:
+  # Node.js Backend for wind data collection
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jollykite-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - AMBIENT_WEATHER_API=https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504
+      - OPEN_METEO_API=https://api.open-meteo.com/v1/forecast
+      - DATA_COLLECTION_INTERVAL=300000
+      - ARCHIVE_INTERVAL=3600000
+      - TZ=Asia/Bangkok
+    networks:
+      - jollykite-network
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: jollykite-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+    networks:
+      - jollykite-network
+
+  # LocalXpose Tunnel (only for public access)
+  # Set LX_ACCESS_TOKEN in .env to enable
+  tunnel:
+    image: localxpose/localxpose:latest
+    container_name: jollykite-tunnel
+    restart: unless-stopped
+    environment:
+      - LX_ACCESS_TOKEN=${LX_ACCESS_TOKEN}
+    volumes:
+      - ./lx-data:/home/nonroot/.localxpose
+    command: >
+      tunnel http 
+      --reserved-domain pnp.ap.loclx.io
+      --to nginx:80
+    ports:
+      - "54538:54538"
+    depends_on:
+      - nginx
+    networks:
+      - jollykite-network
+
+networks:
+  jollykite-network:
+    driver: bridge

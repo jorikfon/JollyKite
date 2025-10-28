@@ -235,12 +235,6 @@
                         <div style="opacity: 0.7;">Макс сегодня</div>
                         <div style="font-weight: 600; font-size: 1.1rem;" id="maxGust">--</div>
                     </div>
-                    <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Тренд</div>
-                        <div id="windTrend" style="font-weight: 600; font-size: 1.1rem;">
-                            <span>⏳</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Информация о ветре -->
@@ -250,6 +244,11 @@
                         <div style="flex: 1; text-align: left;">
                             <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;">Загружаем данные...</div>
                             <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;">Подождите немного</div>
+                            <!-- Тренд ветра -->
+                            <div id="windTrend" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                                <div id="trendIcon" style="font-size: 1.3em;">⏳</div>
+                                <div id="trendText" style="font-size: 0.8rem; line-height: 1.3;">--</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -264,8 +263,39 @@
                     <div class="live-indicator">
                         <span class="live-dot"></span>
                         <span>LIVE</span>
-                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">15с</span>
+                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">загрузка...</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок рекомендаций по размеру кайта -->
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
+                🪁 Подбор размера кайта
+            </h2>
+            <div id="kiteSizeRecommendation" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[180px]">
+                <div class="text-center py-6">
+                    <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p class="text-white/80 text-sm">Загружаем рекомендации...</p>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <p class="text-xs text-white/60">
+                    💡 Цифры показывают рекомендуемый вес райдера для текущих условий
+                </p>
+            </div>
+        </div>
+
+        <!-- Блок истории ветра за сегодня -->
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
+                📊 История ветра сегодня (6:00-19:00)
+            </h2>
+            <div id="windHistory" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[120px]">
+                <div class="text-center py-6">
+                    <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p class="text-white/80 text-sm">Загружаем историю ветра...</p>
                 </div>
             </div>
         </div>
@@ -273,13 +303,23 @@
         <!-- Блок прогноза ветра -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                🌪️ Прогноз ветра на 3 дня
+                🌪️ Прогноз ветра на 3 дня (6:00-19:00)
             </h2>
             <div id="windForecast" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
                     <p class="text-white/80 text-sm">Загружаем прогноз ветра...</p>
                 </div>
+            </div>
+
+            <!-- Кнопка подписки на уведомления -->
+            <div class="mt-4 text-center">
+                <button id="notificationButton" class="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg">
+                    🔔 Загрузка...
+                </button>
+                <p class="text-xs text-white/60 mt-2">
+                    Получайте уведомление когда ветер усилится выше 10 узлов (не чаще 1 раза в день)
+                </p>
             </div>
         </div>
 
@@ -293,7 +333,7 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js';
+        import App from './js/App.js?v=1.7.0';
 
         // Global app instance
         let jollyKiteApp;
@@ -311,9 +351,6 @@
 
                     // Make app available globally for debugging
                     window.jollyKiteApp = jollyKiteApp;
-
-                    // Setup update countdown
-                    setupUpdateCountdown();
                 } else {
                     console.error('Failed to initialize JollyKite App');
                     showError('Не удалось загрузить приложение. Пожалуйста, обновите страницу.');
@@ -323,22 +360,6 @@
                 showError('Произошла ошибка при загрузке приложения.');
             }
         });
-
-        // Setup countdown timer
-        function setupUpdateCountdown() {
-            let countdown = 30;
-            const countdownElement = document.getElementById('updateCountdown');
-
-            setInterval(() => {
-                countdown--;
-                if (countdown <= 0) {
-                    countdown = 30;
-                }
-                if (countdownElement) {
-                    countdownElement.textContent = countdown + 'с';
-                }
-            }, 1000);
-        }
 
         // Error display function
         function showError(message) {

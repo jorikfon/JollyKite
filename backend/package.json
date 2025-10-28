@@ -1,0 +1,30 @@
+{
+  "name": "jollykite-backend",
+  "version": "1.0.0",
+  "description": "Backend service for JollyKite wind data collection and aggregation",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "wind",
+    "kite",
+    "weather",
+    "api"
+  ],
+  "author": "JollyKite",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "openai": "^4.77.0",
+    "sql.js": "^1.10.3",
+    "web-push": "^3.6.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

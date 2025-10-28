@@ -125,3 +125,20 @@ sw.js.map
 
 # Local development
 *.local
+
+# Docker volumes and data
+backend/data/*.db
+backend/data/*.db-*
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+
+# Backend dependencies
+backend/node_modules/
+backend/package-lock.json
+
+# LocalXpose
+.loclx/
+.localxpose/
+loclx-*.zip
+lx-data/
