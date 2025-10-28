@@ -44,7 +44,7 @@ services:
     environment:
       - LX_ACCESS_TOKEN=${LX_ACCESS_TOKEN}
     volumes:
-      - ./lx-data:/home/nonroot/.localxpose
+      - ./tmp/lx-data:/home/nonroot/.localxpose
     command: >
       tunnel http
       --reserved-domain pnp.ap.loclx.io
