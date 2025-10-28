@@ -4,8 +4,8 @@ FROM node:20-alpine AS backend
 WORKDIR /app
 
 # Install dependencies
-COPY backend/package*.json ./
-RUN npm ci --only=production
+COPY backend/package.json ./
+RUN npm install --omit=dev && npm cache clean --force
 
 # Copy backend source
 COPY backend/ ./
