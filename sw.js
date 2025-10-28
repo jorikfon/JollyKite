@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v1.1.8';
-const API_CACHE_NAME = 'jollykite-api-v1.1.8';
+const CACHE_NAME = 'jollykite-v1.7.3';
+const API_CACHE_NAME = 'jollykite-api-v1.7.3';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -20,16 +20,22 @@ const CORE_ASSETS = [
   '/js/WindArrowController.js',
   '/js/WindStatistics.js',
   '/js/HistoryManager.js',
+  '/js/WindStreamManager.js',
+  '/js/WindHistoryDisplay.js',
+  '/js/NotificationManager.js',
+  '/js/KiteSizeRecommendation.js',
+  '/js/utils/KiteSizeCalculator.js',
   'https://cdn.tailwindcss.com/',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap'
 ];
 
-// API endpoints для кэширования
+// API endpoints для кэширования (теперь все через backend)
 const API_ENDPOINTS = [
-  'https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504',
-  'https://api.open-meteo.com/v1/forecast'
+  '/api/wind/current',
+  '/api/wind/forecast',
+  '/api/wind/trend'
 ];
 
 // Установка Service Worker
@@ -83,6 +89,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // НЕ кэшировать SSE stream - всегда загружать из сети для real-time обновлений
+  if (isSSERequest(url)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   // Стратегия для API запросов - Network First with Cache Fallback
   if (isApiRequest(url)) {
     event.respondWith(handleApiRequest(event.request));
@@ -115,10 +127,14 @@ function isMapTile(url) {
          url.pathname.match(/\/\d+\/\d+\/\d+(@2x)?\.(png|jpg)/);
 }
 
-// Проверка, является ли запрос API
+// Проверка, является ли запрос SSE stream (Server-Sent Events)
+function isSSERequest(url) {
+  return url.pathname.includes('/stream');
+}
+
+// Проверка, является ли запрос API (теперь локальный backend API)
 function isApiRequest(url) {
-  return url.hostname.includes('lightning.ambientweather.net') ||
-         url.hostname.includes('api.open-meteo.com');
+  return url.pathname.startsWith('/api/');
 }
 
 // Проверка, является ли ресурс статическим
@@ -240,31 +256,40 @@ self.addEventListener('sync', event => {
   }
 });
 
-// Функция фонового обновления данных о погоде
+// Функция фонового обновления данных о погоде (теперь через backend)
 async function updateWeatherData() {
   console.log('[SW] Background sync: updating weather data');
   try {
     const responses = await Promise.all([
-      fetch('https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504'),
-      fetch('https://api.open-meteo.com/v1/forecast?latitude=12.346596280786017&longitude=99.99817902532192&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Asia/Bangkok&forecast_days=3')
+      fetch('/api/wind/current'),
+      fetch('/api/wind/forecast')
     ]);
-    
+
     console.log('[SW] Background weather data updated successfully');
   } catch (error) {
     console.error('[SW] Background sync failed:', error);
   }
 }
 
-// Push notifications (для будущих обновлений)
+// Push notifications for wind conditions
 self.addEventListener('push', event => {
+  console.log('[SW] Push notification received');
+
   if (event.data) {
     const data = event.data.json();
+    const title = data.title || 'JollyKite - Ветер усиливается! 🌬️';
     const options = {
-      body: data.message,
+      body: data.body || data.message || 'Отличные условия для кайтсерфинга!',
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
-      vibrate: [200, 100, 200],
-      data: data.url,
+      vibrate: [200, 100, 200, 100, 200],
+      tag: 'wind-alert',
+      requireInteraction: true,
+      data: {
+        url: data.url || '/',
+        windSpeed: data.windSpeed,
+        timestamp: Date.now()
+      },
       actions: [
         {
           action: 'view',
