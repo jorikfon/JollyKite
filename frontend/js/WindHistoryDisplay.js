@@ -5,11 +5,13 @@
 class WindHistoryDisplay {
     constructor() {
         this.historyContainer = null;
+        this.titleElement = null;
         this.apiBaseUrl = '/api';
     }
 
     init() {
         this.historyContainer = document.getElementById('windHistory');
+        this.titleElement = document.getElementById('windHistoryTitle');
         if (!this.historyContainer) {
             console.error('Wind history container not found');
             return false;
@@ -67,7 +69,53 @@ class WindHistoryDisplay {
     }
 
     /**
-     * Display wind history as gradient bar
+     * Create smooth curve path using Catmull-Rom spline
+     */
+    createSmoothPath(points, width, height, maxSpeed) {
+        if (points.length === 0) return '';
+
+        // Scale points to SVG coordinates
+        const scaledPoints = points.map((p, i) => ({
+            x: (i / (points.length - 1)) * width,
+            y: height - (p.speed / maxSpeed) * height
+        }));
+
+        // Create smooth curve using Catmull-Rom
+        let pathData = `M ${scaledPoints[0].x} ${scaledPoints[0].y}`;
+
+        for (let i = 0; i < scaledPoints.length - 1; i++) {
+            const p0 = scaledPoints[Math.max(0, i - 1)];
+            const p1 = scaledPoints[i];
+            const p2 = scaledPoints[i + 1];
+            const p3 = scaledPoints[Math.min(scaledPoints.length - 1, i + 2)];
+
+            // Catmull-Rom to Bezier conversion
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+            pathData += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+        }
+
+        return pathData;
+    }
+
+    /**
+     * Create gradient definition based on wind speeds
+     */
+    createGradient(points, id) {
+        let stops = '';
+        points.forEach((p, i) => {
+            const offset = (i / (points.length - 1)) * 100;
+            const color = this.getWindColor(p.speed);
+            stops += `<stop offset="${offset}%" stop-color="${color}" stop-opacity="0.8"/>`;
+        });
+        return `<linearGradient id="${id}" x1="0%" y1="0%" x2="100%" y2="0%">${stops}</linearGradient>`;
+    }
+
+    /**
+     * Display wind history as smooth wave with gradient fill
      */
     async displayHistory() {
         try {
@@ -84,78 +132,139 @@ class WindHistoryDisplay {
                 return;
             }
 
-            let historyHTML = `
-                <div style="position: relative;">
-                    <!-- Плавная градиентная полоса истории ветра -->
-                    <div style="display: flex; height: 60px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            `;
-
-            // Создаем плавный градиент с 5-минутными сегментами (6:00-19:00)
-            // Всего 13 часов * 12 сегментов по 5 минут = 156 сегментов
+            // Prepare data points
             const startHour = 6;
-            const endHour = 19;
-            const totalMinutes = (endHour - startHour) * 60;
-            const segmentMinutes = 5;
-            const totalSegments = totalMinutes / segmentMinutes;
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
 
-            for (let i = 0; i < totalSegments; i++) {
-                const minutesFromStart = i * segmentMinutes;
-                const currentHour = startHour + Math.floor(minutesFromStart / 60);
-                const currentMinute = minutesFromStart % 60;
+            // End hour is either 19:00 or current time (whichever is earlier)
+            const endHour = Math.min(19, currentHour < 6 ? 19 : currentHour);
+            const points = [];
 
-                // Ищем данные для текущего 5-минутного интервала
-                const segmentData = hourlyData.find(d => {
-                    const dataHour = parseInt(d.hour);
-                    const dataMinute = parseInt(d.minute || 0);
-                    return dataHour === currentHour && Math.abs(dataMinute - currentMinute) < 5;
-                });
+            // Collect all data points up to current time
+            hourlyData.forEach(d => {
+                if (d.measurements > 0) {
+                    const pointHour = parseInt(d.hour);
+                    const pointMinute = parseInt(d.minute || 0);
 
-                if (segmentData && segmentData.measurements > 0) {
-                    const avgSpeed = parseFloat(segmentData.avg_speed);
-                    const maxGust = parseFloat(segmentData.max_gust) || avgSpeed;
-                    const color = this.getWindColor(avgSpeed);
-                    const timeLabel = `${currentHour}:${currentMinute.toString().padStart(2, '0')}`;
+                    // Only include points up to current time
+                    if (pointHour < currentHour || (pointHour === currentHour && pointMinute <= currentMinute)) {
+                        points.push({
+                            hour: pointHour,
+                            minute: pointMinute,
+                            speed: parseFloat(d.avg_speed),
+                            maxGust: parseFloat(d.max_gust) || parseFloat(d.avg_speed)
+                        });
+                    }
+                }
+            });
 
-                    historyHTML += `
-                        <div style="flex: 1; background: ${color}; position: relative;"
-                             title="${timeLabel} - Средний: ${avgSpeed.toFixed(1)} узлов, Макс: ${maxGust.toFixed(1)} узлов">
-                        </div>
-                    `;
-                } else {
-                    // Пустой сегмент для интервалов без данных
-                    historyHTML += `
-                        <div style="flex: 1; background: rgba(255,255,255,0.05); position: relative;">
-                        </div>
-                    `;
+            if (points.length === 0) {
+                this.historyContainer.innerHTML = `
+                    <div class="text-center py-6">
+                        <p class="text-white/70">Нет данных о ветре за сегодня</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Find max speed for scaling
+            const maxSpeed = Math.max(...points.map(p => p.maxGust)) * 1.1; // 10% padding
+
+            // SVG dimensions
+            const width = 800;
+            const height = 150;
+            const padding = { top: 10, right: 20, bottom: 30, left: 40 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            // Create smooth path
+            const curvePath = this.createSmoothPath(points, chartWidth, chartHeight, maxSpeed);
+            const gradientId = 'windGradient';
+            const gradient = this.createGradient(points, gradientId);
+
+            // Create filled area path
+            const firstPoint = points[0];
+            const lastPoint = points[points.length - 1];
+            const firstX = 0;
+            const lastX = chartWidth;
+            const areaPath = curvePath + ` L ${lastX} ${chartHeight} L ${firstX} ${chartHeight} Z`;
+
+            // Generate time labels for every hour (only up to current time)
+            const timeLabels = [];
+            for (let hour = startHour; hour <= endHour; hour++) {
+                // Show label for every hour up to current hour
+                if (hour <= currentHour) {
+                    const x = ((hour - startHour) / (endHour - startHour)) * chartWidth;
+                    timeLabels.push({ hour, x });
                 }
             }
 
-            historyHTML += `
-                    </div>
-
-                    <!-- Часовые метки -->
-                    <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.75rem; color: rgba(255,255,255,0.7);">
-            `;
-
-            // Добавляем метки для ключевых часов (6, 10, 13, 16, 19)
-            for (let hour = 6; hour <= 19; hour++) {
-                const shouldShowLabel = hour === 6 || hour === 10 || hour === 13 || hour === 16 || hour === 19;
-                if (shouldShowLabel) {
-                    // Рассчитываем позицию метки как процент от общей длины
-                    const position = ((hour - 6) / (19 - 6)) * 100;
-                    historyHTML += `
-                        <div style="position: absolute; left: ${position}%; transform: translateX(-50%);">
-                            <span style="font-weight: 600; color: rgba(255,255,255,0.9);">${hour}:00</span>
-                        </div>
-                    `;
+            // Add current time label if we're not at exact hour (more than 5 minutes past)
+            if (currentMinute > 5 && currentHour > startHour) {
+                // Replace the current hour label with exact time
+                const currentHourLabelIndex = timeLabels.findIndex(t => t.hour === currentHour);
+                if (currentHourLabelIndex !== -1) {
+                    timeLabels[currentHourLabelIndex].isCurrent = true;
                 }
             }
 
-            historyHTML += `
-                    </div>
-                    <div style="height: 20px;"></div> <!-- Spacer for labels -->
+            // Update title with actual time range
+            if (this.titleElement) {
+                const endTimeStr = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+                this.titleElement.textContent = `📊 История ветра сегодня (6:00-${endTimeStr})`;
+            }
 
-                    <!-- Легенда -->
+            // Create HTML with SVG visualization
+            const historyHTML = `
+                <div style="position: relative; width: 100%; max-width: 100%; overflow-x: auto;">
+                    <svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="display: block;">
+                        <defs>
+                            ${gradient}
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur"/>
+                                    <feMergeNode in="SourceGraphic"/>
+                                </feMerge>
+                            </filter>
+                        </defs>
+
+                        <g transform="translate(${padding.left}, ${padding.top})">
+                            <!-- Grid lines -->
+                            ${[0, 0.25, 0.5, 0.75, 1].map(ratio => `
+                                <line x1="0" y1="${chartHeight * ratio}" x2="${chartWidth}" y2="${chartHeight * ratio}"
+                                      stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5"/>
+                            `).join('')}
+
+                            <!-- Filled area under curve -->
+                            <path d="${areaPath}" fill="url(#${gradientId})" opacity="0.6"/>
+
+                            <!-- Smooth curve line -->
+                            <path d="${curvePath}" fill="none" stroke="url(#${gradientId})"
+                                  stroke-width="3" filter="url(#glow)"/>
+
+                            <!-- Time labels -->
+                            ${timeLabels.map(t => `
+                                <text x="${t.x}" y="${chartHeight + 20}" text-anchor="middle"
+                                      fill="rgba(255,255,255,${t.isCurrent ? '1' : '0.8'})"
+                                      font-size="12" font-weight="${t.isCurrent ? '700' : '600'}">
+                                    ${t.hour}:${t.isCurrent ? currentMinute.toString().padStart(2, '0') : '00'}
+                                </text>
+                            `).join('')}
+
+                            <!-- Y-axis speed labels -->
+                            ${[0, maxSpeed * 0.5, maxSpeed].map((speed, i) => `
+                                <text x="-5" y="${chartHeight - (speed / maxSpeed) * chartHeight + 5}"
+                                      text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="11">
+                                    ${speed.toFixed(0)}
+                                </text>
+                            `).join('')}
+                        </g>
+                    </svg>
+
+                    <!-- Legend -->
                     <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 0.7rem; color: rgba(255,255,255,0.8); flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 5px;">
                             <div style="width: 12px; height: 12px; background: #87CEEB; border-radius: 2px;"></div>

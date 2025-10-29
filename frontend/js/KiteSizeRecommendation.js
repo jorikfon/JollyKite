@@ -41,36 +41,24 @@ class KiteSizeRecommendation {
     // Get overall recommendation text
     const recommendationText = this.calculator.getRecommendationText(windSpeed);
 
-    // Update container
+    // Update container with M3 design - clean structure, no inline styles
     this.containerElement.innerHTML = `
-      <div style="text-align: center; margin-bottom: 15px; color: rgba(255,255,255,0.9); font-size: 1rem;">
-        ${recommendationText}
-      </div>
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
-        ${cardsHtml}
+      <div class="kite-recommendation-container">
+        <div class="kite-recommendation-header">
+          ${recommendationText}
+        </div>
+        <div class="kite-cards-grid">
+          ${cardsHtml}
+        </div>
       </div>
     `;
   }
 
   /**
-   * Create HTML for a single kite size card
+   * Create HTML for a single kite size card - M3 Design with CSS classes
    */
   createKiteCard(recommendation) {
-    const { size, weight, suitability, color } = recommendation;
-
-    // Determine opacity based on suitability
-    let opacity = '1';
-    let borderWidth = '2px';
-    let transform = 'scale(1)';
-
-    if (suitability === 'optimal') {
-      borderWidth = '3px';
-      transform = 'scale(1.05)';
-    } else if (suitability === 'too_light' || suitability === 'too_strong') {
-      opacity = '0.5';
-    } else if (suitability === 'none') {
-      opacity = '0.3';
-    }
+    const { size, weight, suitability } = recommendation;
 
     // Create weight display
     const weightDisplay = weight > 0 ? `${weight} кг` : '-';
@@ -78,46 +66,16 @@ class KiteSizeRecommendation {
     // Get suitability icon
     const icon = this.getSuitabilityIcon(suitability);
 
+    // Get suitability class modifier
+    const suitabilityClass = `kite-card--${suitability.replace('_', '-')}`;
+
+    // Clean M3 structure with BEM classes
     return `
-      <div style="
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(10px);
-        border: ${borderWidth} solid ${color};
-        border-radius: 12px;
-        padding: 15px 10px;
-        text-align: center;
-        opacity: ${opacity};
-        transform: ${transform};
-        transition: all 0.3s ease;
-      ">
-        <!-- Kite size -->
-        <div style="font-size: 2rem; font-weight: 700; color: #fff; line-height: 1;">
-          ${size}м
-        </div>
-
-        <!-- Icon -->
-        <div style="font-size: 1.5rem; margin: 8px 0;">
-          ${icon}
-        </div>
-
-        <!-- Recommended weight -->
-        <div style="
-          font-size: 1.3rem;
-          font-weight: 600;
-          color: ${color};
-          margin: 8px 0;
-        ">
-          ${weightDisplay}
-        </div>
-
-        <!-- Suitability text -->
-        <div style="
-          font-size: 0.75rem;
-          color: rgba(255,255,255,0.7);
-          margin-top: 5px;
-        ">
-          ${this.calculator.getSuitabilityText(suitability)}
-        </div>
+      <div class="kite-card ${suitabilityClass}">
+        <div class="kite-card__size">${size}м</div>
+        <div class="kite-card__icon">${icon}</div>
+        <div class="kite-card__weight">${weightDisplay}</div>
+        <div class="kite-card__label">${this.calculator.getSuitabilityText(suitability)}</div>
       </div>
     `;
   }
@@ -138,27 +96,27 @@ class KiteSizeRecommendation {
   }
 
   /**
-   * Show loading state
+   * Show loading state - M3 Design
    */
   showLoading() {
     if (!this.containerElement) return;
 
     this.containerElement.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.7);">
-        <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 10px;"></div>
-        <p>Загружаем рекомендации...</p>
+      <div class="kite-loading">
+        <div class="kite-loading__spinner"></div>
+        <p class="kite-loading__text">Загружаем рекомендации...</p>
       </div>
     `;
   }
 
   /**
-   * Show error state
+   * Show error state - M3 Design
    */
   showError(message) {
     if (!this.containerElement) return;
 
     this.containerElement.innerHTML = `
-      <div style="text-align: center; padding: 20px; color: rgba(255,100,100,0.9);">
+      <div class="kite-error">
         ⚠️ ${message}
       </div>
     `;

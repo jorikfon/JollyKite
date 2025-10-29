@@ -1,15 +1,16 @@
-import config from './config.js?v=1.7.0';
-import WindUtils from './utils/WindUtils.js?v=1.7.0';
-import WindDataManager from './WindDataManager.js?v=1.7.0';
-import WindStreamManager from './WindStreamManager.js?v=1.7.0';
-import MapController from './MapController.js?v=1.7.0';
-import ForecastManager from './ForecastManager.js?v=1.7.0';
-import WindArrowController from './WindArrowController.js?v=1.7.0';
-import HistoryManager from './HistoryManager.js?v=1.7.0';
-import WindStatistics from './WindStatistics.js?v=1.7.0';
-import WindHistoryDisplay from './WindHistoryDisplay.js?v=1.7.0';
-import NotificationManager from './NotificationManager.js?v=1.7.0';
-import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=1.7.0';
+import config from './config.js?v=1.8.7';
+import WindUtils from './utils/WindUtils.js?v=1.8.7';
+import WindDataManager from './WindDataManager.js?v=1.8.7';
+import WindStreamManager from './WindStreamManager.js?v=1.8.7';
+import MapController from './MapController.js?v=1.8.7';
+import ForecastManager from './ForecastManager.js?v=1.8.7';
+import WindArrowController from './WindArrowController.js?v=1.8.7';
+import HistoryManager from './HistoryManager.js?v=1.8.7';
+import WindStatistics from './WindStatistics.js?v=1.8.7';
+import WindHistoryDisplay from './WindHistoryDisplay.js?v=1.8.7';
+import NotificationManager from './NotificationManager.js?v=1.8.7';
+import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=1.8.7';
+import { rippleManager } from './MaterialRipple.js?v=1.8.7';
 
 class App {
     constructor() {
@@ -88,6 +89,10 @@ class App {
 
             // Запуск обновления истории (forecast обновляется по-прежнему по таймеру)
             this.startHistoryUpdate();
+
+            // Инициализация Material Design 3 Ripple эффектов
+            rippleManager.init();
+            console.log('✓ Material Design 3 Ripple эффекты инициализированы');
 
             this.isInitialized = true;
             console.log('✅ JollyKite App успешно инициализирован');

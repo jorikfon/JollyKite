@@ -63,11 +63,11 @@
     <!-- External CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/main.css?v=1.8.7">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -270,11 +270,11 @@
         </div>
 
         <!-- Блок рекомендаций по размеру кайта -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
                 🪁 Подбор размера кайта
             </h2>
-            <div id="kiteSizeRecommendation" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[180px]">
+            <div id="kiteSizeRecommendation" class="overflow-hidden min-h-[180px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
                     <p class="text-white/80 text-sm">Загружаем рекомендации...</p>
@@ -288,11 +288,11 @@
         </div>
 
         <!-- Блок истории ветра за сегодня -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                📊 История ветра сегодня (6:00-19:00)
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+            <h2 id="windHistoryTitle" class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
+                📊 История ветра сегодня
             </h2>
-            <div id="windHistory" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[120px]">
+            <div id="windHistory" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
                     <p class="text-white/80 text-sm">Загружаем историю ветра...</p>
@@ -301,11 +301,11 @@
         </div>
 
         <!-- Блок прогноза ветра -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 border border-white/20 animate-fadeIn">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
                 🌪️ Прогноз ветра на 3 дня (6:00-19:00)
             </h2>
-            <div id="windForecast" class="bg-white/10 rounded-xl p-3 sm:p-6 overflow-hidden min-h-[120px]">
+            <div id="windForecast" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
                     <p class="text-white/80 text-sm">Загружаем прогноз ветра...</p>
@@ -318,13 +318,14 @@
                     🔔 Загрузка...
                 </button>
                 <p class="text-xs text-white/60 mt-2">
-                    Получайте уведомление когда ветер усилится выше 10 узлов (не чаще 1 раза в день)
+                    Получайте уведомление когда ветер устойчиво держится выше 10 узлов в течение 20 минут (не чаще 1 раза в день)
                 </p>
             </div>
         </div>
 
         <footer>
-            <p>&copy; 2024 Pak Nam Pran. Разработано с ❤️ для кайтсерферов</p>
+            <p>&copy; 2025 Pak Nam Pran. Разработано с ❤️ для кайтсерферов</p>
+            <p class="text-xs opacity-60 mt-2">v1.8.7</p>
         </footer>
     </div>
 
@@ -333,7 +334,7 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=1.7.0';
+        import App from './js/App.js?v=1.8.7';
 
         // Global app instance
         let jollyKiteApp;

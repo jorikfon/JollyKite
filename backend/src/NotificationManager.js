@@ -87,20 +87,103 @@ export class NotificationManager {
   }
 
   /**
-   * Check if notification should be sent based on conditions
+   * Check if wind conditions are stable over the last 20 minutes
+   * Requirements:
+   * - Speed >= 10 knots in ALL measurements
+   * - Direction stable (variance <= 30°)
+   * - Gusts not critical (max - avg <= 7 knots)
+   * - Trend is increasing or stable (not decreasing)
    */
-  shouldNotify(windData, trend) {
-    // Conditions:
-    // 1. Wind speed >= 10 knots
-    // 2. Trend is increasing (усиление)
-    // 3. Not already notified today
+  checkWindStability(measurements) {
+    if (!measurements || measurements.length < 4) {
+      return { stable: false, reason: 'Insufficient data (need at least 4 measurements)' };
+    }
 
-    if (!windData || !trend) return false;
+    // Take last 4 measurements (20 minutes with 5-min intervals)
+    const last20min = measurements.slice(-4);
 
-    const speed = windData.windSpeedKnots || 0;
-    const isIncreasing = trend.change > 0;
+    // 1. Check if ALL measurements have speed >= 10 knots
+    const allAbove10 = last20min.every(m => (m.windSpeedKnots || 0) >= 10);
+    if (!allAbove10) {
+      return { stable: false, reason: 'Wind speed dropped below 10 knots in last 20 minutes' };
+    }
 
-    return speed >= 10 && isIncreasing;
+    // 2. Check direction stability (variance <= 30°)
+    const directions = last20min.map(m => m.windDirection || 0);
+    const directionVariance = this.calculateDirectionVariance(directions);
+    if (directionVariance > 30) {
+      return { stable: false, reason: `Direction too variable (${directionVariance.toFixed(1)}°)` };
+    }
+
+    // 3. Check gusts are not critical (difference between max gust and avg speed <= 7 knots)
+    const avgSpeed = last20min.reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / last20min.length;
+    const maxGust = Math.max(...last20min.map(m => m.gustKnots || m.windSpeedKnots || 0));
+    const gustDiff = maxGust - avgSpeed;
+    if (gustDiff > 7) {
+      return { stable: false, reason: `Gusts too strong (${gustDiff.toFixed(1)} knots difference)` };
+    }
+
+    // 4. Check trend is not decreasing (comparing first half vs second half of 20min window)
+    const firstHalf = last20min.slice(0, 2).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 2;
+    const secondHalf = last20min.slice(2, 4).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 2;
+    const trendChange = secondHalf - firstHalf;
+    if (trendChange < -1) { // Allow minor fluctuations (-1 knot)
+      return { stable: false, reason: `Wind is weakening (${trendChange.toFixed(1)} knots)` };
+    }
+
+    return {
+      stable: true,
+      avgSpeed: avgSpeed.toFixed(1),
+      directionVariance: directionVariance.toFixed(1),
+      gustDiff: gustDiff.toFixed(1),
+      trendChange: trendChange.toFixed(1)
+    };
+  }
+
+  /**
+   * Calculate direction variance (accounting for circular nature of degrees)
+   */
+  calculateDirectionVariance(directions) {
+    if (directions.length < 2) return 0;
+
+    // Convert to radians
+    const radians = directions.map(d => d * Math.PI / 180);
+
+    // Calculate mean sine and cosine
+    const meanSin = radians.reduce((sum, r) => sum + Math.sin(r), 0) / radians.length;
+    const meanCos = radians.reduce((sum, r) => sum + Math.cos(r), 0) / radians.length;
+
+    // Calculate mean direction
+    const meanDir = Math.atan2(meanSin, meanCos) * 180 / Math.PI;
+
+    // Calculate angular differences from mean
+    const diffs = directions.map(d => {
+      let diff = Math.abs(d - meanDir);
+      // Handle wrap-around (e.g., 10° and 350° should be close)
+      if (diff > 180) diff = 360 - diff;
+      return diff;
+    });
+
+    // Return maximum deviation
+    return Math.max(...diffs);
+  }
+
+  /**
+   * Check if notification should be sent based on conditions
+   * Now uses 20-minute stability check instead of instant trigger
+   */
+  shouldNotify(measurements) {
+    if (!measurements || measurements.length === 0) return false;
+
+    const stability = this.checkWindStability(measurements);
+
+    if (!stability.stable) {
+      console.log(`⏸️  Not notifying: ${stability.reason}`);
+      return false;
+    }
+
+    console.log(`✓ Wind stable for 20 minutes: avg=${stability.avgSpeed}kn, dir_var=${stability.directionVariance}°, gusts=${stability.gustDiff}kn, trend=${stability.trendChange}kn`);
+    return true;
   }
 
   /**
@@ -119,19 +202,24 @@ export class NotificationManager {
 
   /**
    * Send push notifications to all subscribed users
+   * @param {Array} measurements - Array of recent wind measurements (last 20+ minutes)
    */
-  async sendNotifications(windData, trend) {
-    if (!this.shouldNotify(windData, trend)) {
+  async sendNotifications(measurements) {
+    if (!this.shouldNotify(measurements)) {
       return { sent: 0, reason: 'Conditions not met' };
     }
 
     let sentCount = 0;
     const now = new Date().toISOString();
 
+    // Get current wind data (latest measurement)
+    const windData = measurements[measurements.length - 1];
+    const avgSpeed = measurements.slice(-4).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 4;
+
     // Prepare notification payload
     const payload = JSON.stringify({
-      title: '🌬️ Ветер усиливается!',
-      body: `Скорость ветра: ${windData.windSpeedKnots.toFixed(1)} узлов (${trend.text}). Отличные условия для кайтсерфинга!`,
+      title: '🌬️ Отличные условия для кайтинга!',
+      body: `Ветер устойчиво держится ${avgSpeed.toFixed(1)} узлов последние 20 минут. Время на воду! 🪁`,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       url: '/',
@@ -152,7 +240,7 @@ export class NotificationManager {
         await webpush.sendNotification(subscription, payload);
 
         console.log(`📨 Push notification sent to: ${subId.substring(0, 50)}...`);
-        console.log(`   Wind: ${windData.windSpeedKnots.toFixed(1)} knots ${trend.text}`);
+        console.log(`   Wind: ${avgSpeed.toFixed(1)} knots (stable for 20 min)`);
 
         // Mark as notified
         this.notificationLog[subId] = now;
@@ -173,7 +261,8 @@ export class NotificationManager {
       total: this.subscriptions.length,
       conditions: {
         speed: windData.windSpeedKnots,
-        trend: trend.text
+        avgSpeed: avgSpeed.toFixed(1),
+        stable: true
       }
     };
   }

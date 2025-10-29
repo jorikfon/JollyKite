@@ -119,6 +119,24 @@ export class DatabaseManager {
   }
 
   /**
+   * Get last N measurements (for notification stability check)
+   */
+  getLastMeasurements(count = 4) {
+    const result = this.db.exec(`
+      SELECT * FROM wind_data
+      ORDER BY timestamp DESC
+      LIMIT ${count}
+    `);
+
+    if (result.length === 0) return [];
+
+    // Return in chronological order (oldest first)
+    return result[0].values
+      .map(row => this._rowToObject(result[0].columns, row))
+      .reverse();
+  }
+
+  /**
    * Get aggregated hourly data for current day (Bangkok timezone)
    */
   getHourlyAggregateToday(startHour = 6, endHour = 19) {

@@ -99,17 +99,15 @@ async function initialize() {
         }
 
         // Check if we should send push notifications
-        const stats = dbManager.getStatistics(1); // Last hour stats
+        // Get last 4 measurements (20 minutes) for stability check
+        const recentMeasurements = dbManager.getLastMeasurements(4);
 
-        if (latestData && stats && stats.count > 6) {
-          // Send notifications if conditions are met
-          const result = await notificationManager.sendNotifications(
-            { windSpeedKnots: latestData.wind_speed_knots },
-            trend
-          );
+        if (recentMeasurements && recentMeasurements.length >= 4) {
+          // Send notifications if conditions are met (stable wind for 20 min)
+          const result = await notificationManager.sendNotifications(recentMeasurements);
 
           if (result.sent > 0) {
-            console.log(`📨 Sent ${result.sent} push notifications`);
+            console.log(`📨 Sent ${result.sent} push notifications (stable wind detected)`);
           }
         }
       } catch (error) {
