@@ -32,6 +32,9 @@ const forecastCollector = new ForecastCollector(config);
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from frontend directory
+app.use(express.static('../frontend'));
+
 // API Routes
 const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector);
 app.use('/api', apiRouter.getRouter());

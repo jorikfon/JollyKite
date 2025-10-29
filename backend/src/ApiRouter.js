@@ -165,6 +165,84 @@ export class ApiRouter {
       }
     });
 
+    // Get combined history + extrapolated forecast for today's full timeline
+    this.router.get('/wind/today/full', async (req, res) => {
+      try {
+        const startHour = parseInt(req.query.start) || 6;
+        const endHour = parseInt(req.query.end) || 19;
+        const interval = parseInt(req.query.interval) || 5;
+
+        // Get today's actual wind data (history)
+        const historyData = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
+
+        if (!historyData || historyData.length === 0) {
+          return res.json({
+            history: [],
+            forecast: [],
+            correctionFactor: 1.0,
+            currentTime: null
+          });
+        }
+
+        // Get current time in Bangkok timezone
+        const now = new Date();
+        const bangkokTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+        const currentHour = bangkokTime.getHours();
+        const currentMinute = bangkokTime.getMinutes();
+
+        // Get forecast for today
+        if (!this.forecastCollector) {
+          return res.json({
+            history: historyData,
+            forecast: [],
+            correctionFactor: 1.0,
+            currentTime: { hour: currentHour, minute: currentMinute }
+          });
+        }
+
+        const fullForecast = await this.forecastCollector.fetchWindForecast();
+
+        // Filter forecast for today only
+        const todayForecast = fullForecast.filter(f => {
+          const forecastDate = new Date(f.date);
+          return forecastDate.toDateString() === bangkokTime.toDateString();
+        });
+
+        // Convert history data to format compatible with correction factor calculation
+        const historyForComparison = historyData.map(h => ({
+          time: `${bangkokTime.toDateString()} ${h.hour}:${h.minute || 0}:00`,
+          avg_speed: h.avg_speed
+        }));
+
+        // Calculate correction factor based on history vs forecast comparison
+        const correctionFactor = this.forecastCollector.calculateCorrectionFactor(
+          historyForComparison,
+          todayForecast
+        );
+
+        // Filter forecast to only include future hours
+        const futureForecast = todayForecast.filter(f => {
+          const forecastDate = new Date(f.date);
+          const forecastHour = forecastDate.getHours();
+          return forecastHour > currentHour ||
+                 (forecastHour === currentHour && forecastDate.getMinutes() > currentMinute);
+        });
+
+        // Apply correction factor to future forecast
+        const correctedForecast = this.forecastCollector.applyCorrection(futureForecast, correctionFactor);
+
+        res.json({
+          history: historyData,
+          forecast: correctedForecast,
+          correctionFactor: parseFloat(correctionFactor.toFixed(2)),
+          currentTime: { hour: currentHour, minute: currentMinute }
+        });
+      } catch (error) {
+        console.error('Error generating full timeline:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Debug: Get database statistics
     this.router.get('/debug/db-stats', (req, res) => {
       try {
