@@ -160,14 +160,29 @@ class ForecastManager {
             const windPeaks = this.findPeaks(windSpeeds, 5);
             const wavePeaks = this.findPeaks(waveHeights, 5);
 
-            // Generate time labels for every 2 hours
+            // Generate time labels for every 2 hours (only even hours: 6, 8, 10, 12, 14, 16, 18)
+            // Always show 18:00 as the last label even if data goes to 19:00
             const timeLabels = [];
             group.forEach((hour, i) => {
-                if (i % 2 === 0 || i === group.length - 1) {
+                if (hour.time % 2 === 0 && hour.time <= 18) {
                     const x = (i / (group.length - 1)) * chartWidth;
                     timeLabels.push({ hour: hour.time, x });
                 }
             });
+
+            // If we have 19:00 data but didn't add 18:00 label, ensure we have it
+            if (group.length > 0 && group[group.length - 1].time === 19) {
+                const has18Label = timeLabels.some(l => l.hour === 18);
+                if (!has18Label) {
+                    // Find 18:00 in data
+                    const index18 = group.findIndex(h => h.time === 18);
+                    if (index18 !== -1) {
+                        const x = (index18 / (group.length - 1)) * chartWidth;
+                        timeLabels.push({ hour: 18, x });
+                        timeLabels.sort((a, b) => a.hour - b.hour);
+                    }
+                }
+            }
 
             forecastHTML += `
                 <div class="mb-8">

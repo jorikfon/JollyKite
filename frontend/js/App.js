@@ -1,16 +1,16 @@
-import config from './config.js?v=1.9.2';
-import WindUtils from './utils/WindUtils.js?v=1.9.2';
-import WindDataManager from './WindDataManager.js?v=1.9.2';
-import WindStreamManager from './WindStreamManager.js?v=1.9.2';
-import MapController from './MapController.js?v=1.9.2';
-import ForecastManager from './ForecastManager.js?v=1.9.2';
-import WindArrowController from './WindArrowController.js?v=1.9.2';
-import HistoryManager from './HistoryManager.js?v=1.9.2';
-import WindStatistics from './WindStatistics.js?v=1.9.2';
-import WindHistoryDisplay from './WindHistoryDisplay.js?v=1.9.2';
-import NotificationManager from './NotificationManager.js?v=1.9.2';
-import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=1.9.2';
-import { rippleManager } from './MaterialRipple.js?v=1.9.2';
+import config from './config.js?v=2.0.0';
+import WindUtils from './utils/WindUtils.js?v=2.0.0';
+import WindDataManager from './WindDataManager.js?v=2.0.0';
+import WindStreamManager from './WindStreamManager.js?v=2.0.0';
+import MapController from './MapController.js?v=2.0.0';
+import ForecastManager from './ForecastManager.js?v=2.0.0';
+import WindArrowController from './WindArrowController.js?v=2.0.0';
+import HistoryManager from './HistoryManager.js?v=2.0.0';
+import WindStatistics from './WindStatistics.js?v=2.0.0';
+import NotificationManager from './NotificationManager.js?v=2.0.0';
+import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=2.0.0';
+import TodayWindTimeline from './TodayWindTimeline.js?v=2.0.0';
+import { rippleManager } from './MaterialRipple.js?v=2.0.0';
 
 class App {
     constructor() {
@@ -21,9 +21,9 @@ class App {
         this.forecastManager = new ForecastManager();
         this.historyManager = new HistoryManager();
         this.windStatistics = new WindStatistics();
-        this.windHistoryDisplay = new WindHistoryDisplay();
         this.notificationManager = new NotificationManager();
         this.kiteSizeRecommendation = new KiteSizeRecommendation();
+        this.todayWindTimeline = new TodayWindTimeline();
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
@@ -55,18 +55,18 @@ class App {
                 console.log('✓ Менеджер прогнозов инициализирован');
             }
 
-            // Инициализация отображения истории ветра
-            if (!this.windHistoryDisplay.init()) {
-                console.warn('⚠ Не удалось инициализировать отображение истории');
-            } else {
-                console.log('✓ Отображение истории инициализировано');
-            }
-
             // Инициализация рекомендаций по размеру кайта
             if (!this.kiteSizeRecommendation.init()) {
                 console.warn('⚠ Не удалось инициализировать рекомендации по размеру кайта');
             } else {
                 console.log('✓ Рекомендации по размеру кайта инициализированы');
+            }
+
+            // Инициализация графика ветра на сегодня
+            if (!this.todayWindTimeline.init()) {
+                console.warn('⚠ Не удалось инициализировать график ветра на сегодня');
+            } else {
+                console.log('✓ График ветра на сегодня инициализирован');
             }
 
             // Настройка симуляции ветра для прогнозов
@@ -114,6 +114,14 @@ class App {
             this.showWindError('Ошибка загрузки данных о ветре');
         }
 
+        // Загрузка графика на сегодня (история + прогноз)
+        try {
+            await this.updateTodayTimeline();
+            console.log('✓ График на сегодня загружен');
+        } catch (error) {
+            console.error('⚠ Ошибка загрузки графика на сегодня:', error);
+        }
+
         // Загрузка прогноза
         try {
             await this.updateForecast();
@@ -121,14 +129,6 @@ class App {
         } catch (error) {
             console.error('⚠ Ошибка загрузки прогноза:', error);
             this.forecastManager.showError(error);
-        }
-
-        // Загрузка истории ветра
-        try {
-            await this.windHistoryDisplay.displayHistory();
-            console.log('✓ История ветра загружена');
-        } catch (error) {
-            console.error('⚠ Ошибка загрузки истории:', error);
         }
 
         // Инициализация кнопки уведомлений
@@ -403,6 +403,15 @@ class App {
         }
     }
 
+    async updateTodayTimeline() {
+        try {
+            await this.todayWindTimeline.displayTimeline();
+        } catch (error) {
+            console.error('Error updating today timeline:', error);
+            this.todayWindTimeline.showError(error);
+        }
+    }
+
     simulateWind(direction, speed) {
         console.log(`Симуляция ветра: ${speed} узлов, направление ${direction}°`);
         
@@ -445,13 +454,13 @@ class App {
      * Start periodic history update (wind updates come via SSE)
      */
     startHistoryUpdate() {
-        // Обновление истории ветра и прогноза каждые 5 минут
+        // Обновление графика ветра на сегодня каждые 5 минут
         this.historyUpdateInterval = setInterval(async () => {
             try {
-                await this.windHistoryDisplay.displayHistory();
-                console.log('✓ История ветра обновлена');
+                await this.updateTodayTimeline();
+                console.log('✓ График на сегодня обновлен');
             } catch (error) {
-                console.error('Ошибка обновления истории:', error);
+                console.error('Ошибка обновления графика на сегодня:', error);
             }
         }, 5 * 60 * 1000); // 5 минут
 

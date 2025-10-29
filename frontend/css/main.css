@@ -1259,6 +1259,7 @@ footer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 12px;
+    padding: 8px;
 }
 
 /* Individual kite card - M3 Filled Card style */

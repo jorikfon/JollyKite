@@ -92,7 +92,7 @@ export class ForecastCollector {
     const hoursToShow = [];
     const startHour = 6;
     const endHour = 19;
-    const hourInterval = 2;
+    const hourInterval = 1;
     const daysToShow = 3;
 
     for (let day = 0; day < daysToShow; day++) {
@@ -124,6 +124,7 @@ export class ForecastCollector {
       }
     }
 
+    console.log(`✓ Processed ${hoursToShow.length} forecast hours`);
     return hoursToShow;
   }
 
@@ -169,5 +170,74 @@ export class ForecastCollector {
       isOffshore,
       isOnshore
     };
+  }
+
+  /**
+   * Calculate correction factor by comparing actual data with forecast
+   * @param {Array} actualData - Actual wind measurements from history
+   * @param {Array} forecastData - Forecast data for the same period
+   * @returns {number} Correction factor (actual/forecast ratio)
+   */
+  calculateCorrectionFactor(actualData, forecastData) {
+    if (!actualData || !forecastData || actualData.length === 0 || forecastData.length === 0) {
+      console.log('⚠️ Insufficient data for correction factor calculation');
+      return 1.0; // No correction if not enough data
+    }
+
+    const comparisons = [];
+
+    // Compare actual data with forecast for matching hours
+    actualData.forEach(actual => {
+      // Extract hour from actual data timestamp
+      const actualDate = new Date(actual.time);
+      const actualHour = actualDate.getHours();
+
+      // Find corresponding forecast entry
+      const forecast = forecastData.find(f => {
+        const forecastDate = new Date(f.date);
+        return forecastDate.getHours() === actualHour &&
+               forecastDate.toDateString() === actualDate.toDateString();
+      });
+
+      if (forecast && forecast.speed > 0) {
+        const ratio = actual.avg_speed / forecast.speed;
+        // Only use reasonable ratios (0.5 to 2.0) to avoid outliers
+        if (ratio >= 0.5 && ratio <= 2.0) {
+          comparisons.push(ratio);
+        }
+      }
+    });
+
+    if (comparisons.length === 0) {
+      console.log('⚠️ No matching data points for correction factor');
+      return 1.0;
+    }
+
+    // Calculate average correction factor
+    const avgFactor = comparisons.reduce((sum, val) => sum + val, 0) / comparisons.length;
+
+    console.log(`✓ Correction factor: ${avgFactor.toFixed(2)} (based on ${comparisons.length} data points)`);
+
+    return avgFactor;
+  }
+
+  /**
+   * Get extrapolated forecast with correction factor applied
+   * @param {Array} forecastData - Raw forecast data
+   * @param {number} correctionFactor - Correction factor to apply
+   * @returns {Array} Corrected forecast data
+   */
+  applyCorrection(forecastData, correctionFactor) {
+    if (!forecastData || forecastData.length === 0) {
+      return [];
+    }
+
+    return forecastData.map(item => ({
+      ...item,
+      speed: parseFloat((item.speed * correctionFactor).toFixed(1)),
+      gust: parseFloat((item.gust * correctionFactor).toFixed(1)),
+      corrected: true,
+      correctionFactor: parseFloat(correctionFactor.toFixed(2))
+    }));
   }
 }

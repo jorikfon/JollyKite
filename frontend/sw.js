@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v1.7.3';
-const API_CACHE_NAME = 'jollykite-api-v1.7.3';
+const CACHE_NAME = 'jollykite-v2.0.0';
+const API_CACHE_NAME = 'jollykite-api-v2.0.0';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -21,9 +21,9 @@ const CORE_ASSETS = [
   '/js/WindStatistics.js',
   '/js/HistoryManager.js',
   '/js/WindStreamManager.js',
-  '/js/WindHistoryDisplay.js',
   '/js/NotificationManager.js',
   '/js/KiteSizeRecommendation.js',
+  '/js/TodayWindTimeline.js',
   '/js/utils/KiteSizeCalculator.js',
   'https://cdn.tailwindcss.com/',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
