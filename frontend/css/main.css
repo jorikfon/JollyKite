@@ -944,8 +944,34 @@ footer {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
+    /* Убираем padding у основного контейнера на мобильных */
+    .max-w-7xl {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* Убираем обрамление у карточек на мобильных */
+    #currentWindSection,
+    #mapSection,
+    #offlineNotice,
+    .bg-white\/15 {
+        border-radius: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+
+    /* Убираем border-radius у карт на мобильных */
+    .card {
+        border-radius: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
     .wind-dashboard {
         grid-template-columns: 1fr;
+        gap: 0;
     }
 
     .card {
@@ -964,6 +990,7 @@ footer {
 
     #windMap {
         width: 100%;
+        border-radius: 0 !important;
     }
 
     .compass-container {
@@ -999,6 +1026,18 @@ footer {
 
     .forecast-hour-dir {
         font-size: 0.6rem;
+    }
+
+    /* Убираем padding у header на мобильных */
+    header {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Footer остается с небольшим padding для читаемости */
+    footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 }
 

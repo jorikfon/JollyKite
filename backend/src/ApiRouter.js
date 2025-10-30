@@ -96,6 +96,60 @@ export class ApiRouter {
       }
     });
 
+    // Get wind history for last 7 days (grouped by day, 6:00-19:00 only)
+    // IMPORTANT: This must be before the generic /wind/history/:hours? route
+    this.router.get('/wind/history/week', (req, res) => {
+      try {
+        const days = parseInt(req.query.days) || 7;
+        const data = this.dbManager.getDataByHours(days * 24);
+
+        // Group data by day
+        const groupedByDay = {};
+
+        data.forEach(record => {
+          // Get Bangkok time hour for filtering
+          const timestamp = new Date(record.timestamp);
+          const bangkokHour = parseInt(timestamp.toLocaleString('en-US', {
+            timeZone: 'Asia/Bangkok',
+            hour: 'numeric',
+            hour12: false
+          }));
+
+          // Only include data from 6:00 to 19:00 Bangkok time
+          if (bangkokHour < 6 || bangkokHour >= 19) {
+            return;
+          }
+
+          // Get Bangkok date for grouping
+          const bangkokDateStr = timestamp.toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
+          const dateKey = new Date(bangkokDateStr).toDateString();
+
+          if (!groupedByDay[dateKey]) {
+            groupedByDay[dateKey] = {
+              date: dateKey,
+              data: []
+            };
+          }
+
+          groupedByDay[dateKey].data.push({
+            time: record.timestamp,
+            avg_speed: parseFloat(record.wind_speed_knots) || 0,
+            max_gust: parseFloat(record.wind_gust_knots || record.wind_speed_knots) || 0,
+            direction: parseInt(record.wind_direction) || 0
+          });
+        });
+
+        // Convert to array and sort by date (newest first)
+        const result = Object.values(groupedByDay)
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, days);
+
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Get wind history for last N hours
     this.router.get('/wind/history/:hours?', (req, res) => {
       try {

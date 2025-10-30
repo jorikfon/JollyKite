@@ -67,7 +67,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="./css/main.css?v=2.0.0">
+    <link rel="stylesheet" href="./css/main.css?v=2.1.1">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -193,8 +193,18 @@
         </header>
 
         <div class="wind-dashboard">
+            <!-- Информационная карточка о времени работы станции (скрыта по умолчанию) -->
+            <div id="offlineNotice" style="display: none; background: rgba(255,165,0,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin-bottom: 15px; border: 2px solid rgba(255,165,0,0.3); text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🌙</div>
+                <div style="font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 10px;">Станция не работает</div>
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.9); line-height: 1.6;">
+                    Данные о ветре собираются только с <strong>6:00 до 19:00</strong> (время Таиланда).<br>
+                    Пожалуйста, вернитесь в рабочее время для получения актуальных данных.
+                </div>
+            </div>
+
             <!-- Упрощённый блок информации о ветре с градиентным баром -->
-            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.2);">
+            <div id="currentWindSection" style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.2);">
                 <!-- Основная скорость и направление -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div style="text-align: center; flex: 1;">
@@ -255,7 +265,7 @@
             </div>
 
             <!-- Карта -->
-            <div class="card" style="padding: 0; overflow: hidden;">
+            <div id="mapSection" class="card" style="padding: 0; overflow: hidden;">
                 <div class="map-container">
                     <div id="windMap"></div>
 
@@ -312,20 +322,34 @@
                 </div>
             </div>
 
-            <!-- Кнопка подписки на уведомления -->
-            <div class="mt-4 text-center">
-                <button id="notificationButton" class="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg">
-                    🔔 Загрузка...
-                </button>
-                <p class="text-xs text-white/60 mt-2">
-                    Получайте уведомление когда ветер устойчиво держится выше 10 узлов в течение 20 минут (не чаще 1 раза в день)
-                </p>
+        </div>
+
+        <!-- Блок истории ветра за последние 7 дней -->
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
+                📈 История ветра за 7 дней (6:00-19:00)
+            </h2>
+            <div id="weekWindHistory" class="overflow-hidden min-h-[120px]">
+                <div class="text-center py-6">
+                    <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p class="text-white/80 text-sm">Загружаем историю...</p>
+                </div>
             </div>
+        </div>
+
+        <!-- Кнопка подписки на уведомления -->
+        <div class="mt-4 mb-8 text-center">
+            <button id="notificationButton" class="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg">
+                🔔 Загрузка...
+            </button>
+            <p class="text-xs text-white/60 mt-2">
+                Получайте уведомление когда ветер устойчиво держится выше 10 узлов в течение 20 минут (не чаще 1 раза в день)
+            </p>
         </div>
 
         <footer>
             <p>&copy; 2025 Pak Nam Pran. Разработано с ❤️ для кайтсерферов</p>
-            <p class="text-xs opacity-60 mt-2">v1.9.6</p>
+            <p class="text-xs opacity-60 mt-2">v2.1.1</p>
         </footer>
     </div>
 
@@ -334,7 +358,7 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=2.0.0';
+        import App from './js/App.js?v=2.1.1';
 
         // Global app instance
         let jollyKiteApp;

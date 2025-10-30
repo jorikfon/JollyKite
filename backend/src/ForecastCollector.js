@@ -25,8 +25,8 @@ export class ForecastCollector {
     const daysToShow = 3;
 
     try {
-      // Fetch wind forecast
-      const windUrl = `${this.forecastApiUrl}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=${timezone}&forecast_days=${daysToShow}`;
+      // Fetch wind forecast with precipitation probability
+      const windUrl = `${this.forecastApiUrl}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability&timezone=${timezone}&forecast_days=${daysToShow}`;
 
       console.log(`📡 Fetching wind forecast from Open-Meteo...`);
       const windController = new AbortController();
@@ -111,6 +111,11 @@ export class ForecastCollector {
             direction: Math.round(windDir),
             gust: parseFloat(windGust.toFixed(1))
           };
+
+          // Add precipitation probability if available
+          if (hourly.precipitation_probability && hourIndex < hourly.precipitation_probability.length) {
+            hourData.precipitationProbability = hourly.precipitation_probability[hourIndex];
+          }
 
           // Add wave data if available
           if (marineHourly && hourIndex < marineHourly.time.length) {

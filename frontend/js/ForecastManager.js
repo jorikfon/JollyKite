@@ -27,6 +27,18 @@ class ForecastManager {
     }
 
     /**
+     * Get rain droplets based on precipitation probability
+     * Returns 0-4 droplets
+     */
+    getRainDroplets(precipitationProbability) {
+        if (!precipitationProbability || precipitationProbability === 0) return '';
+        if (precipitationProbability < 20) return '💧';           // 1 капелька
+        if (precipitationProbability < 40) return '💧💧';         // 2 капельки
+        if (precipitationProbability < 60) return '💧💧💧';       // 3 капельки
+        return '💧💧💧💧';                                         // 4 капельки
+    }
+
+    /**
      * Create smooth curve path using Catmull-Rom spline
      */
     createSmoothPath(points, width, height, maxValue) {
@@ -137,7 +149,7 @@ class ForecastManager {
             const windHeight = 80;
             const waveHeight = 60;
             const totalHeight = windHeight + waveHeight + 10; // 10px gap
-            const padding = { top: 35, right: 30, bottom: 40, left: 50 };  // More padding for text
+            const padding = { top: 35, right: 30, bottom: 50, left: 50 };  // More padding for text and rain droplets
             const chartWidth = width - padding.left - padding.right;
 
             // Find max values for scaling
@@ -166,7 +178,13 @@ class ForecastManager {
             group.forEach((hour, i) => {
                 if (hour.time % 2 === 0 && hour.time <= 18) {
                     const x = (i / (group.length - 1)) * chartWidth;
-                    timeLabels.push({ hour: hour.time, x });
+                    const rainDroplets = this.getRainDroplets(hour.precipitationProbability);
+                    timeLabels.push({
+                        hour: hour.time,
+                        x,
+                        rainDroplets,
+                        precipitationProbability: hour.precipitationProbability || 0
+                    });
                 }
             });
 
@@ -178,7 +196,14 @@ class ForecastManager {
                     const index18 = group.findIndex(h => h.time === 18);
                     if (index18 !== -1) {
                         const x = (index18 / (group.length - 1)) * chartWidth;
-                        timeLabels.push({ hour: 18, x });
+                        const hour18Data = group[index18];
+                        const rainDroplets = this.getRainDroplets(hour18Data.precipitationProbability);
+                        timeLabels.push({
+                            hour: 18,
+                            x,
+                            rainDroplets,
+                            precipitationProbability: hour18Data.precipitationProbability || 0
+                        });
                         timeLabels.sort((a, b) => a.hour - b.hour);
                     }
                 }
@@ -293,6 +318,12 @@ class ForecastManager {
                                           fill="rgba(255,255,255,0.8)" font-size="12" font-weight="600">
                                         ${t.hour}:00
                                     </text>
+                                    ${t.rainDroplets ? `
+                                        <text x="${t.x}" y="${totalHeight + 36}" text-anchor="middle"
+                                              font-size="10" title="Вероятность дождя: ${t.precipitationProbability}%">
+                                            ${t.rainDroplets}
+                                        </text>
+                                    ` : ''}
                                 `).join('')}
                             </g>
                         </svg>
@@ -303,7 +334,7 @@ class ForecastManager {
 
         // Add legend once at the end for all days
         forecastHTML += `
-            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.75rem; color: rgba(255,255,255,0.85); padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.75rem; color: rgba(255,255,255,0.85); padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; max-width: 500px; margin-left: auto; margin-right: auto; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 24px; height: 4px; background: linear-gradient(to right, #00FF00, #FFD700); border-radius: 2px;"></div>
                     <span>Ветер (узлы)</span>
@@ -311,6 +342,10 @@ class ForecastManager {
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 24px; height: 4px; background: #4682B4; border-radius: 2px;"></div>
                     <span>Волны (м)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1rem;">💧</span>
+                    <span>Дождь</span>
                 </div>
             </div>
         `;
