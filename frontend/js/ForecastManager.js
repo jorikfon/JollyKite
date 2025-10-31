@@ -146,8 +146,8 @@ class ForecastManager {
 
             // SVG dimensions
             const width = 1000;  // Increased for better text spacing
-            const windHeight = 80;
-            const waveHeight = 60;
+            const windHeight = 104;
+            const waveHeight = 78;
             const totalHeight = windHeight + waveHeight + 10; // 10px gap
             const padding = { top: 35, right: 30, bottom: 50, left: 50 };  // More padding for text and rain droplets
             const chartWidth = width - padding.left - padding.right;
@@ -251,7 +251,7 @@ class ForecastManager {
                                     <!-- Wind speed labels -->
                                     ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => `
                                         <text x="-5" y="${windHeight - (speed / maxWindSpeed) * windHeight + 5}"
-                                              text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="10">
+                                              text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
                                             ${speed.toFixed(0)}
                                         </text>
                                     `).join('')}
@@ -267,7 +267,7 @@ class ForecastManager {
                                                 <circle cx="${x}" cy="${y}" r="7" fill="none"
                                                         stroke="white" stroke-width="1" opacity="0.6"/>
                                                 <text x="${x}" y="${y - 12}" text-anchor="middle"
-                                                      fill="white" font-size="12" font-weight="700"
+                                                      fill="white" font-size="15" font-weight="700"
                                                       style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
                                                     ${peak.value.toFixed(1)}
                                                 </text>
@@ -287,7 +287,7 @@ class ForecastManager {
 
                                     <!-- Wave height labels -->
                                     <text x="-5" y="${waveHeight - 5}"
-                                          text-anchor="end" fill="rgba(135,206,235,0.8)" font-size="10">
+                                          text-anchor="end" fill="rgba(135,206,235,0.8)" font-size="13">
                                         ${maxWaveHeight.toFixed(1)}м
                                     </text>
 
@@ -303,7 +303,7 @@ class ForecastManager {
                                                 <circle cx="${x}" cy="${y}" r="6" fill="none"
                                                         stroke="rgba(135,206,235,0.8)" stroke-width="1" opacity="0.7"/>
                                                 <text x="${x}" y="${y - 12}" text-anchor="middle"
-                                                      fill="#87CEEB" font-size="11" font-weight="700"
+                                                      fill="#87CEEB" font-size="14" font-weight="700"
                                                       style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
                                                     ${peak.value.toFixed(1)}м
                                                 </text>
@@ -315,12 +315,12 @@ class ForecastManager {
                                 <!-- Time labels -->
                                 ${timeLabels.map(t => `
                                     <text x="${t.x}" y="${totalHeight + 20}" text-anchor="middle"
-                                          fill="rgba(255,255,255,0.8)" font-size="12" font-weight="600">
+                                          fill="rgba(255,255,255,0.8)" font-size="15" font-weight="600">
                                         ${t.hour}:00
                                     </text>
                                     ${t.rainDroplets ? `
                                         <text x="${t.x}" y="${totalHeight + 36}" text-anchor="middle"
-                                              font-size="10" title="Вероятность дождя: ${t.precipitationProbability}%">
+                                              font-size="13" title="Вероятность дождя: ${t.precipitationProbability}%">
                                             ${t.rainDroplets}
                                         </text>
                                     ` : ''}

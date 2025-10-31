@@ -1,9 +1,11 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v2.1.1';
-const API_CACHE_NAME = 'jollykite-api-v2.1.1';
+const CACHE_NAME = 'jollykite-v2.2.1';
+const API_CACHE_NAME = 'jollykite-api-v2.2.1';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
+// Note: External CDN resources are NOT cached here due to CORS restrictions
+// They will be cached on first access via handleStaticAsset
 const CORE_ASSETS = [
   '/',
   '/index.html',
@@ -25,11 +27,7 @@ const CORE_ASSETS = [
   '/js/KiteSizeRecommendation.js',
   '/js/TodayWindTimeline.js',
   '/js/WeekWindHistory.js',
-  '/js/utils/KiteSizeCalculator.js',
-  'https://cdn.tailwindcss.com/',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@700&family=Pacifico&display=swap'
+  '/js/utils/KiteSizeCalculator.js'
 ];
 
 // API endpoints для кэширования (теперь все через backend)

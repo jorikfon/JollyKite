@@ -67,7 +67,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="./css/main.css?v=2.1.1">
+    <link rel="stylesheet" href="./css/main.css?v=2.1.7">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -298,9 +298,9 @@
         </div>
 
         <!-- Блок графика ветра на сегодня (история + прогноз) -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                📊 Ветер сегодня (6:00-19:00)
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
+                📊 Ветер сегодня
             </h2>
             <div id="todayWindTimeline" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
@@ -311,9 +311,9 @@
         </div>
 
         <!-- Блок прогноза ветра -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                🌪️ Прогноз ветра на 3 дня (6:00-19:00)
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
+                🌪️ Прогноз ветра на 3 дня
             </h2>
             <div id="windForecast" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
@@ -325,9 +325,9 @@
         </div>
 
         <!-- Блок истории ветра за последние 7 дней -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                📈 История ветра за 7 дней (6:00-19:00)
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
+                📈 История ветра за 7 дней
             </h2>
             <div id="weekWindHistory" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
@@ -349,7 +349,7 @@
 
         <footer>
             <p>&copy; 2025 Pak Nam Pran. Разработано с ❤️ для кайтсерферов</p>
-            <p class="text-xs opacity-60 mt-2">v2.1.1</p>
+            <p class="text-xs opacity-60 mt-2">v2.1.7</p>
         </footer>
     </div>
 
@@ -358,7 +358,7 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=2.1.1';
+        import App from './js/App.js?v=2.1.7';
 
         // Global app instance
         let jollyKiteApp;
@@ -397,12 +397,42 @@
             if (windIcon) windIcon.textContent = '⚠️';
         }
 
-        // Register Service Worker
+        // Version check and Service Worker registration
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => console.log('✓ Service Worker registered:', registration.scope))
-                    .catch(err => console.log('✗ Service Worker registration failed:', err));
+            window.addEventListener('load', async () => {
+                // Import and initialize VersionManager
+                const { default: VersionManager } = await import('./js/VersionManager.js');
+                const versionManager = new VersionManager();
+
+                // Check version and clear cache if needed
+                const shouldProceed = await versionManager.init();
+                if (!shouldProceed) {
+                    // Page will reload, don't continue
+                    return;
+                }
+
+                // Register Service Worker with forced update
+                navigator.serviceWorker.register('./sw.js?v=2.1.7', {
+                    updateViaCache: 'none'
+                }).then(registration => {
+                    console.log('✓ Service Worker registered:', registration.scope);
+
+                    // Check for updates every page load
+                    registration.update().catch(err => {
+                        console.warn('Service Worker update check failed:', err);
+                    });
+
+                    // Auto-reload when new service worker is activated
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'activated') {
+                                console.log('✓ New Service Worker activated, reloading...');
+                                window.location.reload();
+                            }
+                        });
+                    });
+                }).catch(err => console.log('✗ Service Worker registration failed:', err));
             });
         }
     </script>

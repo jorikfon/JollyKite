@@ -41,6 +41,15 @@ export class ApiRouter {
   }
 
   setupRoutes() {
+    // Version endpoint for cache invalidation
+    this.router.get('/version', (req, res) => {
+      res.json({
+        version: '2.2.1',
+        timestamp: new Date().toISOString(),
+        serviceWorkerVersion: 'jollykite-v2.2.1'
+      });
+    });
+
     // Server-Sent Events endpoint for real-time updates
     this.router.get('/wind/stream', (req, res) => {
       res.setHeader('Content-Type', 'text/event-stream');
@@ -120,9 +129,8 @@ export class ApiRouter {
             return;
           }
 
-          // Get Bangkok date for grouping
-          const bangkokDateStr = timestamp.toLocaleDateString('en-US', { timeZone: 'Asia/Bangkok' });
-          const dateKey = new Date(bangkokDateStr).toDateString();
+          // Get Bangkok date for grouping (en-CA format gives YYYY-MM-DD)
+          const dateKey = timestamp.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 
           if (!groupedByDay[dateKey]) {
             groupedByDay[dateKey] = {

@@ -216,7 +216,7 @@ class TodayWindTimeline {
         const maxSpeed = Math.max(...speeds) * 1.1;
 
         const width = 1000;
-        const height = 120;
+        const height = 156;
         const padding = { top: 35, right: 30, bottom: 40, left: 50 };
         const chartWidth = width - padding.left - padding.right;
 
@@ -252,13 +252,6 @@ class TodayWindTimeline {
 
         let html = `
             <div class="mb-6">
-                <div class="flex justify-between items-center mb-3">
-                    ${correctionFactor !== 1.0 ? `
-                        <div class="text-xs text-white/70">
-                            Прогноз скорректирован: ×${correctionFactor}
-                        </div>
-                    ` : '<div></div>'}
-                </div>
                 <div style="position: relative; width: 100%;">
                     <svg width="100%" viewBox="0 0 ${width} ${height + padding.top + padding.bottom}" preserveAspectRatio="none" style="display: block;">
                         <defs>
@@ -289,7 +282,7 @@ class TodayWindTimeline {
                             <!-- Wind speed labels on Y axis -->
                             ${[0, maxSpeed * 0.5, maxSpeed].map((speed, i) => `
                                 <text x="-5" y="${height - (speed / maxSpeed) * height + 5}"
-                                      text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="10">
+                                      text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
                                     ${speed.toFixed(0)}
                                 </text>
                             `).join('')}
@@ -313,18 +306,18 @@ class TodayWindTimeline {
                                 </g>
 
                                 <!-- Labels -->
-                                <text x="${dividerX - 5}" y="-8" text-anchor="end" fill="rgba(255,255,255,0.9)" font-size="11" font-weight="600">
+                                <text x="${dividerX - 5}" y="-8" text-anchor="end" fill="rgba(255,255,255,0.9)" font-size="14" font-weight="600">
                                     Факт
                                 </text>
-                                <text x="${dividerX + 5}" y="-8" text-anchor="start" fill="rgba(255,215,0,0.9)" font-size="11" font-weight="600">
-                                    Прогноз
+                                <text x="${dividerX + 5}" y="-8" text-anchor="start" fill="rgba(255,215,0,0.9)" font-size="14" font-weight="600">
+                                    Прогноз ${correctionFactor !== 1.0 ? `×${correctionFactor}` : ''}
                                 </text>
                             ` : ''}
 
                             <!-- Time labels on X axis -->
                             ${timeLabels.map(t => `
                                 <text x="${t.x}" y="${height + 20}" text-anchor="middle"
-                                      fill="rgba(255,255,255,0.8)" font-size="12" font-weight="600">
+                                      fill="rgba(255,255,255,0.8)" font-size="15" font-weight="600">
                                     ${t.hour}:00
                                 </text>
                             `).join('')}

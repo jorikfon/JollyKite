@@ -139,19 +139,35 @@ class WeekWindHistory {
                 return;
             }
 
+            // Filter out today's data (it's already shown in "Today's Wind Timeline")
+            const today = new Date().toDateString();
+            const filteredHistoryData = historyData.filter(dayData => {
+                const dayDate = new Date(dayData.date).toDateString();
+                return dayDate !== today;
+            });
+
+            if (filteredHistoryData.length === 0) {
+                console.warn('WeekWindHistory: No historical data (only today)');
+                this.showNoData();
+                return;
+            }
+
             let html = '';
 
             // Process each day
-            historyData.forEach((dayData, dayIndex) => {
+            filteredHistoryData.forEach((dayData, dayIndex) => {
                 const { date, data } = dayData;
 
                 if (!data || data.length === 0) {
                     return; // Skip days with no data
                 }
 
-                // Extract wind speeds and times
-                const windSpeeds = data.map(d => parseFloat(d.avg_speed || 0));
-                const times = data.map(d => {
+                // Sort data by time (earliest to latest) for correct graph display
+                const sortedData = [...data].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+                // Extract wind speeds and times from sorted data
+                const windSpeeds = sortedData.map(d => parseFloat(d.avg_speed || 0));
+                const times = sortedData.map(d => {
                     const dt = new Date(d.time);
                     return dt.getHours() + dt.getMinutes() / 60;
                 });
@@ -159,10 +175,10 @@ class WeekWindHistory {
                 // Calculate time positions (6:00 = 0, 19:00 = 1)
                 const timePositions = times.map(t => (t - 6) / 13);
 
-                // SVG dimensions
+                // SVG dimensions (height increased for better visibility on mobile)
                 const width = 1000;
-                const height = 100;
-                const padding = { top: 25, right: 30, bottom: 35, left: 50 };
+                const height = 195;
+                const padding = { top: 35, right: 30, bottom: 40, left: 50 };
                 const chartWidth = width - padding.left - padding.right;
                 const chartHeight = height - padding.top - padding.bottom;
 
@@ -177,26 +193,51 @@ class WeekWindHistory {
                 // Create filled area path
                 const windAreaPath = windPath + ` L ${chartWidth} ${chartHeight} L 0 ${chartHeight} Z`;
 
-                // Find peak wind speeds (top 3)
-                const peaks = windSpeeds
-                    .map((speed, index) => ({ speed, index, timePos: timePositions[index] }))
-                    .sort((a, b) => b.speed - a.speed)
-                    .slice(0, 3);
+                // Find peak wind speeds (top 3) with minimum 30-minute interval
+                const MIN_PEAK_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
 
-                // Generate time labels (every 2 hours)
+                // Create candidates sorted by speed (highest first)
+                const peakCandidates = windSpeeds
+                    .map((speed, index) => ({
+                        speed,
+                        index,
+                        timePos: timePositions[index],
+                        timestamp: new Date(sortedData[index].time).getTime()
+                    }))
+                    .sort((a, b) => b.speed - a.speed);
+
+                // Filter peaks with minimum time interval
+                const peaks = [];
+                for (const candidate of peakCandidates) {
+                    // Check if this peak is far enough from already selected peaks
+                    const isFarEnough = peaks.every(peak =>
+                        Math.abs(candidate.timestamp - peak.timestamp) >= MIN_PEAK_INTERVAL_MS
+                    );
+
+                    if (isFarEnough) {
+                        peaks.push(candidate);
+                    }
+
+                    // Stop when we have 3 peaks
+                    if (peaks.length >= 3) {
+                        break;
+                    }
+                }
+
+                // Generate time labels (every 3 hours for better readability on mobile)
                 const timeLabels = [];
-                for (let hour = 6; hour <= 18; hour += 2) {
+                for (let hour = 6; hour <= 18; hour += 3) {
                     const pos = (hour - 6) / 13;
                     timeLabels.push({ hour, x: pos * chartWidth });
                 }
 
                 html += `
                     <div style="margin-bottom: 30px;">
-                        <div style="text-sm font-semibold text-white mb-3 text-center; font-size: 0.9rem; color: rgba(255,255,255,0.9);">
+                        <div style="font-size: 0.9rem; font-weight: 600; color: rgba(255,255,255,0.9); margin-bottom: 12px; text-align: center;">
                             ${this.formatDate(date)}
                         </div>
                         <div style="position: relative; width: 100%;">
-                            <svg width="100%" viewBox="0 0 ${width} ${height + padding.top + padding.bottom}" preserveAspectRatio="none" style="display: block;">
+                            <svg width="100%" viewBox="0 0 ${width} ${height + padding.top + padding.bottom}" preserveAspectRatio="xMinYMid meet" style="display: block;">
                                 <defs>
                                     ${windGradient}
                                     <filter id="glow">
@@ -225,7 +266,7 @@ class WeekWindHistory {
                                     <!-- Wind speed labels -->
                                     ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => `
                                         <text x="-5" y="${chartHeight - (speed / maxWindSpeed) * chartHeight + 5}"
-                                              text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="10">
+                                              text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
                                             ${speed.toFixed(0)}
                                         </text>
                                     `).join('')}
@@ -241,7 +282,7 @@ class WeekWindHistory {
                                                 <circle cx="${x}" cy="${y}" r="7" fill="none"
                                                         stroke="white" stroke-width="1" opacity="0.6"/>
                                                 <text x="${x}" y="${y - 12}" text-anchor="middle"
-                                                      fill="white" font-size="12" font-weight="700"
+                                                      fill="white" font-size="15" font-weight="700"
                                                       style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
                                                     ${peak.speed.toFixed(1)}
                                                 </text>
@@ -252,7 +293,7 @@ class WeekWindHistory {
                                     <!-- Time labels -->
                                     ${timeLabels.map(t => `
                                         <text x="${t.x}" y="${chartHeight + 20}" text-anchor="middle"
-                                              fill="rgba(255,255,255,0.8)" font-size="11" font-weight="600">
+                                              fill="rgba(255,255,255,0.8)" font-size="14" font-weight="600">
                                             ${t.hour}:00
                                         </text>
                                     `).join('')}
