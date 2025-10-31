@@ -1437,7 +1437,7 @@ footer {
 /* Mobile optimizations */
 @media (max-width: 768px) {
     .kite-cards-grid {
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
     }
 
@@ -1446,15 +1446,15 @@ footer {
     }
 
     .kite-card__size {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
     .kite-card__icon {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 
     .kite-card__weight {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .kite-card__label {
