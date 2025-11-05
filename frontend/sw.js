@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v2.2.2';
-const API_CACHE_NAME = 'jollykite-api-v2.2.2';
+const CACHE_NAME = 'jollykite-v2.4.3';
+const API_CACHE_NAME = 'jollykite-api-v2.4.3';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -27,7 +27,19 @@ const CORE_ASSETS = [
   '/js/KiteSizeRecommendation.js',
   '/js/TodayWindTimeline.js',
   '/js/WeekWindHistory.js',
-  '/js/utils/KiteSizeCalculator.js'
+  '/js/utils/KiteSizeCalculator.js',
+  // i18n System
+  '/js/i18n/I18nManager.js',
+  '/js/i18n/translations/en.js',
+  '/js/i18n/translations/ru.js',
+  '/js/i18n/translations/de.js',
+  '/js/i18n/translations/th.js',
+  // Settings System
+  '/js/settings/SettingsManager.js',
+  '/js/settings/LocalStorageManager.js',
+  '/js/settings/MenuController.js',
+  // Utils
+  '/js/utils/UnitConverter.js'
 ];
 
 // API endpoints для кэширования (теперь все через backend)
@@ -270,15 +282,62 @@ async function updateWeatherData() {
   }
 }
 
+// Переводы для пуш-уведомлений
+const NOTIFICATION_TRANSLATIONS = {
+  en: {
+    title: 'Pak Nam Pran - Wind is picking up! 🌬️',
+    body: 'Great conditions for kitesurfing!',
+    view: 'View',
+    close: 'Close'
+  },
+  ru: {
+    title: 'Пак Нам Пран - Ветер усиливается! 🌬️',
+    body: 'Отличные условия для кайтсерфинга!',
+    view: 'Посмотреть',
+    close: 'Закрыть'
+  },
+  de: {
+    title: 'Pak Nam Pran - Wind nimmt zu! 🌬️',
+    body: 'Perfekte Bedingungen zum Kitesurfen!',
+    view: 'Ansehen',
+    close: 'Schließen'
+  },
+  th: {
+    title: 'ปากน้ำปราณ - ลมกำลังแรงขึ้น! 🌬️',
+    body: 'สภาพที่ยอดเยี่ยมสำหรับไคท์เซิร์ฟ!',
+    view: 'ดู',
+    close: 'ปิด'
+  }
+};
+
+// Получить текущий язык из LocalStorage
+async function getCurrentLocale() {
+  try {
+    // Пытаемся получить из IndexedDB или fallback на 'en'
+    const cache = await caches.open('jollykite-settings');
+    const response = await cache.match('/locale');
+    if (response) {
+      const locale = await response.text();
+      return locale || 'en';
+    }
+  } catch (e) {
+    console.log('[SW] Could not get locale, using default');
+  }
+  return 'en';
+}
+
 // Push notifications for wind conditions
-self.addEventListener('push', event => {
+self.addEventListener('push', async event => {
   console.log('[SW] Push notification received');
 
   if (event.data) {
     const data = event.data.json();
-    const title = data.title || 'JollyKite - Ветер усиливается! 🌬️';
+    const locale = await getCurrentLocale();
+    const translations = NOTIFICATION_TRANSLATIONS[locale] || NOTIFICATION_TRANSLATIONS.en;
+
+    const title = data.title || translations.title;
     const options = {
-      body: data.body || data.message || 'Отличные условия для кайтсерфинга!',
+      body: data.body || data.message || translations.body,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       vibrate: [200, 100, 200, 100, 200],
@@ -292,19 +351,19 @@ self.addEventListener('push', event => {
       actions: [
         {
           action: 'view',
-          title: 'Посмотреть',
+          title: translations.view,
           icon: '/icons/icon-96x96.png'
         },
         {
           action: 'close',
-          title: 'Закрыть',
+          title: translations.close,
           icon: '/icons/icon-96x96.png'
         }
       ]
     };
-    
+
     event.waitUntil(
-      self.registration.showNotification(data.title, options)
+      self.registration.showNotification(title, options)
     );
   }
 });

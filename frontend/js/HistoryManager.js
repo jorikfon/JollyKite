@@ -1,5 +1,6 @@
 class HistoryManager {
-    constructor() {
+    constructor(i18n = null) {
+        this.i18n = i18n;
         this.storageKey = 'jolly-kite-wind-history';
         this.maxHistoryEntries = 100; // Максимальное количество записей
     }
@@ -166,10 +167,11 @@ class HistoryManager {
         ];
 
         const csvRows = [headers.join(',')];
-        
+
+        const locale = this.i18n ? this.i18n.getFullLocale() : 'ru-RU';
         data.forEach(entry => {
             const row = [
-                new Date(entry.timestamp).toLocaleString('ru-RU'),
+                new Date(entry.timestamp).toLocaleString(locale),
                 entry.windSpeed.toFixed(1),
                 entry.windDirection,
                 entry.windGust.toFixed(1),

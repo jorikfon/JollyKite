@@ -4,8 +4,9 @@ import KiteSizeCalculator from './utils/KiteSizeCalculator.js';
  * KiteSizeRecommendation - displays kite size recommendations based on current wind
  */
 class KiteSizeRecommendation {
-  constructor() {
-    this.calculator = new KiteSizeCalculator();
+  constructor(i18n = null) {
+    this.i18n = i18n;
+    this.calculator = new KiteSizeCalculator(i18n);
     this.containerElement = null;
     this.currentWindSpeed = 0;
   }
@@ -61,7 +62,8 @@ class KiteSizeRecommendation {
     const { size, weight, suitability } = recommendation;
 
     // Create weight display
-    const weightDisplay = weight > 0 ? `${weight} кг` : '-';
+    const kgLabel = this.i18n ? this.i18n.t('kite.kg') : 'кг';
+    const weightDisplay = weight > 0 ? `${weight} ${kgLabel}` : '-';
 
     // Get suitability icon
     const icon = this.getSuitabilityIcon(suitability);
@@ -101,10 +103,11 @@ class KiteSizeRecommendation {
   showLoading() {
     if (!this.containerElement) return;
 
+    const loadingText = this.i18n ? this.i18n.t('app.loading') : 'Загружаем рекомендации...';
     this.containerElement.innerHTML = `
       <div class="kite-loading">
         <div class="kite-loading__spinner"></div>
-        <p class="kite-loading__text">Загружаем рекомендации...</p>
+        <p class="kite-loading__text">${loadingText}</p>
       </div>
     `;
   }

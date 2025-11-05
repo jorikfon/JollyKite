@@ -2,7 +2,8 @@
  * NotificationManager - manages push notification subscriptions
  */
 class NotificationManager {
-    constructor() {
+    constructor(i18n = null) {
+        this.i18n = i18n;
         this.apiBaseUrl = '/api';
         this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
         this.subscription = null;
@@ -157,7 +158,7 @@ class NotificationManager {
     async updateUI(buttonElement) {
         if (!this.isSupported) {
             buttonElement.disabled = true;
-            buttonElement.textContent = '🔕 Уведомления не поддерживаются';
+            buttonElement.textContent = this.i18n ? this.i18n.t('notifications.notSupported') : '🔕 Уведомления не поддерживаются';
             buttonElement.classList.add('opacity-50', 'cursor-not-allowed');
             return;
         }
@@ -167,18 +168,18 @@ class NotificationManager {
 
         if (permission === 'denied') {
             buttonElement.disabled = true;
-            buttonElement.textContent = '🔕 Уведомления заблокированы';
+            buttonElement.textContent = this.i18n ? this.i18n.t('notifications.blocked') : '🔕 Уведомления заблокированы';
             buttonElement.classList.add('opacity-50');
             return;
         }
 
         if (subscribed) {
-            buttonElement.textContent = '🔔 Отключить уведомления';
+            buttonElement.textContent = this.i18n ? this.i18n.t('notifications.disable') : '🔔 Отключить уведомления';
             buttonElement.classList.remove('opacity-50');
             buttonElement.classList.add('bg-red-500', 'hover:bg-red-600');
             buttonElement.classList.remove('bg-green-500', 'hover:bg-green-600');
         } else {
-            buttonElement.textContent = '🔔 Получать уведомления о ветре';
+            buttonElement.textContent = this.i18n ? this.i18n.t('notifications.enable') : '🔔 Получать уведомления о ветре';
             buttonElement.classList.remove('opacity-50', 'bg-red-500', 'hover:bg-red-600');
             buttonElement.classList.add('bg-green-500', 'hover:bg-green-600');
         }

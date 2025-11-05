@@ -45,7 +45,7 @@ class WindUtils {
     /**
      * Convert degrees to cardinal direction
      * @param {number} degrees - Wind direction in degrees
-     * @returns {string} Cardinal direction (С, СВ, В, etc.)
+     * @returns {string} Cardinal direction (N, NE, E, etc. or translated)
      */
     static degreesToCardinal(degrees) {
         const deg = parseFloat(degrees) || 0;
@@ -55,14 +55,24 @@ class WindUtils {
             if (direction.min > direction.max) {
                 // Handle North (wraps around 360/0)
                 if (normalized >= direction.min || normalized < direction.max) {
-                    return direction.name;
+                    // Use i18n if available
+                    const i18n = window.i18n;
+                    return i18n
+                        ? i18n.t(`wind.directions.${direction.i18nKey}`)
+                        : direction.i18nKey;
                 }
             } else if (normalized >= direction.min && normalized < direction.max) {
-                return direction.name;
+                // Use i18n if available
+                const i18n = window.i18n;
+                return i18n
+                    ? i18n.t(`wind.directions.${direction.i18nKey}`)
+                    : direction.i18nKey;
             }
         }
 
-        return 'С'; // Fallback to North
+        // Fallback to North
+        const i18n = window.i18n;
+        return i18n ? i18n.t('wind.directions.N') : 'N';
     }
 
     /**
@@ -95,22 +105,26 @@ class WindUtils {
         } else if (isOnshore && knots >= speeds.veryLow && knots < speeds.moderate) {
             // Onshore with light-moderate wind
             safety = { ...levels.good };
-            safety.text = 'Безопасно';
         } else if (knots >= speeds.low && knots <= speeds.good) {
             // Sideshore with moderate wind
             safety = { ...levels.good };
         }
 
+        // Get text from i18n
+        const i18n = window.i18n;
+        if (i18n && safety.i18nKey) {
+            safety.text = i18n.t(safety.i18nKey);
+        } else {
+            safety.text = safety.level;
+        }
+
         // Add wind type information
         let windType = 'sideshore';
-        let windTypeRu = 'Боковой';
 
         if (isOffshore) {
             windType = 'offshore';
-            windTypeRu = 'Отжим';
         } else if (isOnshore) {
             windType = 'onshore';
-            windTypeRu = 'Прижим';
         }
 
         return {
@@ -119,8 +133,7 @@ class WindUtils {
             isOnshore,
             windSpeed: knots,
             windDirection: dir,
-            windType,
-            windTypeRu
+            windType
         };
     }
 
@@ -135,13 +148,18 @@ class WindUtils {
 
         for (const category of config.windCategories) {
             if (speed < category.maxSpeed) {
-                const subtitle = category.subtitle.includes('узлов')
-                    ? `${speed.toFixed(1)} ${category.subtitle}`
-                    : category.subtitle;
+                // Use i18n if available
+                const i18n = window.i18n;
+                const title = i18n
+                    ? i18n.t(`wind.categories.${category.i18nKey}.title`)
+                    : category.i18nKey;
+                const subtitle = i18n
+                    ? i18n.t(`wind.categories.${category.i18nKey}.subtitle`)
+                    : '';
 
                 return {
                     icon: category.icon,
-                    title: category.title,
+                    title,
                     subtitle
                 };
             }
@@ -217,25 +235,27 @@ class WindUtils {
      * @returns {Object} Trend icon and description
      */
     static getTrendInfo(trend) {
+        const i18n = window.i18n;
+
         const trends = {
             strengthening: {
                 icon: '↗️',
-                text: 'Раздувает',
+                text: i18n ? i18n.t('trends.strengthening') : 'Раздувает',
                 color: '#FF8C00'
             },
             weakening: {
                 icon: '↘️',
-                text: 'Затихает',
+                text: i18n ? i18n.t('trends.weakening') : 'Затихает',
                 color: '#87CEEB'
             },
             stable: {
                 icon: '➡️',
-                text: 'Стабильный',
+                text: i18n ? i18n.t('trends.stable') : 'Стабильный',
                 color: '#4169E1'
             },
             insufficient_data: {
                 icon: '⏳',
-                text: 'Недостаточно данных',
+                text: i18n ? i18n.t('trends.noData') : 'Недостаточно данных',
                 color: '#808080'
             }
         };

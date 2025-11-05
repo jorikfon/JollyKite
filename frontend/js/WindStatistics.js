@@ -156,11 +156,13 @@ class WindStatistics {
 
         // Определяем тренд на основе изменения скорости
         // Используем порог 10% для более стабильных результатов
+        const i18n = window.i18n;
+
         if (Math.abs(percentChange) < 10) {
             // Изменение меньше 10% - стабильно
             return {
                 trend: 'stable',
-                text: 'Стабильный',
+                text: i18n ? i18n.t('trends.stable') : 'Стабильный',
                 icon: '➡️',
                 color: '#4169E1',
                 currentSpeed: currentAverage,
@@ -172,7 +174,7 @@ class WindStatistics {
             // Усиливается
             return {
                 trend: 'strengthening',
-                text: 'Раздувает',
+                text: i18n ? i18n.t('trends.strengthening') : 'Раздувает',
                 icon: '↗️',
                 color: '#FF8C00',
                 currentSpeed: currentAverage,
@@ -184,7 +186,7 @@ class WindStatistics {
             // Ослабевает
             return {
                 trend: 'weakening',
-                text: 'Затихает',
+                text: i18n ? i18n.t('trends.weakening') : 'Затихает',
                 icon: '↘️',
                 color: '#87CEEB',
                 currentSpeed: currentAverage,

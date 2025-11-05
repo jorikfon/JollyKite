@@ -3,7 +3,8 @@
  * Shows actual wind data for each day from 6:00 to 19:00
  */
 class WeekWindHistory {
-    constructor() {
+    constructor(i18n = null) {
+        this.i18n = i18n;
         this.container = null;
         this.apiUrl = '/api';
     }
@@ -103,16 +104,24 @@ class WeekWindHistory {
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (date.toDateString() === today.toDateString()) {
-            return 'Сегодня';
+            return this.i18n ? this.i18n.t('forecast.today') : 'Сегодня';
         } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Вчера';
-        } else {
+            // For yesterday, just use localized short date format
+            const locale = this.i18n ? this.i18n.getFullLocale() : 'ru-RU';
             const options = {
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short'
             };
-            return date.toLocaleDateString('ru-RU', options);
+            return date.toLocaleDateString(locale, options);
+        } else {
+            const locale = this.i18n ? this.i18n.getFullLocale() : 'ru-RU';
+            const options = {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short'
+            };
+            return date.toLocaleDateString(locale, options);
         }
     }
 

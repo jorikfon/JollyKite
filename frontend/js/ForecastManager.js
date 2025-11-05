@@ -1,6 +1,7 @@
 class ForecastManager {
-    constructor() {
+    constructor(i18n) {
         this.forecastContainer = null;
+        this.i18n = i18n || window.i18n;
     }
 
     init() {
@@ -333,19 +334,25 @@ class ForecastManager {
         });
 
         // Add legend once at the end for all days
+        const windUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+        const windUnitLabel = window.unitConverter?.getUnitSymbol(windUnit) || 'kn';
+        const windLabel = this.i18n?.t('forecast.wind') || 'Wind';
+        const wavesLabel = this.i18n?.t('forecast.waves') || 'Waves';
+        const rainLabel = this.i18n?.t('forecast.rain') || 'Rain';
+
         forecastHTML += `
             <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.75rem; color: rgba(255,255,255,0.85); padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px; max-width: 500px; margin-left: auto; margin-right: auto; flex-wrap: wrap;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 24px; height: 4px; background: linear-gradient(to right, #00FF00, #FFD700); border-radius: 2px;"></div>
-                    <span>Ветер (узлы)</span>
+                    <span>${windLabel} (${windUnitLabel})</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div style="width: 24px; height: 4px; background: #4682B4; border-radius: 2px;"></div>
-                    <span>Волны (м)</span>
+                    <span>${wavesLabel} (m)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1rem;">💧</span>
-                    <span>Дождь</span>
+                    <span>${rainLabel}</span>
                 </div>
             </div>
         `;
@@ -361,20 +368,21 @@ class ForecastManager {
         dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
 
         const targetDate = new Date(date);
-        
+
         if (targetDate.toDateString() === today.toDateString()) {
-            return 'Сегодня';
+            return this.i18n?.t('forecast.today') || 'Today';
         } else if (targetDate.toDateString() === tomorrow.toDateString()) {
-            return 'Завтра';
+            return this.i18n?.t('forecast.tomorrow') || 'Tomorrow';
         } else if (targetDate.toDateString() === dayAfterTomorrow.toDateString()) {
-            return 'Послезавтра';
+            return this.i18n?.t('forecast.dayAfterTomorrow') || 'Day after tomorrow';
         } else {
-            const options = { 
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'short' 
+            const locale = this.i18n?.getFullLocale() || 'en-US';
+            const options = {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short'
             };
-            return targetDate.toLocaleDateString('ru-RU', options);
+            return targetDate.toLocaleDateString(locale, options);
         }
     }
 

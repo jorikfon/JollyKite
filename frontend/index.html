@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JollyKite - Кайтсерфинг в Пак Нам Пран 🏄‍♂️</title>
+    <title id="page-title">Pak Nam Pran Kitesurfing - Прогноз ветра 🏄‍♂️</title>
 
     <!-- PWA Meta Tags -->
-    <meta name="description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд. Живые данные о ветре, безопасности и погоде для кайтеров.">
-    <meta name="keywords" content="кайтсерфинг, пак нам пран, таиланд, ветер, прогноз, kite, kitesurfing, wind forecast">
-    <meta name="author" content="JollyKite">
+    <meta name="description" id="page-description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд. Живые данные о ветре, безопасности и погоде для кайтеров.">
+    <meta name="keywords" content="кайтсерфинг, пак нам пран, таиланд, ветер, прогноз, kite, kitesurfing, wind forecast, pak nam pran">
+    <meta name="author" content="Pak Nam Pran Kitesurfing">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json">
@@ -32,7 +32,7 @@
     <!-- Apple Mobile Web App -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="JollyKite">
+    <meta name="apple-mobile-web-app-title" content="Pak Nam Pran">
 
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileImage" content="./icons/icon-144x144.png">
@@ -48,16 +48,16 @@
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
-    <meta property="og:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
+    <meta property="og:title" id="og-title" content="Pak Nam Pran Kitesurfing - Прогноз ветра">
+    <meta property="og:description" id="og-description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
     <meta property="og:image" content="./icons/icon-512x512.png">
-    <meta property="og:url" content="https://jollykite.com">
-    <meta property="og:site_name" content="JollyKite">
+    <meta property="og:url" content="https://paknampran.com">
+    <meta property="og:site_name" content="Pak Nam Pran Kitesurfing">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="JollyKite - Кайтсерфинг в Пак Нам Пран">
-    <meta name="twitter:description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
+    <meta name="twitter:title" id="twitter-title" content="Pak Nam Pran Kitesurfing - Прогноз ветра">
+    <meta name="twitter:description" id="twitter-description" content="Прогноз ветра и условия для кайтсерфинга в Пак Нам Пран, Таиланд">
     <meta name="twitter:image" content="./icons/icon-512x512.png">
 
     <!-- External CSS -->
@@ -67,7 +67,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="./css/main.css?v=2.1.7">
+    <link rel="stylesheet" href="./css/main.css?v=2.3.0">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -185,6 +185,14 @@
         </div>
     </div>
 
+    <!-- Кнопка открытия меню -->
+    <button id="menuButton" class="menu-button" aria-label="Settings menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"></path>
+        </svg>
+    </button>
+
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header class="text-center py-8 sm:py-12 animate-fadeInDown">
             <h1 class="font-dancing text-5xl sm:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-lg mb-4 tracking-wide animate-shimmer">
@@ -196,10 +204,10 @@
             <!-- Информационная карточка о времени работы станции (скрыта по умолчанию) -->
             <div id="offlineNotice" style="display: none; background: rgba(255,165,0,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin-bottom: 15px; border: 2px solid rgba(255,165,0,0.3); text-align: center;">
                 <div style="font-size: 3rem; margin-bottom: 15px;">🌙</div>
-                <div style="font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 10px;">Станция не работает</div>
-                <div style="font-size: 1rem; color: rgba(255,255,255,0.9); line-height: 1.6;">
-                    Данные о ветре собираются только с <strong>6:00 до 19:00</strong> (время Таиланда).<br>
-                    Пожалуйста, вернитесь в рабочее время для получения актуальных данных.
+                <div style="font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 10px;" data-i18n="info.stationOffline">Station Offline</div>
+                <div style="font-size: 1rem; color: rgba(255,255,255,0.9); line-height: 1.6;" id="offlineNoticeText" data-i18n="info.offlineNoticeText">
+                    Wind data is collected only from <strong>6:00 to 19:00</strong> (Thailand time).<br>
+                    Please return during working hours for current data.
                 </div>
             </div>
 
@@ -209,11 +217,11 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <div style="text-align: center; flex: 1;">
                         <div style="font-size: 3rem; font-weight: 700; color: #fff; line-height: 1;" id="windSpeed">--</div>
-                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;">узлов</div>
+                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;" id="windSpeedUnit">kn</div>
                     </div>
                     <div style="text-align: center; flex: 1;">
-                        <div style="font-size: 3rem; font-weight: 700; color: #fff;" id="windCardinal">С</div>
-                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;">направление</div>
+                        <div style="font-size: 3rem; font-weight: 700; color: #fff;" id="windCardinal">N</div>
+                        <div style="font-size: 0.9rem; color: rgba(255,255,255,0.8); margin-top: 5px;" data-i18n="info.direction">direction</div>
                     </div>
                 </div>
 
@@ -238,12 +246,16 @@
                 <!-- Компактная информация -->
                 <div style="display: flex; gap: 15px; justify-content: space-around; margin-top: 20px; font-size: 0.85rem; color: rgba(255,255,255,0.9);">
                     <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Порывы</div>
-                        <div style="font-weight: 600; font-size: 1.1rem;" id="windGust">--</div>
+                        <div style="opacity: 0.7;" data-i18n="info.gust">Gusts</div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">
+                            <span id="windGust">--</span> <span style="font-size: 0.8rem; opacity: 0.8;" id="windGustUnit">kn</span>
+                        </div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="opacity: 0.7;">Макс сегодня</div>
-                        <div style="font-weight: 600; font-size: 1.1rem;" id="maxGust">--</div>
+                        <div style="opacity: 0.7;" data-i18n="info.maxGust">Max today</div>
+                        <div style="font-weight: 600; font-size: 1.1rem;">
+                            <span id="maxGust">--</span> <span style="font-size: 0.8rem; opacity: 0.8;" id="maxGustUnit">kn</span>
+                        </div>
                     </div>
                 </div>
 
@@ -252,8 +264,8 @@
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div id="windIcon" style="font-size: 2.5rem; line-height: 1;">🍃</div>
                         <div style="flex: 1; text-align: left;">
-                            <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;">Загружаем данные...</div>
-                            <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;">Подождите немного</div>
+                            <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;" data-i18n="trends.loading">Loading data...</div>
+                            <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;">Please wait</div>
                             <!-- Тренд ветра -->
                             <div id="windTrend" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
                                 <div id="trendIcon" style="font-size: 1.3em;">⏳</div>
@@ -272,8 +284,8 @@
                     <!-- Индикатор LIVE с таймером -->
                     <div class="live-indicator">
                         <span class="live-dot"></span>
-                        <span>LIVE</span>
-                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;">загрузка...</span>
+                        <span data-i18n="info.live">LIVE</span>
+                        <span id="updateCountdown" style="margin-left: 5px; font-size: 0.8em; opacity: 0.8;" data-i18n="app.loading">загрузка...</span>
                     </div>
                 </div>
             </div>
@@ -281,44 +293,45 @@
 
         <!-- Блок рекомендаций по размеру кайта -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6">
-                🪁 Подбор размера кайта
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6" data-i18n="kite.recommendation">
+                🪁 Kite Size Recommendation
             </h2>
             <div id="kiteSizeRecommendation" class="min-h-[180px] px-2 py-2">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем рекомендации...</p>
+                    <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading recommendations...</p>
                 </div>
             </div>
             <div class="mt-4 text-center">
-                <p class="text-xs text-white/60">
-                    💡 Цифры показывают рекомендуемый вес райдера для текущих условий
+                <p class="text-xs text-white/60" data-i18n="kite.recommendationHint">
+                    💡 Numbers show recommended rider weight for current conditions
                 </p>
             </div>
         </div>
 
         <!-- Блок графика ветра на сегодня (история + прогноз) -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
-                📊 Ветер сегодня
+            <h2 id="todayTimelineHeader" class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
+                <span data-i18n="history.todayTimeline">📊 Today's Wind Timeline</span>
+                <span id="todayTimelineUnit" style="font-size: 0.7em; opacity: 0.8; margin-left: 8px;">(kn)</span>
             </h2>
             <div id="todayWindTimeline" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем данные...</p>
+                    <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading data...</p>
                 </div>
             </div>
         </div>
 
         <!-- Блок прогноза ветра -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
-                🌪️ Прогноз ветра на 3 дня
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0" data-i18n="forecast.title">
+                🌪️ 3-Day Wind Forecast
             </h2>
             <div id="windForecast" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем прогноз ветра...</p>
+                    <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading forecast...</p>
                 </div>
             </div>
 
@@ -326,30 +339,90 @@
 
         <!-- Блок истории ветра за последние 7 дней -->
         <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
-                📈 История ветра за 7 дней
+            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0" data-i18n="history.weekHistory">
+                📈 7-Day Wind History
             </h2>
             <div id="weekWindHistory" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем историю...</p>
+                    <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading history...</p>
                 </div>
             </div>
         </div>
 
-        <!-- Кнопка подписки на уведомления -->
-        <div class="mt-4 mb-8 text-center">
-            <button id="notificationButton" class="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg">
-                🔔 Загрузка...
-            </button>
-            <p class="text-xs text-white/60 mt-2">
-                Получайте уведомление когда ветер устойчиво держится выше 10 узлов в течение 20 минут (не чаще 1 раза в день)
-            </p>
+        <!-- Боковое меню настроек -->
+        <div id="settingsMenu" class="settings-menu">
+            <div class="settings-menu__overlay"></div>
+            <div class="settings-menu__panel">
+                <!-- Заголовок -->
+                <div class="settings-menu__header">
+                    <h2 id="menuTitle" data-i18n="menu.title">Настройки</h2>
+                    <button id="closeMenuButton" class="settings-menu__close" aria-label="Close settings">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Контент -->
+                <div class="settings-menu__content">
+                    <!-- Секция языка -->
+                    <section class="settings-section">
+                        <h3 id="languageTitle" data-i18n="menu.language">Язык</h3>
+                        <div class="language-selector">
+                            <button class="language-option" data-lang="en">
+                                🇬🇧 English
+                            </button>
+                            <button class="language-option" data-lang="ru">
+                                🇷🇺 Русский
+                            </button>
+                            <button class="language-option" data-lang="de">
+                                🇩🇪 Deutsch
+                            </button>
+                            <button class="language-option" data-lang="th">
+                                🇹🇭 ไทย
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Секция единиц измерения -->
+                    <section class="settings-section">
+                        <h3 id="unitsTitle" data-i18n="menu.units">Единицы скорости ветра</h3>
+                        <div class="units-selector">
+                            <button class="unit-option" data-unit="knots">
+                                <span class="unit-name" data-i18n="units.knots">Узлы</span>
+                                <span class="unit-symbol" data-i18n="units.knotsShort">уз</span>
+                            </button>
+                            <button class="unit-option" data-unit="ms">
+                                <span class="unit-name" data-i18n="units.metersPerSecond">Метры в секунду</span>
+                                <span class="unit-symbol" data-i18n="units.msShort">м/с</span>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Секция уведомлений -->
+                    <section class="settings-section">
+                        <h3 id="notificationsTitle" data-i18n="menu.notifications">Уведомления</h3>
+                        <button id="notificationButton" class="notification-button px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 shadow-lg" style="width: 100%;">
+                            🔔 <span data-i18n="trends.loading">Loading...</span>
+                        </button>
+                        <p class="text-xs text-white/60 mt-2" data-i18n="notifications.description">
+                            Get notified when wind is steady above 10 knots for 20 minutes (max once per day)
+                        </p>
+                        <p id="notificationStatus" class="notification-status"></p>
+                    </section>
+                </div>
+
+                <!-- Футер меню -->
+                <div class="settings-menu__footer">
+                    <p class="app-version">JollyKite v2.3.0</p>
+                </div>
+            </div>
         </div>
 
         <footer>
-            <p>&copy; 2025 Pak Nam Pran. Разработано с ❤️ для кайтсерферов</p>
-            <p class="text-xs opacity-60 mt-2">v2.1.7</p>
+            <p data-i18n="app.footer">&copy; 2025 Pak Nam Pran. Made with ❤️ for kitesurfers</p>
+            <p class="text-xs opacity-60 mt-2">v2.3.0</p>
         </footer>
     </div>
 
@@ -358,7 +431,7 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=2.1.7';
+        import App from './js/App.js?v=2.3.0';
 
         // Global app instance
         let jollyKiteApp;
@@ -412,7 +485,7 @@
                 }
 
                 // Register Service Worker with forced update
-                navigator.serviceWorker.register('./sw.js?v=2.1.7', {
+                navigator.serviceWorker.register('./sw.js?v=2.3.0', {
                     updateViaCache: 'none'
                 }).then(registration => {
                     console.log('✓ Service Worker registered:', registration.scope);

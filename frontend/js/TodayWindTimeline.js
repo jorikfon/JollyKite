@@ -4,7 +4,8 @@
  * with a bright marker separating the two
  */
 class TodayWindTimeline {
-    constructor() {
+    constructor(i18n = null) {
+        this.i18n = i18n;
         this.container = null;
         this.apiUrl = '/api';
     }
@@ -114,7 +115,7 @@ class TodayWindTimeline {
             console.log('✅ Timeline data received:', data);
 
             if (!data.history || data.history.length === 0) {
-                this.showMessage('Нет данных за сегодня');
+                this.showMessage(this.i18n ? this.i18n.t('history.noData') : 'Нет данных за сегодня');
                 return;
             }
 
@@ -307,10 +308,10 @@ class TodayWindTimeline {
 
                                 <!-- Labels -->
                                 <text x="${dividerX - 5}" y="-8" text-anchor="end" fill="rgba(255,255,255,0.9)" font-size="14" font-weight="600">
-                                    Факт
+                                    ${this.i18n ? this.i18n.t('history.actual') : 'Факт'}
                                 </text>
                                 <text x="${dividerX + 5}" y="-8" text-anchor="start" fill="rgba(255,215,0,0.9)" font-size="14" font-weight="600">
-                                    Прогноз ${correctionFactor !== 1.0 ? `×${correctionFactor}` : ''}
+                                    ${this.i18n ? this.i18n.t('history.forecast') : 'Прогноз'} ${correctionFactor !== 1.0 ? `×${correctionFactor}` : ''}
                                 </text>
                             ` : ''}
 
@@ -335,7 +336,7 @@ class TodayWindTimeline {
             this.container.innerHTML = `
                 <div class="text-center py-8">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80">Загружаем данные...</p>
+                    <p class="text-white/80">${this.i18n ? this.i18n.t('app.loading') : 'Загружаем данные...'}</p>
                 </div>
             `;
         }
@@ -353,9 +354,10 @@ class TodayWindTimeline {
 
     showError(error) {
         if (this.container) {
+            const errorText = this.i18n ? this.i18n.t('history.loadingError') : 'Ошибка загрузки';
             this.container.innerHTML = `
                 <div class="text-center py-8">
-                    <p class="text-red-400">Ошибка загрузки: ${error.message}</p>
+                    <p class="text-red-400">${errorText}: ${error.message}</p>
                 </div>
             `;
         }

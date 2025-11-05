@@ -1,3 +1,11 @@
+// Settings and i18n
+import I18nManager from './i18n/I18nManager.js?v=2.3.0';
+import SettingsManager from './settings/SettingsManager.js?v=2.3.0';
+import LocalStorageManager from './settings/LocalStorageManager.js?v=2.3.0';
+import MenuController from './settings/MenuController.js?v=2.3.0';
+import UnitConverter from './utils/UnitConverter.js?v=2.3.0';
+
+// App modules
 import config from './config.js?v=2.1.1';
 import WindUtils from './utils/WindUtils.js?v=2.1.1';
 import WindDataManager from './WindDataManager.js?v=2.1.1';
@@ -15,17 +23,22 @@ import { rippleManager } from './MaterialRipple.js?v=2.1.1';
 
 class App {
     constructor() {
+        // Settings and i18n managers
+        this.settingsManager = new SettingsManager();
+        this.i18nManager = new I18nManager();
+        this.menuController = null; // Будет инициализирован в init()
+
         // Инициализация всех менеджеров
         this.windDataManager = new WindDataManager();
         this.windStreamManager = new WindStreamManager('/api');
         this.mapController = new MapController();
-        this.forecastManager = new ForecastManager();
-        this.historyManager = new HistoryManager();
+        this.forecastManager = new ForecastManager(this.i18nManager);
+        this.historyManager = new HistoryManager(this.i18nManager);
         this.windStatistics = new WindStatistics();
-        this.notificationManager = new NotificationManager();
-        this.kiteSizeRecommendation = new KiteSizeRecommendation();
-        this.todayWindTimeline = new TodayWindTimeline();
-        this.weekWindHistory = new WeekWindHistory();
+        this.notificationManager = new NotificationManager(this.i18nManager);
+        this.kiteSizeRecommendation = new KiteSizeRecommendation(this.i18nManager);
+        this.todayWindTimeline = new TodayWindTimeline(this.i18nManager);
+        this.weekWindHistory = new WeekWindHistory(this.i18nManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
@@ -33,6 +46,7 @@ class App {
         this.liveCounterInterval = null;
         this.workingHoursCheckInterval = null;
         this.lastUpdateTime = null;
+        this.lastWindData = null; // Для перерисовки при изменении единиц
         this.isInitialized = false;
 
         // Рабочие часы станции (Bangkok time)
@@ -45,6 +59,60 @@ class App {
     async init() {
         try {
             console.log('Инициализация JollyKite App...');
+
+            // === ФАЗА 1: Инициализация настроек и i18n ===
+
+            // 1. Загрузка настроек из LocalStorage
+            this.settingsManager.loadSettings();
+            console.log('✓ Настройки загружены');
+
+            // 2. Загрузка всех переводов
+            await this.i18nManager.loadTranslations();
+            console.log('✓ Переводы загружены');
+
+            // 3. Определение языка (из настроек или браузера)
+            let locale = this.settingsManager.getSetting('locale');
+            if (!locale) {
+                locale = this.i18nManager.detectBrowserLanguage();
+                this.settingsManager.setSetting('locale', locale);
+            }
+            this.i18nManager.setLocale(locale);
+            console.log('✓ Язык установлен:', locale);
+
+            // Сохранить локаль для Service Worker (для пуш-уведомлений)
+            await LocalStorageManager.saveLocaleForServiceWorker(locale);
+
+            // Перевести всю страницу
+            this.i18nManager.translatePage();
+            console.log('✓ Страница переведена');
+
+            // Make i18n, settings, and unitConverter available globally for all components
+            window.i18n = this.i18nManager;
+            window.settings = this.settingsManager;
+            window.unitConverter = UnitConverter;
+            console.log('✓ Глобальные объекты установлены (i18n, settings, unitConverter)');
+
+            // 4. Инициализация контроллера меню
+            this.menuController = new MenuController(
+                this.settingsManager,
+                this.i18nManager
+            );
+            if (this.menuController.init()) {
+                console.log('✓ Меню настроек инициализировано');
+            }
+
+            // Подписка на изменение единиц измерения
+            window.addEventListener('unitChanged', async () => {
+                console.log('🔄 Unit changed, refreshing data...');
+                // Перерисовать текущие данные о ветре
+                if (this.lastWindData) {
+                    this.updateWindDisplay(this.lastWindData);
+                }
+                // Перерисовать графики
+                await this.loadInitialData();
+            });
+
+            // === ФАЗА 2: Инициализация основного приложения ===
 
             // Проверка и обновление видимости секций в зависимости от времени работы станции
             this.updateWorkingHoursVisibility();
@@ -267,6 +335,9 @@ class App {
             // Обновление данных с информацией о безопасности
             windData.safety = safety;
 
+            // Сохранить данные для перерисовки при изменении единиц
+            this.lastWindData = windData;
+
             // Обновление UI
             this.updateWindDisplay(windData);
 
@@ -302,6 +373,17 @@ class App {
         const trendElement = document.getElementById('windTrend');
 
         if (trendIconElement && trendTextElement && trend) {
+            // Map backend trend types to i18n keys
+            const trendTextMap = {
+                'stable': 'trends.stable',
+                'increasing_strong': 'trends.strengthening',
+                'increasing': 'trends.slightlyIncreasing',
+                'decreasing_strong': 'trends.weakening',
+                'decreasing': 'trends.slightlyDecreasing'
+            };
+            const trendKey = trendTextMap[trend.trend] || 'trends.stable';
+            const trendText = this.i18nManager.t(trendKey);
+
             // Иконка тренда
             trendIconElement.textContent = trend.icon;
             trendIconElement.style.color = trend.color;
@@ -311,10 +393,12 @@ class App {
                 const percentText = trend.percentChange > 0 ?
                     `+${Math.abs(trend.percentChange).toFixed(1)}%` :
                     `-${Math.abs(trend.percentChange).toFixed(1)}%`;
-                trendTextElement.innerHTML = `<span style="font-weight: 600;">${trend.text}</span> ${percentText} <span style="opacity: 0.7;">(за 30 мин)</span>`;
+                const for30min = this.i18nManager.t('trends.for30min');
+                trendTextElement.innerHTML = `<span style="font-weight: 600;">${trendText}</span> ${percentText} <span style="opacity: 0.7;">(${for30min})</span>`;
                 trendTextElement.style.color = trend.color;
             } else {
-                trendTextElement.innerHTML = '<span style="opacity: 0.7;">Накапливаем данные...</span>';
+                const accumulatingText = this.i18nManager.t('trends.accumulatingData');
+                trendTextElement.innerHTML = `<span style="opacity: 0.7;">${accumulatingText}</span>`;
                 trendTextElement.style.color = '#808080';
             }
 
@@ -322,7 +406,7 @@ class App {
             if (trendElement) {
                 if (trend.currentSpeed && trend.previousSpeed) {
                     const changeText = trend.change > 0 ? `+${trend.change.toFixed(1)}` : trend.change.toFixed(1);
-                    trendElement.title = `${trend.text}\n\nМетод скользящего окна:\n• Последние 30 мин: ${trend.currentSpeed.toFixed(1)} узлов\n• Предыдущие 30 мин: ${trend.previousSpeed.toFixed(1)} узлов\n• Изменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)\n\nАнализ обновляется каждые 5 минут`;
+                    trendElement.title = `${trendText}\n\nМетод скользящего окна:\n• Последние 30 мин: ${trend.currentSpeed.toFixed(1)} узлов\n• Предыдущие 30 мин: ${trend.previousSpeed.toFixed(1)} узлов\n• Изменение: ${changeText} узлов (${trend.percentChange.toFixed(1)}%)\n\nАнализ обновляется каждые 5 минут`;
                 } else {
                     trendElement.title = 'Накапливаем данные для анализа тренда\n(требуется 60 минут данных с интервалом 5 мин)';
                 }
@@ -337,21 +421,37 @@ class App {
     }
 
     updateWindDisplay(windData) {
+        // Get current unit setting
+        const currentUnit = this.settingsManager.getSetting('windSpeedUnit') || 'knots';
+        const unitSymbol = UnitConverter.getUnitSymbol(currentUnit);
+
         // Обновление скорости ветра
         const windSpeedElement = document.getElementById('windSpeed');
         if (windSpeedElement) {
-            windSpeedElement.textContent = windData.windSpeedKnots.toFixed(1);
+            const speed = UnitConverter.convert(windData.windSpeedKnots, 'knots', currentUnit);
+            windSpeedElement.textContent = speed.toFixed(1);
         }
 
-        // Обновление рекомендаций по размеру кайта
+        // Обновление единиц измерения
+        const windSpeedUnitElement = document.getElementById('windSpeedUnit');
+        if (windSpeedUnitElement) {
+            windSpeedUnitElement.textContent = unitSymbol;
+        }
+
+        // Обновление единицы измерения в заголовке графика
+        const todayTimelineUnitElement = document.getElementById('todayTimelineUnit');
+        if (todayTimelineUnitElement) {
+            todayTimelineUnitElement.textContent = `(${unitSymbol})`;
+        }
+
+        // Обновление рекомендаций по размеру кайта (всегда в узлах)
         if (this.kiteSizeRecommendation) {
             this.kiteSizeRecommendation.updateRecommendations(windData.windSpeedKnots);
         }
 
-        // Обновление индикатора на градиентном баре
+        // Обновление индикатора на градиентном баре (всегда в узлах)
         const windSpeedIndicator = document.getElementById('windSpeedIndicator');
         if (windSpeedIndicator) {
-            // Масштабируем скорость ветра на шкалу от 0 до 30+ узлов
             const maxSpeed = 30;
             const speed = Math.min(windData.windSpeedKnots, maxSpeed);
             const percentage = (speed / maxSpeed) * 100;
@@ -361,17 +461,35 @@ class App {
         // Обновление порывов ветра
         const windGustElement = document.getElementById('windGust');
         if (windGustElement) {
-            windGustElement.textContent = (windData.windGustKnots !== null && windData.windGustKnots !== undefined)
-                ? windData.windGustKnots.toFixed(1)
-                : '--';
+            if (windData.windGustKnots !== null && windData.windGustKnots !== undefined) {
+                const gust = UnitConverter.convert(windData.windGustKnots, 'knots', currentUnit);
+                windGustElement.textContent = gust.toFixed(1);
+            } else {
+                windGustElement.textContent = '--';
+            }
+        }
+
+        // Обновление единицы измерения для порывов
+        const windGustUnitElement = document.getElementById('windGustUnit');
+        if (windGustUnitElement) {
+            windGustUnitElement.textContent = unitSymbol;
         }
 
         // Обновление максимального порыва сегодня
         const maxGustElement = document.getElementById('maxGust');
         if (maxGustElement) {
-            maxGustElement.textContent = (windData.maxGustKnots !== null && windData.maxGustKnots !== undefined)
-                ? windData.maxGustKnots.toFixed(1)
-                : '--';
+            if (windData.maxGustKnots !== null && windData.maxGustKnots !== undefined) {
+                const maxGust = UnitConverter.convert(windData.maxGustKnots, 'knots', currentUnit);
+                maxGustElement.textContent = maxGust.toFixed(1);
+            } else {
+                maxGustElement.textContent = '--';
+            }
+        }
+
+        // Обновление единицы измерения для максимального порыва
+        const maxGustUnitElement = document.getElementById('maxGustUnit');
+        if (maxGustUnitElement) {
+            maxGustUnitElement.textContent = unitSymbol;
         }
 
         // Обновление направления и описания ветра
@@ -394,14 +512,14 @@ class App {
             let safetyText = windData.safety.text + ' • ';
             let textColor = windData.safety.color;
 
-            // Добавляем информацию о типе ветра (offshore/onshore)
+            // Добавляем информацию о типе ветра (offshore/onshore) с переводом
             if (windData.safety.isOffshore) {
-                safetyText = '⚠️ ОПАСНО • Отжим (offshore)';
+                safetyText = this.i18nManager.t('info.dangerOffshore');
                 textColor = '#FF4500'; // Красный для offshore - это всегда опасно!
             } else if (windData.safety.isOnshore) {
-                safetyText += 'Прижим (onshore)';
+                safetyText += this.i18nManager.t('info.onshore');
             } else {
-                safetyText += 'Боковой (sideshore)';
+                safetyText += this.i18nManager.t('info.sideshore');
             }
 
             windSubtitle.textContent = safetyText;
@@ -485,8 +603,8 @@ class App {
         const windTitle = document.getElementById('windTitle');
         const windSubtitle = document.getElementById('windSubtitle');
         const windIcon = document.getElementById('windIcon');
-        
-        if (windTitle) windTitle.textContent = 'Ошибка загрузки';
+
+        if (windTitle) windTitle.textContent = this.i18nManager.t('app.error');
         if (windSubtitle) windSubtitle.textContent = message;
         if (windIcon) windIcon.textContent = '⚠️';
     }
@@ -520,7 +638,7 @@ class App {
         // Update counter every second
         this.liveCounterInterval = setInterval(() => {
             if (!this.lastUpdateTime) {
-                counterElement.textContent = 'загрузка...';
+                counterElement.textContent = this.i18nManager.t('app.loading');
                 return;
             }
 
@@ -535,12 +653,15 @@ class App {
             // Show different messages based on how long ago
             let displayText;
             if (secondsAgo < 60) {
-                displayText = `${secondsAgo}с назад`;
+                const secondsText = this.i18nManager.t('info.secondsAgo');
+                displayText = `${secondsAgo}${secondsText}`;
             } else if (secondsAgo < 3600) {
                 const minutesAgo = Math.floor(secondsAgo / 60);
-                displayText = `${minutesAgo}м назад`;
+                const minutesText = this.i18nManager.t('info.minutesAgo');
+                displayText = `${minutesAgo}${minutesText}`;
             } else {
-                displayText = `в ${hours}:${minutes}`;
+                const atText = this.i18nManager.t('info.at');
+                displayText = `${atText} ${hours}:${minutes}`;
             }
 
             counterElement.textContent = displayText;

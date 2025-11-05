@@ -11,7 +11,8 @@
  * Where Factor depends on conditions and experience level
  */
 class KiteSizeCalculator {
-  constructor() {
+  constructor(i18n = null) {
+    this.i18n = i18n;
     // Available kite sizes in m²
     this.kiteSizes = [9, 12, 14, 17];
 
@@ -154,6 +155,19 @@ class KiteSizeCalculator {
    * Get description for suitability level
    */
   getSuitabilityText(suitability) {
+    if (this.i18n) {
+      const keys = {
+        'optimal': 'kite.optimal',
+        'good': 'kite.good',
+        'acceptable': 'kite.acceptable',
+        'too_light': 'kite.tooLight',
+        'too_strong': 'kite.tooStrong',
+        'none': 'kite.none'
+      };
+      return this.i18n.t(keys[suitability]) || '';
+    }
+
+    // Fallback to Russian
     const texts = {
       'optimal': 'Отлично!',
       'good': 'Хорошо',
@@ -169,18 +183,23 @@ class KiteSizeCalculator {
    * Get detailed recommendation text
    */
   getRecommendationText(windSpeed) {
+    // Use i18n if available, otherwise fallback to Russian
+    const t = (key, fallback) => {
+      return this.i18n ? this.i18n.t(key) : fallback;
+    };
+
     if (windSpeed < 8) {
-      return '🏖️ Слишком слабый ветер для кайтсёрфинга';
+      return t('kite.veryWeak', '🏖️ Слишком слабый ветер для кайтсёрфинга');
     } else if (windSpeed >= 8 && windSpeed < 12) {
-      return '💨 Слабый ветер - нужен большой кайт (17м)';
+      return t('kite.weak', '💨 Слабый ветер - нужен большой кайт (17м)');
     } else if (windSpeed >= 12 && windSpeed < 18) {
-      return '✨ Хорошие условия - средний кайт (12-14м)';
+      return t('kite.goodConditions', '✨ Хорошие условия - средний кайт (12-14м)');
     } else if (windSpeed >= 18 && windSpeed < 25) {
-      return '🔥 Отличные условия - маленький кайт (9-12м)';
+      return t('kite.excellentConditions', '🔥 Отличные условия - маленький кайт (9-12м)');
     } else if (windSpeed >= 25 && windSpeed < 30) {
-      return '💪 Сильный ветер - малый кайт (9м)';
+      return t('kite.strongWind', '💪 Сильный ветер - малый кайт (9м)');
     } else {
-      return '⚠️ Очень сильный ветер - для опытных!';
+      return t('kite.veryStrong', '⚠️ Очень сильный ветер - для опытных!');
     }
   }
 }

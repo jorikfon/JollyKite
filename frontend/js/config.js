@@ -49,31 +49,31 @@ const config = {
             extreme: 30     // Dangerous
         },
 
-        // Safety levels configuration
+        // Safety levels configuration with i18n keys
         levels: {
             low: {
                 level: 'low',
-                text: 'Слабый ветер',
+                i18nKey: 'wind.safety.weak',
                 color: '#87CEEB'
             },
             danger: {
                 level: 'danger',
-                text: 'Опасно!',
+                i18nKey: 'wind.safety.dangerous',
                 color: '#FF4500'
             },
             high: {
                 level: 'high',
-                text: 'Отличные условия!',
+                i18nKey: 'wind.safety.excellent',
                 color: '#00FF00'
             },
             good: {
                 level: 'good',
-                text: 'Хорошие условия',
+                i18nKey: 'wind.safety.good',
                 color: '#FFD700'
             },
             medium: {
                 level: 'medium',
-                text: 'Умеренно',
+                i18nKey: 'wind.safety.moderate',
                 color: '#FFA500'
             }
         }
@@ -127,49 +127,45 @@ const config = {
     },
 
     // Wind Speed Categories
+    // Wind categories with i18n keys
     windCategories: [
         {
             maxSpeed: 5,
             icon: '🍃',
-            title: 'Штиль',
-            subtitle: 'Ветра практически нет'
+            i18nKey: 'calm'  // Use: window.i18n.t('wind.categories.calm.title')
         },
         {
             maxSpeed: 12,
             icon: '💨',
-            title: 'Легкий ветер',
-            subtitle: 'узлов'
+            i18nKey: 'light'
         },
         {
             maxSpeed: 20,
             icon: '🌬️',
-            title: 'Умеренный ветер',
-            subtitle: 'узлов - отлично для кайта!'
+            i18nKey: 'moderate'
         },
         {
             maxSpeed: 30,
             icon: '💨',
-            title: 'Сильный ветер',
-            subtitle: 'узлов - для опытных'
+            i18nKey: 'strong'
         },
         {
             maxSpeed: Infinity,
             icon: '⚡',
-            title: 'Экстремальный ветер',
-            subtitle: 'узлов - осторожно!'
+            i18nKey: 'extreme'
         }
     ],
 
-    // Cardinal Directions
+    // Cardinal Directions with i18n keys
     cardinalDirections: [
-        { min: 337.5, max: 22.5, name: 'С' },     // North
-        { min: 22.5, max: 67.5, name: 'СВ' },     // Northeast
-        { min: 67.5, max: 112.5, name: 'В' },     // East
-        { min: 112.5, max: 157.5, name: 'ЮВ' },   // Southeast
-        { min: 157.5, max: 202.5, name: 'Ю' },    // South
-        { min: 202.5, max: 247.5, name: 'ЮЗ' },   // Southwest
-        { min: 247.5, max: 292.5, name: 'З' },    // West
-        { min: 292.5, max: 337.5, name: 'СЗ' }    // Northwest
+        { min: 337.5, max: 22.5, i18nKey: 'N' },     // North
+        { min: 22.5, max: 67.5, i18nKey: 'NE' },     // Northeast
+        { min: 67.5, max: 112.5, i18nKey: 'E' },     // East
+        { min: 112.5, max: 157.5, i18nKey: 'SE' },   // Southeast
+        { min: 157.5, max: 202.5, i18nKey: 'S' },    // South
+        { min: 202.5, max: 247.5, i18nKey: 'SW' },   // Southwest
+        { min: 247.5, max: 292.5, i18nKey: 'W' },    // West
+        { min: 292.5, max: 337.5, i18nKey: 'NW' }    // Northwest
     ],
 
     // Local Storage Keys
