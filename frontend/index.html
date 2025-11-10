@@ -506,6 +506,14 @@
                         });
                     });
                 }).catch(err => console.log('✗ Service Worker registration failed:', err));
+
+                // Listen for messages from Service Worker (for language change reload)
+                navigator.serviceWorker.addEventListener('message', event => {
+                    if (event.data && event.data.type === 'RELOAD') {
+                        console.log('✓ Received reload request from Service Worker');
+                        window.location.reload(true);
+                    }
+                });
             });
         }
     </script>

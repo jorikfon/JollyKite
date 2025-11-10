@@ -178,9 +178,21 @@ class MenuController {
     // Сохранить локаль для Service Worker (для пуш-уведомлений)
     LocalStorageManager.saveLocaleForServiceWorker(locale);
 
-    // Перезагрузить страницу для полного применения перевода
+    // Полная перезагрузка приложения для PWA
     setTimeout(() => {
-      window.location.reload();
+      // Используем hard reload для обхода кеша Service Worker
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        // Отправляем сообщение Service Worker для очистки кеша
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SKIP_WAITING_AND_RELOAD',
+        });
+
+        // Выполняем жесткую перезагрузку
+        window.location.reload(true);
+      } else {
+        // Если Service Worker не активен, просто перезагружаем
+        window.location.reload(true);
+      }
     }, 300); // Небольшая задержка для сохранения настройки
   }
 

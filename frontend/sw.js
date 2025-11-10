@@ -371,10 +371,39 @@ self.addEventListener('push', async event => {
 // Обработка кликов по уведомлениям
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  
+
   if (event.action === 'view') {
     event.waitUntil(
       clients.openWindow(event.notification.data || '/')
+    );
+  }
+});
+
+// Обработка сообщений от клиента (для перезагрузки при смене языка)
+self.addEventListener('message', event => {
+  console.log('[SW] Message received:', event.data);
+
+  if (event.data && event.data.type === 'SKIP_WAITING_AND_RELOAD') {
+    console.log('[SW] Force reload requested, clearing caches...');
+
+    // Очистка всех кешей для полной перезагрузки
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            console.log('[SW] Deleting cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      }).then(() => {
+        console.log('[SW] All caches cleared, reloading clients...');
+        // Уведомляем все клиенты о необходимости перезагрузки
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'RELOAD' });
+          });
+        });
+      })
     );
   }
 });
