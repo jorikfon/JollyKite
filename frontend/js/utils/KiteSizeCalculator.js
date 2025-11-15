@@ -1,203 +1,254 @@
 /**
- * KiteSizeCalculator - calculates recommended kite size based on wind speed and rider weight
+ * KiteSizeCalculator - calculates recommended kite size based on wind speed, rider weight, and board type
  *
  * Based on general kitesurfing formulas:
- * - Lighter winds (5-12 knots) require larger kites
- * - Medium winds (12-20 knots) require medium kites
- * - Strong winds (20-30+ knots) require smaller kites
+ * - Lighter winds require larger kites
+ * - Stronger winds require smaller kites
+ * - Hydrofoil requires less power than twintip
  *
- * Formula approximation:
- * Kite Size (m²) ≈ Rider Weight (kg) / Wind Speed (knots) * Factor
- * Where Factor depends on conditions and experience level
+ * Formula: Optimal Weight = (KiteSize * WindSpeed²) / Factor
  */
+import config from '../config.js';
+
 class KiteSizeCalculator {
   constructor(i18n = null) {
     this.i18n = i18n;
-    // Available kite sizes in m²
-    this.kiteSizes = [9, 12, 14, 17];
 
-    // Кайтсерфинг коэффициенты для разных условий
-    // Для twin-tip досок и среднего уровня катания
-    // Скорректировано на основе реальных данных: при 14 узлах 12м кайт для 55 кг, 14м для 68 кг
-    this.baseFactor = 3.0;  // Базовый коэффициент (увеличен для уменьшения рекомендуемого веса)
+    // Get kite sizes from config
+    this.kiteSizes = config.kiteSize.sizes;
 
-    // Диапазоны веса для каждого размера кайта при разной силе ветра
-    // Основано на стандартных таблицах производителей кайтов
-    this.kiteRanges = {
-      9: {
-        minWind: 18,   // минимальная скорость ветра для 9м кайта
-        optimalWind: 25,
-        maxWind: 40,
-        weightRange: [50, 90]  // диапазон веса райдеров
-      },
-      12: {
-        minWind: 13,
-        optimalWind: 18,
-        maxWind: 30,
-        weightRange: [50, 100]
-      },
-      14: {
-        minWind: 10,
-        optimalWind: 15,
-        maxWind: 25,
-        weightRange: [50, 110]
-      },
-      17: {
-        minWind: 8,
-        optimalWind: 12,
-        maxWind: 20,
-        weightRange: [50, 120]
-      }
-    };
+    // Default settings
+    this.riderWeight = config.kiteSize.defaultRiderWeight;
+    this.boardType = config.kiteSize.defaultBoardType;
+  }
+
+  /**
+   * Set rider weight
+   * @param {number} weight - Rider weight in kg
+   */
+  setRiderWeight(weight) {
+    this.riderWeight = weight;
+  }
+
+  /**
+   * Set board type
+   * @param {string} type - 'twintip' or 'hydrofoil'
+   */
+  setBoardType(type) {
+    if (config.kiteSize.boardTypes[type]) {
+      this.boardType = type;
+    }
   }
 
   /**
    * Calculate optimal rider weight for a given kite size and wind speed
-   * Returns weight in 5kg increments
+   * Formula: Weight = (KiteSize * WindSpeed²) / Factor
+   * @param {number} kiteSize - Kite size in m²
+   * @param {number} windSpeed - Wind speed in knots
+   * @param {string} boardType - 'twintip' or 'hydrofoil'
+   * @returns {number} Optimal weight in kg (rounded to nearest kg)
    */
-  calculateOptimalWeight(kiteSize, windSpeed) {
-    // Базовая формула: Weight = KiteSize * WindSpeed / Factor
-    const baseWeight = (kiteSize * windSpeed) / this.baseFactor;
+  calculateOptimalWeight(kiteSize, windSpeed, boardType = null) {
+    const type = boardType || this.boardType;
+    const calcParams = config.kiteSize.calculation[type];
 
-    // Корректировки для разных размеров кайта
-    let adjustedWeight = baseWeight;
+    // Formula: Weight = (KiteSize * WindSpeed²) / Factor
+    const baseWeight = (kiteSize * Math.pow(windSpeed, 2)) / calcParams.factor;
 
-    // Для больших кайтов (17м) в слабый ветер нужно больше веса
-    if (kiteSize === 17 && windSpeed < 10) {
-      adjustedWeight *= 1.15;
-    }
+    // Round to nearest 1 kg
+    const roundedWeight = Math.round(baseWeight);
 
-    // Для маленьких кайтов (9м) в сильный ветер нужно меньше веса
-    if (kiteSize === 9 && windSpeed > 25) {
-      adjustedWeight *= 0.9;
-    }
-
-    // Округляем до 5 кг
-    const roundedWeight = Math.round(adjustedWeight / 5) * 5;
-
-    // Проверяем, находится ли вес в разумном диапазоне
-    const range = this.kiteRanges[kiteSize];
-    if (range) {
-      // Ограничиваем вес разумными пределами
-      return Math.max(range.weightRange[0], Math.min(range.weightRange[1], roundedWeight));
-    }
-
-    return roundedWeight;
+    // Keep weight in reasonable range (40-120 kg)
+    return Math.max(40, Math.min(120, roundedWeight));
   }
 
   /**
-   * Get recommendations for all kite sizes based on current wind speed
-   * Returns array of objects with kite size and recommended weight
+   * Calculate optimal kite size for a specific rider weight and wind speed
+   * Formula: KiteSize = (RiderWeight * Factor) / WindSpeed²
+   * @param {number} riderWeight - Rider weight in kg
+   * @param {number} windSpeed - Wind speed in knots
+   * @param {string} boardType - 'twintip' or 'hydrofoil'
+   * @returns {number} Optimal kite size in m²
    */
-  getRecommendations(windSpeed) {
-    return this.kiteSizes.map(size => {
-      const range = this.kiteRanges[size];
-      const weight = this.calculateOptimalWeight(size, windSpeed);
+  calculateOptimalKiteSize(riderWeight, windSpeed, boardType = null) {
+    const type = boardType || this.boardType;
+    const calcParams = config.kiteSize.calculation[type];
 
-      // Определяем, подходит ли этот размер для текущего ветра
-      let suitability = 'none';
-      let color = '#666';
+    // Formula: KiteSize = (RiderWeight * Factor) / WindSpeed²
+    const optimalSize = (riderWeight * calcParams.factor) / Math.pow(windSpeed, 2);
 
-      if (windSpeed >= range.minWind && windSpeed <= range.maxWind) {
-        // Кайт подходит для текущих условий
-        const distanceToOptimal = Math.abs(windSpeed - range.optimalWind);
+    return optimalSize;
+  }
 
-        if (distanceToOptimal <= 3) {
-          suitability = 'optimal';
-          color = '#00FF00';  // Зелёный - оптимально
-        } else if (distanceToOptimal <= 5) {
-          suitability = 'good';
-          color = '#90EE90';  // Светло-зелёный - хорошо
-        } else {
-          suitability = 'acceptable';
-          color = '#FFD700';  // Жёлтый - приемлемо
-        }
-      } else if (windSpeed < range.minWind) {
-        suitability = 'too_light';
-        color = '#87CEEB';  // Голубой - слабо
+  /**
+   * Find closest kite size from available sizes
+   * @param {number} optimalSize - Calculated optimal size
+   * @returns {number} Closest available kite size
+   */
+  findClosestKiteSize(optimalSize) {
+    return this.kiteSizes.reduce((prev, curr) => {
+      return Math.abs(curr - optimalSize) < Math.abs(prev - optimalSize) ? curr : prev;
+    });
+  }
+
+  /**
+   * Get suitability classification for a kite size based on how close it is to optimal
+   * @param {number} kiteSize - Kite size to evaluate
+   * @param {number} optimalSize - Optimal kite size
+   * @param {number} windSpeed - Current wind speed
+   * @param {string} boardType - Board type
+   * @returns {object} Suitability info
+   */
+  getSuitability(kiteSize, optimalSize, windSpeed, boardType = null) {
+    const type = boardType || this.boardType;
+    const calcParams = config.kiteSize.calculation[type];
+
+    // Check if wind is in usable range
+    if (windSpeed < calcParams.minWind) {
+      return {
+        level: 'none',
+        i18nKey: 'kite.tooWeak',
+        color: '#87CEEB',
+        icon: '🏖️'
+      };
+    }
+
+    if (windSpeed > calcParams.maxWind) {
+      return {
+        level: 'none',
+        i18nKey: 'kite.tooStrong',
+        color: '#FF6347',
+        icon: '⚠️'
+      };
+    }
+
+    // Calculate difference percentage from optimal
+    const difference = Math.abs(kiteSize - optimalSize);
+    const percentDiff = (difference / optimalSize) * 100;
+
+    // Classify suitability
+    if (percentDiff <= 10) {
+      return {
+        level: 'optimal',
+        i18nKey: 'kite.optimal',
+        color: '#00FF00',
+        icon: '🎯'
+      };
+    } else if (percentDiff <= 20) {
+      return {
+        level: 'good',
+        i18nKey: 'kite.good',
+        color: '#90EE90',
+        icon: '✅'
+      };
+    } else if (percentDiff <= 35) {
+      return {
+        level: 'acceptable',
+        i18nKey: 'kite.acceptable',
+        color: '#FFD700',
+        icon: '👍'
+      };
+    } else {
+      // Determine if too small or too large
+      if (kiteSize < optimalSize) {
+        return {
+          level: 'too_small',
+          i18nKey: 'kite.tooSmall',
+          color: '#FFA500',
+          icon: '⬇️'
+        };
       } else {
-        suitability = 'too_strong';
-        color = '#FF6347';  // Красный - слишком сильно
+        return {
+          level: 'too_large',
+          i18nKey: 'kite.tooLarge',
+          color: '#FF8C00',
+          icon: '⬆️'
+        };
       }
+    }
+  }
+
+  /**
+   * Get recommendations for all kite sizes based on current conditions
+   * @param {number} windSpeed - Wind speed in knots
+   * @param {number} riderWeight - Rider weight in kg (optional, uses default if not provided)
+   * @param {string} boardType - Board type (optional, uses default if not provided)
+   * @returns {Array} Array of recommendations for each kite size
+   */
+  getRecommendations(windSpeed, riderWeight = null, boardType = null) {
+    const weight = riderWeight || this.riderWeight;
+    const type = boardType || this.boardType;
+
+    // Calculate optimal size for the rider
+    const optimalSize = this.calculateOptimalKiteSize(weight, windSpeed, type);
+    const closestSize = this.findClosestKiteSize(optimalSize);
+
+    // Generate recommendations for each kite size
+    return this.kiteSizes.map(size => {
+      const recommendedWeight = this.calculateOptimalWeight(size, windSpeed, type);
+      const suitability = this.getSuitability(size, optimalSize, windSpeed, type);
 
       return {
         size,
-        weight,
-        suitability,
-        color,
-        range
+        recommendedWeight,
+        suitability: suitability.level,
+        i18nKey: suitability.i18nKey,
+        color: suitability.color,
+        icon: suitability.icon,
+        isOptimal: size === closestSize,
+        optimalSize: optimalSize.toFixed(1)
       };
     });
   }
 
   /**
-   * Find best kite size for specific rider weight and wind speed
+   * Get suitability text (translated)
+   * @param {string} suitabilityKey - i18n key for suitability
+   * @returns {string} Translated text
    */
-  findBestKiteSize(riderWeight, windSpeed) {
-    const recommendations = this.getRecommendations(windSpeed);
-
-    // Находим кайт, где вес райдера ближе всего к рекомендованному
-    let bestMatch = null;
-    let minDifference = Infinity;
-
-    recommendations.forEach(rec => {
-      const difference = Math.abs(rec.weight - riderWeight);
-      if (difference < minDifference && rec.suitability !== 'none') {
-        minDifference = difference;
-        bestMatch = rec;
-      }
-    });
-
-    return bestMatch;
-  }
-
-  /**
-   * Get description for suitability level
-   */
-  getSuitabilityText(suitability) {
+  getSuitabilityText(suitabilityKey) {
     if (this.i18n) {
-      const keys = {
-        'optimal': 'kite.optimal',
-        'good': 'kite.good',
-        'acceptable': 'kite.acceptable',
-        'too_light': 'kite.tooLight',
-        'too_strong': 'kite.tooStrong',
-        'none': 'kite.none'
-      };
-      return this.i18n.t(keys[suitability]) || '';
+      return this.i18n.t(suitabilityKey);
     }
 
     // Fallback to Russian
     const texts = {
-      'optimal': 'Отлично!',
-      'good': 'Хорошо',
-      'acceptable': 'Подойдёт',
-      'too_light': 'Слабо',
-      'too_strong': 'Сильно',
-      'none': 'Не подходит'
+      'kite.optimal': 'Отлично!',
+      'kite.good': 'Хорошо',
+      'kite.acceptable': 'Подойдёт',
+      'kite.tooSmall': 'Маловат',
+      'kite.tooLarge': 'Великоват',
+      'kite.tooWeak': 'Слабый ветер',
+      'kite.tooStrong': 'Сильный ветер',
+      'kite.none': 'Не подходит'
     };
-    return texts[suitability] || '';
+    return texts[suitabilityKey] || '';
   }
 
   /**
-   * Get detailed recommendation text
+   * Get general recommendation text based on wind speed
+   * @param {number} windSpeed - Wind speed in knots
+   * @param {string} boardType - Board type
+   * @returns {string} Recommendation text
    */
-  getRecommendationText(windSpeed) {
-    // Use i18n if available, otherwise fallback to Russian
+  getRecommendationText(windSpeed, boardType = null) {
+    const type = boardType || this.boardType;
+    const calcParams = config.kiteSize.calculation[type];
+
     const t = (key, fallback) => {
       return this.i18n ? this.i18n.t(key) : fallback;
     };
 
-    if (windSpeed < 8) {
+    if (windSpeed < calcParams.minWind) {
       return t('kite.veryWeak', '🏖️ Слишком слабый ветер для кайтсёрфинга');
-    } else if (windSpeed >= 8 && windSpeed < 12) {
-      return t('kite.weak', '💨 Слабый ветер - нужен большой кайт (17м)');
+    } else if (windSpeed >= calcParams.minWind && windSpeed < 12) {
+      return t('kite.lightWind', '💨 Слабый ветер - нужен большой кайт (14-17м)');
     } else if (windSpeed >= 12 && windSpeed < 18) {
-      return t('kite.goodConditions', '✨ Хорошие условия - средний кайт (12-14м)');
+      return t('kite.goodConditions', '✨ Хорошие условия - средний кайт (11-14м)');
     } else if (windSpeed >= 18 && windSpeed < 25) {
       return t('kite.excellentConditions', '🔥 Отличные условия - маленький кайт (9-12м)');
-    } else if (windSpeed >= 25 && windSpeed < 30) {
-      return t('kite.strongWind', '💪 Сильный ветер - малый кайт (9м)');
+    } else if (windSpeed >= 25 && windSpeed < calcParams.maxWind) {
+      return t('kite.strongWind', '💪 Сильный ветер - малый кайт (8-9м)');
     } else {
       return t('kite.veryStrong', '⚠️ Очень сильный ветер - для опытных!');
     }

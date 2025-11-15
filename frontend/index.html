@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title id="page-title">Pak Nam Pran Kitesurfing - Прогноз ветра 🏄‍♂️</title>
 
     <!-- PWA Meta Tags -->
@@ -400,6 +403,41 @@
                         </div>
                     </section>
 
+                    <!-- Секция настроек райдера -->
+                    <section class="settings-section">
+                        <h3 id="riderTitle" data-i18n="menu.riderPreferences">Настройки райдера</h3>
+
+                        <!-- Тип доски -->
+                        <div class="rider-setting">
+                            <label class="rider-setting-label" data-i18n="menu.boardType">Тип доски</label>
+                            <div class="board-type-selector">
+                                <button class="board-type-option" data-board="twintip">
+                                    <span class="board-type-icon">🏄</span>
+                                    <span class="board-type-name" data-i18n="menu.twintip">Твинтип</span>
+                                </button>
+                                <button class="board-type-option" data-board="hydrofoil">
+                                    <span class="board-type-icon">🪂</span>
+                                    <span class="board-type-name" data-i18n="menu.hydrofoil">Гидрофойл</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Вес райдера -->
+                        <div class="rider-setting">
+                            <label class="rider-setting-label" for="riderWeight" data-i18n="menu.riderWeight">Вес райдера (кг)</label>
+                            <div class="rider-weight-input">
+                                <input type="number" id="riderWeight" min="40" max="120" step="1" value="75" class="weight-input">
+                                <div class="weight-buttons">
+                                    <button class="weight-button weight-button--minus" data-action="decrease">-</button>
+                                    <button class="weight-button weight-button--plus" data-action="increase">+</button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-white/60 mt-2" data-i18n="menu.weightHint">
+                                Используется для расчета оптимального размера кайта
+                            </p>
+                        </div>
+                    </section>
+
                     <!-- Секция уведомлений -->
                     <section class="settings-section">
                         <h3 id="notificationsTitle" data-i18n="menu.notifications">Уведомления</h3>
@@ -431,14 +469,25 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=2.3.0';
+        import App from './js/App.js?v=2.5.7';
 
         // Global app instance
         let jollyKiteApp;
 
+        // Force Service Worker update
+        const APP_VERSION = '2.5.7';
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    console.log('Updating Service Worker...');
+                    registration.update();
+                });
+            });
+        }
+
         // Initialize the app when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Initializing JollyKite App...');
+            console.log(`Initializing JollyKite App v${APP_VERSION}...`);
 
             try {
                 jollyKiteApp = new App();

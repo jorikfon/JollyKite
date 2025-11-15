@@ -7,7 +7,9 @@ const config = {
     // API Endpoints
     // Note: All API calls now go through the backend
     api: {
-        backend: '/api' // Backend API endpoint (proxied through nginx)
+        backend: window.location.hostname === 'localhost' && window.location.port === '8000'
+            ? 'http://localhost:3000/api'  // Development: direct to backend
+            : '/api'  // Production: proxied through nginx
     },
 
     // Geographical Locations
@@ -193,6 +195,40 @@ const config = {
             270: { x: 0, y: 0 },    // West (З)
             315: { x: 0, y: 0 }     // Northwest (СЗ)
         }
+    },
+
+    // Kite Size Recommendation Configuration
+    kiteSize: {
+        // Available kite sizes in square meters
+        sizes: [8, 9, 10, 11, 12, 13.5, 14, 17],
+
+        // Board types
+        boardTypes: {
+            twintip: 'twintip',
+            hydrofoil: 'hydrofoil'
+        },
+
+        // Kite size calculation parameters
+        // Formula: kiteSize = (riderWeight * windFactor) / windSpeed^2
+        calculation: {
+            // Wind factors for different board types (higher = needs more kite)
+            twintip: {
+                minWind: 8,      // Minimum wind for recommendation (knots)
+                maxWind: 35,     // Maximum wind for recommendation (knots)
+                factor: 35       // Base calculation factor for twintip
+            },
+            hydrofoil: {
+                minWind: 6,      // Minimum wind for recommendation (knots)
+                maxWind: 30,     // Maximum wind for recommendation (knots)
+                factor: 25       // Base calculation factor for hydrofoil (needs less power)
+            }
+        },
+
+        // Default rider weight (kg)
+        defaultRiderWeight: 75,
+
+        // Default board type
+        defaultBoardType: 'twintip'
     }
 };
 

@@ -16,7 +16,7 @@ import WindArrowController from './WindArrowController.js?v=2.1.1';
 import HistoryManager from './HistoryManager.js?v=2.1.1';
 import WindStatistics from './WindStatistics.js?v=2.1.1';
 import NotificationManager from './NotificationManager.js?v=2.1.1';
-import KiteSizeRecommendation from './KiteSizeRecommendation.js?v=2.1.1';
+import KiteSizeSlider from './KiteSizeSlider.js';
 import TodayWindTimeline from './TodayWindTimeline.js?v=2.1.1';
 import WeekWindHistory from './WeekWindHistory.js?v=2.1.1';
 import { rippleManager } from './MaterialRipple.js?v=2.1.1';
@@ -36,8 +36,8 @@ class App {
         this.historyManager = new HistoryManager(this.i18nManager);
         this.windStatistics = new WindStatistics();
         this.notificationManager = new NotificationManager(this.i18nManager);
-        this.kiteSizeRecommendation = new KiteSizeRecommendation(this.i18nManager);
-        this.todayWindTimeline = new TodayWindTimeline(this.i18nManager);
+        this.kiteSizeSlider = new KiteSizeSlider(this.i18nManager);
+        this.todayWindTimeline = new TodayWindTimeline(this.i18nManager, this.settingsManager);
         this.weekWindHistory = new WeekWindHistory(this.i18nManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
@@ -112,6 +112,15 @@ class App {
                 await this.loadInitialData();
             });
 
+            // Подписка на изменение настроек райдера
+            window.addEventListener('riderSettingsChanged', () => {
+                console.log('🔄 Rider settings changed, updating kite recommendations...');
+                // Обновить рекомендации по размеру кайта
+                if (this.lastWindData && this.kiteSizeSlider) {
+                    this.kiteSizeSlider.onSettingsChange();
+                }
+            });
+
             // === ФАЗА 2: Инициализация основного приложения ===
 
             // Проверка и обновление видимости секций в зависимости от времени работы станции
@@ -135,11 +144,11 @@ class App {
                 console.log('✓ Менеджер прогнозов инициализирован');
             }
 
-            // Инициализация рекомендаций по размеру кайта
-            if (!this.kiteSizeRecommendation.init()) {
-                console.warn('⚠ Не удалось инициализировать рекомендации по размеру кайта');
+            // Инициализация слайдера с размерами кайтов
+            if (!this.kiteSizeSlider.init()) {
+                console.warn('⚠ Не удалось инициализировать слайдер кайтов');
             } else {
-                console.log('✓ Рекомендации по размеру кайта инициализированы');
+                console.log('✓ Слайдер кайтов инициализирован');
             }
 
             // Инициализация графика ветра на сегодня
@@ -445,8 +454,8 @@ class App {
         }
 
         // Обновление рекомендаций по размеру кайта (всегда в узлах)
-        if (this.kiteSizeRecommendation) {
-            this.kiteSizeRecommendation.updateRecommendations(windData.windSpeedKnots);
+        if (this.kiteSizeSlider) {
+            this.kiteSizeSlider.updateRecommendations(windData.windSpeedKnots);
         }
 
         // Обновление индикатора на градиентном баре (всегда в узлах)

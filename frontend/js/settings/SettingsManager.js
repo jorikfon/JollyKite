@@ -16,6 +16,8 @@ class SettingsManager {
     notificationsEnabled: false,
     theme: 'auto',          // auto, light, dark (для будущего)
     version: '2.3.0',
+    boardType: 'twintip',   // twintip, hydrofoil
+    riderWeight: 75,        // kg (40-120)
   };
 
   /**
@@ -27,6 +29,8 @@ class SettingsManager {
     notificationsEnabled: (value) => typeof value === 'boolean',
     theme: (value) => ['auto', 'light', 'dark'].includes(value),
     version: (value) => typeof value === 'string',
+    boardType: (value) => ['twintip', 'hydrofoil'].includes(value),
+    riderWeight: (value) => typeof value === 'number' && value >= 40 && value <= 120,
   };
 
   /**

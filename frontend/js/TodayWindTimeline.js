@@ -1,11 +1,14 @@
+import WindUtils from './utils/WindUtils.js';
+
 /**
  * TodayWindTimeline - displays combined history + forecast for today
  * Shows actual wind data transitioning to extrapolated forecast
  * with a bright marker separating the two
  */
 class TodayWindTimeline {
-    constructor(i18n = null) {
+    constructor(i18n = null, settings = null) {
         this.i18n = i18n;
+        this.settings = settings;
         this.container = null;
         this.apiUrl = '/api';
     }
@@ -208,6 +211,46 @@ class TodayWindTimeline {
     }
 
     /**
+     * Find peak values in history data with minimum 30-minute spacing
+     */
+    findPeaks(timeline, forecastStartIndex) {
+        if (forecastStartIndex <= 0) return [];
+
+        const historyData = timeline.slice(0, forecastStartIndex);
+        if (historyData.length === 0) return [];
+
+        // Create array of peaks with their indices
+        const peaks = historyData
+            .map((point, index) => ({
+                index,
+                speed: point.speed,
+                hour: point.hour,
+                minute: point.minute,
+                timeMinutes: point.hour * 60 + point.minute
+            }))
+            .sort((a, b) => b.speed - a.speed); // Sort by speed descending
+
+        // Select top peaks with minimum 30-minute spacing
+        const selectedPeaks = [];
+        const minSpacingMinutes = 30;
+
+        for (const peak of peaks) {
+            // Check if this peak is at least 30 minutes away from all selected peaks
+            const tooClose = selectedPeaks.some(selected =>
+                Math.abs(peak.timeMinutes - selected.timeMinutes) < minSpacingMinutes
+            );
+
+            if (!tooClose) {
+                selectedPeaks.push(peak);
+                if (selectedPeaks.length >= 3) break; // Max 3 peaks
+            }
+        }
+
+        // Sort by time for display
+        return selectedPeaks.sort((a, b) => a.timeMinutes - b.timeMinutes);
+    }
+
+    /**
      * Render the timeline SVG
      */
     renderTimeline(timeline, forecastStartIndex, currentTime, correctionFactor) {
@@ -215,6 +258,9 @@ class TodayWindTimeline {
 
         const speeds = timeline.map(t => t.speed);
         const maxSpeed = Math.max(...speeds) * 1.1;
+
+        // Find peak values in history data
+        const peaks = this.findPeaks(timeline, forecastStartIndex);
 
         const width = 1000;
         const height = 156;
@@ -279,6 +325,56 @@ class TodayWindTimeline {
                             <!-- Smooth wind curve line -->
                             <path d="${windPath}" fill="none" stroke="url(#todayWindGradient)"
                                   stroke-width="3" filter="url(#glowToday)"/>
+
+                            <!-- Peak markers (only in history section) -->
+                            ${peaks.map(peak => {
+                                const peakX = timePositions[peak.index] * chartWidth;
+                                const peakY = height - (peak.speed / maxSpeed) * height;
+
+                                // Get current unit setting
+                                const currentUnit = this.settings ? this.settings.getSetting('windSpeedUnit') : 'knots';
+                                const unitShort = currentUnit === 'knots' ?
+                                    (this.i18n ? this.i18n.t('units.knotsShort') : 'kn') :
+                                    (this.i18n ? this.i18n.t('units.msShort') : 'm/s');
+
+                                // Convert speed if needed
+                                const displaySpeed = currentUnit === 'ms' ?
+                                    WindUtils.knotsToMs(peak.speed) :
+                                    peak.speed;
+
+                                const speedText = `${displaySpeed.toFixed(1)} ${unitShort}`;
+                                const timeText = `${String(peak.hour).padStart(2, '0')}:${String(peak.minute).padStart(2, '0')}`;
+
+                                return `
+                                    <!-- Peak marker circle -->
+                                    <circle cx="${peakX}" cy="${peakY}" r="6"
+                                            fill="#FF6B6B" stroke="white" stroke-width="2"/>
+
+                                    <!-- Peak value label -->
+                                    <g transform="translate(${peakX}, ${peakY - 15})">
+                                        <!-- Background rect for better readability -->
+                                        <rect x="-28" y="-14" width="56" height="14"
+                                              rx="3" fill="rgba(255, 107, 107, 0.9)"/>
+                                        <!-- Speed text -->
+                                        <text x="0" y="-4"
+                                              text-anchor="middle"
+                                              fill="white"
+                                              font-size="11"
+                                              font-weight="700">
+                                            ${speedText}
+                                        </text>
+                                    </g>
+
+                                    <!-- Time label below -->
+                                    <text x="${peakX}" y="${peakY + 20}"
+                                          text-anchor="middle"
+                                          fill="rgba(255, 107, 107, 0.9)"
+                                          font-size="10"
+                                          font-weight="600">
+                                        ${timeText}
+                                    </text>
+                                `;
+                            }).join('')}
 
                             <!-- Wind speed labels on Y axis -->
                             ${[0, maxSpeed * 0.5, maxSpeed].map((speed, i) => `

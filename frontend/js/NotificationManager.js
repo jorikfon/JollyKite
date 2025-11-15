@@ -1,10 +1,12 @@
+import config from './config.js';
+
 /**
  * NotificationManager - manages push notification subscriptions
  */
 class NotificationManager {
     constructor(i18n = null) {
         this.i18n = i18n;
-        this.apiBaseUrl = '/api';
+        this.apiBaseUrl = config.api.backend;
         this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
         this.subscription = null;
     }

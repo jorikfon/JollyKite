@@ -24,6 +24,9 @@ class MenuController {
     this.overlay = null;
     this.languageButtons = [];
     this.unitButtons = [];
+    this.boardTypeButtons = [];
+    this.weightInput = null;
+    this.weightButtons = [];
 
     this.isOpen = false;
   }
@@ -51,6 +54,18 @@ class MenuController {
       this.unitButtons = Array.from(
         this.settingsMenu.querySelectorAll('.unit-option')
       );
+      this.boardTypeButtons = Array.from(
+        this.settingsMenu.querySelectorAll('.board-type-option')
+      );
+
+      // Получить элементы веса
+      this.weightInput = document.getElementById('riderWeight');
+      this.weightButtons = Array.from(
+        this.settingsMenu.querySelectorAll('.weight-button')
+      );
+
+      console.log('Weight input found:', !!this.weightInput);
+      console.log('Weight buttons found:', this.weightButtons.length);
 
       // Установить обработчики событий
       this.setupEventListeners();
@@ -58,6 +73,8 @@ class MenuController {
       // Инициализировать UI
       this.updateLanguageButtons();
       this.updateUnitButtons();
+      this.updateBoardTypeButtons();
+      this.updateWeightInput();
       this.translateUI();
 
       console.log('✓ MenuController initialized');
@@ -99,6 +116,52 @@ class MenuController {
       button.addEventListener('click', () => {
         const unit = button.dataset.unit;
         this.handleUnitChange(unit);
+      });
+    });
+
+    // Переключение типа доски
+    this.boardTypeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const boardType = button.dataset.board;
+        this.handleBoardTypeChange(boardType);
+      });
+    });
+
+    // Изменение веса через input
+    if (this.weightInput) {
+      // Обработка при потере фокуса (после завершения ввода)
+      this.weightInput.addEventListener('blur', (e) => {
+        console.log('Weight input blur event:', e.target.value);
+        const weight = parseInt(this.weightInput.value, 10);
+        if (!isNaN(weight)) {
+          this.handleWeightChange(weight);
+        }
+      });
+
+      // Обработка при нажатии Enter
+      this.weightInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          console.log('Weight input Enter pressed:', e.target.value);
+          const weight = parseInt(this.weightInput.value, 10);
+          if (!isNaN(weight)) {
+            this.handleWeightChange(weight);
+          }
+          e.target.blur(); // Убрать фокус
+        }
+      });
+    } else {
+      console.warn('⚠️ Weight input not found!');
+    }
+
+    // Кнопки +/- для веса
+    console.log('Setting up weight button listeners for', this.weightButtons.length, 'buttons');
+    this.weightButtons.forEach((button, index) => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = button.dataset.action;
+        console.log(`Weight button ${index} clicked: action=${action}`);
+        this.handleWeightButtonClick(action);
       });
     });
 
@@ -305,6 +368,93 @@ class MenuController {
         status.textContent = this.i18n.t('notifications.notSubscribed');
       }
     }
+  }
+
+  /**
+   * Обработать смену типа доски
+   * @param {string} boardType - Тип доски (twintip, hydrofoil)
+   */
+  handleBoardTypeChange(boardType) {
+    if (!['twintip', 'hydrofoil'].includes(boardType)) {
+      console.warn('Unsupported board type:', boardType);
+      return;
+    }
+
+    this.settings.setSetting('boardType', boardType);
+    this.updateBoardTypeButtons();
+    console.log('Board type changed to:', boardType);
+
+    // Dispatch event for kite size slider to update
+    window.dispatchEvent(new CustomEvent('riderSettingsChanged'));
+  }
+
+  /**
+   * Обработать смену веса
+   * @param {number} weight - Вес в кг
+   */
+  handleWeightChange(weight) {
+    // Validate weight range
+    if (weight < 40) weight = 40;
+    if (weight > 120) weight = 120;
+
+    this.settings.setSetting('riderWeight', weight);
+    this.updateWeightInput();
+    console.log('Rider weight changed to:', weight);
+
+    // Dispatch event for kite size slider to update
+    window.dispatchEvent(new CustomEvent('riderSettingsChanged'));
+  }
+
+  /**
+   * Обработать клик по кнопке +/-
+   * @param {string} action - 'increase' or 'decrease'
+   */
+  handleWeightButtonClick(action) {
+    console.log('🔧 handleWeightButtonClick called with action:', action);
+
+    if (!this.weightInput) {
+      console.error('❌ Weight input not available in handleWeightButtonClick');
+      return;
+    }
+
+    const currentWeight = parseInt(this.weightInput.value, 10) || 75;
+    const step = 1; // Increment by 1kg
+
+    let newWeight = currentWeight;
+    if (action === 'increase') {
+      newWeight = Math.min(120, currentWeight + step);
+    } else if (action === 'decrease') {
+      newWeight = Math.max(40, currentWeight - step);
+    }
+
+    console.log(`Weight change: ${currentWeight} → ${newWeight}`);
+    this.weightInput.value = newWeight;
+    this.handleWeightChange(newWeight);
+  }
+
+  /**
+   * Обновить состояние кнопок типа доски
+   */
+  updateBoardTypeButtons() {
+    const currentBoardType = this.settings.getSetting('boardType') || 'twintip';
+
+    this.boardTypeButtons.forEach((button) => {
+      if (button.dataset.board === currentBoardType) {
+        button.classList.add('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
+  }
+
+  /**
+   * Обновить значение веса в input
+   */
+  updateWeightInput() {
+    if (!this.weightInput) return;
+
+    const currentWeight = this.settings.getSetting('riderWeight') || 75;
+    this.weightInput.value = currentWeight;
   }
 
   /**
