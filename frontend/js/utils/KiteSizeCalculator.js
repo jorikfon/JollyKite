@@ -181,7 +181,14 @@ class KiteSizeCalculator {
 
     // Calculate optimal size for the rider
     const optimalSize = this.calculateOptimalKiteSize(weight, windSpeed, type);
-    const closestSize = this.findClosestKiteSize(optimalSize);
+
+    // Check if optimal size is within available range
+    const minSize = Math.min(...this.kiteSizes);
+    const maxSize = Math.max(...this.kiteSizes);
+    const isOutOfRange = optimalSize > maxSize * 1.3 || optimalSize < minSize * 0.7;
+
+    // Only find closest size if optimal is in reasonable range
+    const closestSize = isOutOfRange ? null : this.findClosestKiteSize(optimalSize);
 
     // Generate recommendations for each kite size
     return this.kiteSizes.map(size => {
