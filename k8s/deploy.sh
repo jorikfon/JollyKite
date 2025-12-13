@@ -22,4 +22,4 @@ kubectl -n jollykite rollout status deployment/jollykite-nginx --timeout=120s
 
 echo ""
 echo "=== Done! ==="
-echo "Access JollyKite at: http://172.16.33.61:30080"
+echo "Access JollyKite at: http://172.16.33.61:30088"
