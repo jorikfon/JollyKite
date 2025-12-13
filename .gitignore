@@ -142,3 +142,7 @@ backend/package-lock.json
 .localxpose/
 loclx-*.zip
 lx-data/
+
+# K8s deployment (contains infrastructure details)
+k8s/deploy.env
+k8s/jollykite.yaml

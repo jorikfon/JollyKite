@@ -130,8 +130,8 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 172.16.33.69
-    path: /data/nfs/shared/jollykite
+    server: ${NFS_SERVER}
+    path: ${NFS_PATH}
 
 ---
 # PVC for backend data
@@ -269,4 +269,4 @@ spec:
   ports:
     - port: 80
       targetPort: 80
-      nodePort: 30088
+      nodePort: ${NODE_PORT}
