@@ -1,0 +1,272 @@
+---
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jollykite
+
+---
+# ConfigMap for nginx configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: jollykite
+data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+
+        access_log /var/log/nginx/access.log main;
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+
+        gzip on;
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
+
+        server {
+            listen 80;
+            server_name localhost;
+            root /usr/share/nginx/html;
+            index index.html;
+
+            gzip_static on;
+
+            add_header X-Frame-Options "SAMEORIGIN" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-XSS-Protection "1; mode=block" always;
+
+            location / {
+                try_files $uri $uri/ /index.html;
+                expires -1;
+                add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+            }
+
+            # SSE endpoint
+            location /api/wind/stream {
+                proxy_pass http://jollykite-backend:3000/api/wind/stream;
+                proxy_http_version 1.1;
+                proxy_set_header Connection '';
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_buffering off;
+                proxy_cache off;
+                proxy_read_timeout 86400s;
+                proxy_send_timeout 86400s;
+                chunked_transfer_encoding on;
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'X-Accel-Buffering' 'no';
+            }
+
+            # API proxy
+            location /api/ {
+                proxy_pass http://jollykite-backend:3000/api/;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_cache_bypass $http_upgrade;
+                add_header 'Access-Control-Allow-Origin' '*' always;
+            }
+
+            # Health check
+            location /health {
+                proxy_pass http://jollykite-backend:3000/health;
+                access_log off;
+            }
+
+            location ~* \.(js|css)$ {
+                expires -1;
+                add_header Cache-Control "no-store, no-cache, must-revalidate";
+            }
+
+            location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+
+            location ~ /\. {
+                deny all;
+            }
+        }
+    }
+
+---
+# PV for backend data (NFS)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jollykite-data-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 172.16.33.69
+    path: /data/nfs/shared/jollykite
+
+---
+# PVC for backend data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jollykite-data
+  namespace: jollykite
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: jollykite-data-pv
+  storageClassName: ""
+
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jollykite-backend
+  namespace: jollykite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jollykite-backend
+  template:
+    metadata:
+      labels:
+        app: jollykite-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/jorikfon/jollykite/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: AMBIENT_WEATHER_API
+              value: "https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504"
+            - name: OPEN_METEO_API
+              value: "https://api.open-meteo.com/v1/forecast"
+            - name: DATA_COLLECTION_INTERVAL
+              value: "300000"
+            - name: ARCHIVE_INTERVAL
+              value: "3600000"
+            - name: TZ
+              value: "Asia/Bangkok"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jollykite-data
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: jollykite-backend
+  namespace: jollykite
+spec:
+  selector:
+    app: jollykite-backend
+  ports:
+    - port: 3000
+      targetPort: 3000
+
+---
+# Nginx/Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jollykite-nginx
+  namespace: jollykite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jollykite-nginx
+  template:
+    metadata:
+      labels:
+        app: jollykite-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: ghcr.io/jorikfon/jollykite/nginx:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+
+---
+# Nginx Service (NodePort for external access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: jollykite-nginx
+  namespace: jollykite
+spec:
+  type: NodePort
+  selector:
+    app: jollykite-nginx
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
