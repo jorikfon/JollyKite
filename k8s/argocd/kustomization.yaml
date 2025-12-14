@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - backend.yaml
+  - nginx.yaml
+
+images:
+  - name: ghcr.io/jorikfon/jollykite/backend
+    newTag: latest
+  - name: ghcr.io/jorikfon/jollykite/nginx
+    newTag: latest
