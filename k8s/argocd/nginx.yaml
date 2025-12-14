@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jollykite-nginx
+  namespace: jollykite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jollykite-nginx
+  template:
+    metadata:
+      labels:
+        app: jollykite-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: ghcr.io/jorikfon/jollykite/nginx:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jollykite-nginx
+  namespace: jollykite
+spec:
+  type: NodePort
+  selector:
+    app: jollykite-nginx
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30088

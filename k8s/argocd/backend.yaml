@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jollykite-backend
+  namespace: jollykite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jollykite-backend
+  template:
+    metadata:
+      labels:
+        app: jollykite-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/jorikfon/jollykite/backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: AMBIENT_WEATHER_API
+              value: "https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504"
+            - name: OPEN_METEO_API
+              value: "https://api.open-meteo.com/v1/forecast"
+            - name: DATA_COLLECTION_INTERVAL
+              value: "300000"
+            - name: ARCHIVE_INTERVAL
+              value: "3600000"
+            - name: TZ
+              value: "Asia/Bangkok"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: jollykite-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jollykite-backend
+  namespace: jollykite
+spec:
+  selector:
+    app: jollykite-backend
+  ports:
+    - port: 3000
+      targetPort: 3000
