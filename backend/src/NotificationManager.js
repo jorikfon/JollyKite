@@ -87,6 +87,27 @@ export class NotificationManager {
   }
 
   /**
+   * Helper to get wind speed from measurement (handles both snake_case and camelCase)
+   */
+  getWindSpeed(m) {
+    return m.wind_speed_knots || m.windSpeedKnots || 0;
+  }
+
+  /**
+   * Helper to get wind direction from measurement (handles both snake_case and camelCase)
+   */
+  getWindDirection(m) {
+    return m.wind_direction || m.windDirection || 0;
+  }
+
+  /**
+   * Helper to get wind gust from measurement (handles both snake_case and camelCase)
+   */
+  getWindGust(m) {
+    return m.wind_gust_knots || m.gustKnots || m.windGustKnots || this.getWindSpeed(m);
+  }
+
+  /**
    * Check if wind conditions are stable over the last 20 minutes
    * Requirements:
    * - Speed >= 10 knots in ALL measurements
@@ -103,29 +124,30 @@ export class NotificationManager {
     const last20min = measurements.slice(-4);
 
     // 1. Check if ALL measurements have speed >= 10 knots
-    const allAbove10 = last20min.every(m => (m.windSpeedKnots || 0) >= 10);
+    const allAbove10 = last20min.every(m => this.getWindSpeed(m) >= 10);
     if (!allAbove10) {
-      return { stable: false, reason: 'Wind speed dropped below 10 knots in last 20 minutes' };
+      const speeds = last20min.map(m => this.getWindSpeed(m).toFixed(1)).join(', ');
+      return { stable: false, reason: `Wind speed dropped below 10 knots in last 20 minutes (speeds: ${speeds})` };
     }
 
     // 2. Check direction stability (variance <= 30°)
-    const directions = last20min.map(m => m.windDirection || 0);
+    const directions = last20min.map(m => this.getWindDirection(m));
     const directionVariance = this.calculateDirectionVariance(directions);
     if (directionVariance > 30) {
       return { stable: false, reason: `Direction too variable (${directionVariance.toFixed(1)}°)` };
     }
 
     // 3. Check gusts are not critical (difference between max gust and avg speed <= 7 knots)
-    const avgSpeed = last20min.reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / last20min.length;
-    const maxGust = Math.max(...last20min.map(m => m.gustKnots || m.windSpeedKnots || 0));
+    const avgSpeed = last20min.reduce((sum, m) => sum + this.getWindSpeed(m), 0) / last20min.length;
+    const maxGust = Math.max(...last20min.map(m => this.getWindGust(m)));
     const gustDiff = maxGust - avgSpeed;
     if (gustDiff > 7) {
       return { stable: false, reason: `Gusts too strong (${gustDiff.toFixed(1)} knots difference)` };
     }
 
     // 4. Check trend is not decreasing (comparing first half vs second half of 20min window)
-    const firstHalf = last20min.slice(0, 2).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 2;
-    const secondHalf = last20min.slice(2, 4).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 2;
+    const firstHalf = last20min.slice(0, 2).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 2;
+    const secondHalf = last20min.slice(2, 4).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 2;
     const trendChange = secondHalf - firstHalf;
     if (trendChange < -1) { // Allow minor fluctuations (-1 knot)
       return { stable: false, reason: `Wind is weakening (${trendChange.toFixed(1)} knots)` };
@@ -214,7 +236,8 @@ export class NotificationManager {
 
     // Get current wind data (latest measurement)
     const windData = measurements[measurements.length - 1];
-    const avgSpeed = measurements.slice(-4).reduce((sum, m) => sum + (m.windSpeedKnots || 0), 0) / 4;
+    const currentSpeed = this.getWindSpeed(windData);
+    const avgSpeed = measurements.slice(-4).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 4;
 
     // Prepare notification payload
     const payload = JSON.stringify({
@@ -223,7 +246,7 @@ export class NotificationManager {
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       url: '/',
-      windSpeed: windData.windSpeedKnots,
+      windSpeed: currentSpeed,
       timestamp: now
     });
 
@@ -260,7 +283,7 @@ export class NotificationManager {
       sent: sentCount,
       total: this.subscriptions.length,
       conditions: {
-        speed: windData.windSpeedKnots,
+        speed: currentSpeed,
         avgSpeed: avgSpeed.toFixed(1),
         stable: true
       }

@@ -438,6 +438,85 @@ export class ApiRouter {
         res.status(500).json({ error: error.message });
       }
     });
+
+    // Test push notification (for debugging)
+    this.router.post('/notifications/test', async (req, res) => {
+      try {
+        const subscriptions = this.notificationManager.subscriptions;
+        if (subscriptions.length === 0) {
+          return res.status(400).json({ error: 'No subscriptions found' });
+        }
+
+        const payload = JSON.stringify({
+          title: 'Test Notification',
+          body: 'Push notifications are working correctly!',
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          url: '/',
+          timestamp: new Date().toISOString()
+        });
+
+        let sentCount = 0;
+        let errors = [];
+
+        for (const subscription of subscriptions) {
+          try {
+            const webpush = await import('web-push');
+            await webpush.default.sendNotification(subscription, payload);
+            sentCount++;
+            console.log(`Test notification sent to: ${subscription.endpoint.substring(0, 50)}...`);
+          } catch (error) {
+            errors.push({
+              endpoint: subscription.endpoint.substring(0, 50),
+              error: error.message,
+              statusCode: error.statusCode
+            });
+          }
+        }
+
+        res.json({
+          success: true,
+          sent: sentCount,
+          total: subscriptions.length,
+          errors: errors.length > 0 ? errors : undefined
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Debug: Check wind stability conditions
+    this.router.get('/notifications/check-conditions', (req, res) => {
+      try {
+        const recentMeasurements = this.dbManager.getLastMeasurements(4);
+
+        if (!recentMeasurements || recentMeasurements.length < 4) {
+          return res.json({
+            canNotify: false,
+            reason: 'Insufficient measurements',
+            measurementsCount: recentMeasurements?.length || 0,
+            requiredCount: 4
+          });
+        }
+
+        const stability = this.notificationManager.checkWindStability(recentMeasurements);
+        const stats = this.notificationManager.getStats();
+
+        res.json({
+          canNotify: stability.stable,
+          stability: stability,
+          measurements: recentMeasurements.map(m => ({
+            timestamp: m.timestamp,
+            speed: m.wind_speed_knots || m.windSpeedKnots,
+            direction: m.wind_direction || m.windDirection,
+            gust: m.wind_gust_knots || m.gustKnots
+          })),
+          stats: stats
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
   }
 
   /**

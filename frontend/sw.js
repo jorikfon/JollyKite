@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v2.5.7';
-const API_CACHE_NAME = 'jollykite-api-v2.5.7';
+const CACHE_NAME = 'jollykite-v2.5.8';
+const API_CACHE_NAME = 'jollykite-api-v2.5.8';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -372,9 +372,24 @@ self.addEventListener('push', async event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
-  if (event.action === 'view') {
+  // Get URL from notification data
+  const notificationData = event.notification.data || {};
+  const url = notificationData.url || '/';
+
+  if (event.action === 'view' || event.action === '' || !event.action) {
+    // Handle both 'view' action and direct click on notification
     event.waitUntil(
-      clients.openWindow(event.notification.data || '/')
+      clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then(windowClients => {
+          // Check if there's already an open window
+          for (const client of windowClients) {
+            if (client.url.includes(self.location.origin) && 'focus' in client) {
+              return client.focus();
+            }
+          }
+          // Open new window if no existing window found
+          return clients.openWindow(url);
+        })
     );
   }
 });
