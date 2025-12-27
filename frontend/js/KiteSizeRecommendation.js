@@ -61,9 +61,9 @@ class KiteSizeRecommendation {
   createKiteCard(recommendation) {
     const { size, recommendedWeight, suitability } = recommendation;
 
-    // Create weight display
+    // Create weight display (show only if > 40kg to avoid confusion at low wind)
     const kgLabel = this.i18n ? this.i18n.t('kite.kg') : 'кг';
-    const weightDisplay = recommendedWeight > 0 ? `${recommendedWeight} ${kgLabel}` : '-';
+    const weightDisplay = recommendedWeight > 40 ? `${recommendedWeight} ${kgLabel}` : '-';
 
     // Get suitability icon
     const icon = this.getSuitabilityIcon(suitability);

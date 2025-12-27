@@ -35,27 +35,6 @@ services:
     networks:
       - jollykite-network
 
-  # LocalXpose Tunnel (only for public access)
-  # Set LX_ACCESS_TOKEN in .env to enable
-  tunnel:
-    image: localxpose/localxpose:latest
-    container_name: jollykite-tunnel
-    restart: unless-stopped
-    environment:
-      - LX_ACCESS_TOKEN=${LX_ACCESS_TOKEN}
-    volumes:
-      - ./tmp/lx-data:/home/nonroot/.localxpose
-    command: >
-      tunnel http
-      --reserved-domain pnp.ap.loclx.io
-      --to nginx:80
-    ports:
-      - "54538:54538"
-    depends_on:
-      - nginx
-    networks:
-      - jollykite-network
-
 networks:
   jollykite-network:
     driver: bridge
