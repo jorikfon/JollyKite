@@ -15,7 +15,7 @@ class SettingsManager {
     windSpeedUnit: 'knots', // knots, ms
     notificationsEnabled: false,
     theme: 'auto',          // auto, light, dark (для будущего)
-    version: '2.3.0',
+    version: '2.5.9',
     boardType: 'twintip',   // twintip, hydrofoil
     riderWeight: 75,        // kg (40-120)
   };
