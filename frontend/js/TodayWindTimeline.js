@@ -1,4 +1,5 @@
 import WindUtils from './utils/WindUtils.js';
+import UnitConverter from './utils/UnitConverter.js';
 
 /**
  * TodayWindTimeline - displays combined history + forecast for today
@@ -339,7 +340,7 @@ class TodayWindTimeline {
 
                                 // Convert speed if needed
                                 const displaySpeed = currentUnit === 'ms' ?
-                                    WindUtils.knotsToMs(peak.speed) :
+                                    UnitConverter.knotsToMs(peak.speed) :
                                     peak.speed;
 
                                 const speedText = `${displaySpeed.toFixed(1)} ${unitShort}`;
