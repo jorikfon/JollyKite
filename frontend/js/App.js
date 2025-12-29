@@ -66,6 +66,9 @@ class App {
             this.settingsManager.loadSettings();
             console.log('✓ Настройки загружены');
 
+            // Обновить версию в UI из единого источника
+            this.updateVersionDisplay();
+
             // 2. Загрузка всех переводов
             await this.i18nManager.loadTranslations();
             console.log('✓ Переводы загружены');
@@ -817,6 +820,20 @@ class App {
             console.error('Ошибка обновления данных:', error);
             return false;
         }
+    }
+
+    /**
+     * Update version display in UI from SettingsManager
+     */
+    updateVersionDisplay() {
+        const version = SettingsManager.DEFAULT_SETTINGS.version;
+        document.querySelectorAll('.app-version').forEach(el => {
+            el.textContent = `JollyKite v${version}`;
+        });
+        document.querySelectorAll('.version-number').forEach(el => {
+            el.textContent = `v${version}`;
+        });
+        console.log('✓ Версия приложения:', version);
     }
 
     destroy() {
