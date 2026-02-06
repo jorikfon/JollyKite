@@ -183,6 +183,9 @@ class App {
             // Загрузка первоначальных данных
             await this.loadInitialData();
 
+            // Инициализация кнопки уведомлений (один раз, не при каждом loadInitialData)
+            this.setupNotificationButton();
+
             // Подключение к SSE для real-time обновлений (только в рабочие часы)
             if (this.isWithinWorkingHours()) {
                 this.connectToWindStream();
@@ -242,9 +245,6 @@ class App {
             console.error('⚠ Ошибка загрузки прогноза:', error);
             this.forecastManager.showError(error);
         }
-
-        // Инициализация кнопки уведомлений
-        this.setupNotificationButton();
     }
 
     setupNotificationButton() {

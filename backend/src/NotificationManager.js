@@ -10,8 +10,9 @@ import webpush from 'web-push';
 export class NotificationManager {
   constructor(dbPath = './data/subscriptions.json') {
     this.subscriptionsPath = dbPath;
+    this.notificationLogPath = dbPath.replace('subscriptions.json', 'notification_log.json');
     this.subscriptions = [];
-    this.notificationLog = {}; // Track last notification time per subscription
+    this.notificationLog = {};
 
     // Configure web-push with VAPID keys
     webpush.setVapidDetails(
@@ -21,6 +22,7 @@ export class NotificationManager {
     );
 
     this.loadSubscriptions();
+    this.loadNotificationLog();
   }
 
   loadSubscriptions() {
@@ -45,6 +47,31 @@ export class NotificationManager {
       fs.writeFileSync(this.subscriptionsPath, JSON.stringify(this.subscriptions, null, 2));
     } catch (error) {
       console.error('Error saving subscriptions:', error.message);
+    }
+  }
+
+  loadNotificationLog() {
+    try {
+      if (fs.existsSync(this.notificationLogPath)) {
+        const data = fs.readFileSync(this.notificationLogPath, 'utf8');
+        this.notificationLog = JSON.parse(data);
+        console.log(`✓ Loaded notification log (${Object.keys(this.notificationLog).length} entries)`);
+      }
+    } catch (error) {
+      console.error('Error loading notification log:', error.message);
+      this.notificationLog = {};
+    }
+  }
+
+  saveNotificationLog() {
+    try {
+      const dir = path.dirname(this.notificationLogPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(this.notificationLogPath, JSON.stringify(this.notificationLog, null, 2));
+    } catch (error) {
+      console.error('Error saving notification log:', error.message);
     }
   }
 
@@ -87,6 +114,13 @@ export class NotificationManager {
   }
 
   /**
+   * Get current date string in Bangkok timezone (YYYY-MM-DD)
+   */
+  getBangkokDateString(date = new Date()) {
+    return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  }
+
+  /**
    * Helper to get wind speed from measurement (handles both snake_case and camelCase)
    */
   getWindSpeed(m) {
@@ -108,48 +142,48 @@ export class NotificationManager {
   }
 
   /**
-   * Check if wind conditions are stable over the last 20 minutes
+   * Check if wind conditions are stable over the last 15 minutes
    * Requirements:
-   * - Speed >= 10 knots in ALL measurements
-   * - Direction stable (variance <= 30°)
-   * - Gusts not critical (max - avg <= 7 knots)
-   * - Trend is increasing or stable (not decreasing)
+   * - Speed >= 8 knots in ALL measurements
+   * - Direction stable (variance <= 45°)
+   * - Gusts not critical (max - avg <= 8 knots)
+   * - Trend is increasing or stable (not decreasing sharply)
    */
   checkWindStability(measurements) {
-    if (!measurements || measurements.length < 4) {
-      return { stable: false, reason: 'Insufficient data (need at least 4 measurements)' };
+    if (!measurements || measurements.length < 3) {
+      return { stable: false, reason: 'Insufficient data (need at least 3 measurements)' };
     }
 
-    // Take last 4 measurements (20 minutes with 5-min intervals)
-    const last20min = measurements.slice(-4);
+    // Take last 3 measurements (15 minutes with 5-min intervals)
+    const recent = measurements.slice(-3);
 
-    // 1. Check if ALL measurements have speed >= 10 knots
-    const allAbove10 = last20min.every(m => this.getWindSpeed(m) >= 10);
-    if (!allAbove10) {
-      const speeds = last20min.map(m => this.getWindSpeed(m).toFixed(1)).join(', ');
-      return { stable: false, reason: `Wind speed dropped below 10 knots in last 20 minutes (speeds: ${speeds})` };
+    // 1. Check if ALL measurements have speed >= 8 knots
+    const allAboveThreshold = recent.every(m => this.getWindSpeed(m) >= 8);
+    if (!allAboveThreshold) {
+      const speeds = recent.map(m => this.getWindSpeed(m).toFixed(1)).join(', ');
+      return { stable: false, reason: `Wind speed below 8 knots in last 15 minutes (speeds: ${speeds})` };
     }
 
-    // 2. Check direction stability (variance <= 30°)
-    const directions = last20min.map(m => this.getWindDirection(m));
+    // 2. Check direction stability (variance <= 45°)
+    const directions = recent.map(m => this.getWindDirection(m));
     const directionVariance = this.calculateDirectionVariance(directions);
-    if (directionVariance > 30) {
+    if (directionVariance > 45) {
       return { stable: false, reason: `Direction too variable (${directionVariance.toFixed(1)}°)` };
     }
 
-    // 3. Check gusts are not critical (difference between max gust and avg speed <= 7 knots)
-    const avgSpeed = last20min.reduce((sum, m) => sum + this.getWindSpeed(m), 0) / last20min.length;
-    const maxGust = Math.max(...last20min.map(m => this.getWindGust(m)));
+    // 3. Check gusts are not critical (difference between max gust and avg speed <= 8 knots)
+    const avgSpeed = recent.reduce((sum, m) => sum + this.getWindSpeed(m), 0) / recent.length;
+    const maxGust = Math.max(...recent.map(m => this.getWindGust(m)));
     const gustDiff = maxGust - avgSpeed;
-    if (gustDiff > 7) {
+    if (gustDiff > 8) {
       return { stable: false, reason: `Gusts too strong (${gustDiff.toFixed(1)} knots difference)` };
     }
 
-    // 4. Check trend is not decreasing (comparing first half vs second half of 20min window)
-    const firstHalf = last20min.slice(0, 2).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 2;
-    const secondHalf = last20min.slice(2, 4).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 2;
-    const trendChange = secondHalf - firstHalf;
-    if (trendChange < -1) { // Allow minor fluctuations (-1 knot)
+    // 4. Check trend is not decreasing sharply
+    const firstSpeed = this.getWindSpeed(recent[0]);
+    const lastSpeed = this.getWindSpeed(recent[recent.length - 1]);
+    const trendChange = lastSpeed - firstSpeed;
+    if (trendChange < -2) { // Allow minor fluctuations (-2 knots)
       return { stable: false, reason: `Wind is weakening (${trendChange.toFixed(1)} knots)` };
     }
 
@@ -204,7 +238,7 @@ export class NotificationManager {
       return false;
     }
 
-    console.log(`✓ Wind stable for 20 minutes: avg=${stability.avgSpeed}kn, dir_var=${stability.directionVariance}°, gusts=${stability.gustDiff}kn, trend=${stability.trendChange}kn`);
+    console.log(`✓ Wind stable for 15 minutes: avg=${stability.avgSpeed}kn, dir_var=${stability.directionVariance}°, gusts=${stability.gustDiff}kn, trend=${stability.trendChange}kn`);
     return true;
   }
 
@@ -216,10 +250,9 @@ export class NotificationManager {
     if (!lastNotification) return true;
 
     const lastTime = new Date(lastNotification);
-    const now = new Date();
 
-    // Check if it's a different day
-    return lastTime.toDateString() !== now.toDateString();
+    // Compare dates in Bangkok timezone
+    return this.getBangkokDateString(lastTime) !== this.getBangkokDateString();
   }
 
   /**
@@ -237,12 +270,13 @@ export class NotificationManager {
     // Get current wind data (latest measurement)
     const windData = measurements[measurements.length - 1];
     const currentSpeed = this.getWindSpeed(windData);
-    const avgSpeed = measurements.slice(-4).reduce((sum, m) => sum + this.getWindSpeed(m), 0) / 4;
+    const recent = measurements.slice(-3);
+    const avgSpeed = recent.reduce((sum, m) => sum + this.getWindSpeed(m), 0) / recent.length;
 
     // Prepare notification payload
     const payload = JSON.stringify({
       title: '🌬️ Отличные условия для кайтинга!',
-      body: `Ветер устойчиво держится ${avgSpeed.toFixed(1)} узлов последние 20 минут. Время на воду! 🪁`,
+      body: `Ветер устойчиво держится ${avgSpeed.toFixed(1)} узлов последние 15 минут. Время на воду! 🪁`,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
       url: '/',
@@ -263,10 +297,11 @@ export class NotificationManager {
         await webpush.sendNotification(subscription, payload);
 
         console.log(`📨 Push notification sent to: ${subId.substring(0, 50)}...`);
-        console.log(`   Wind: ${avgSpeed.toFixed(1)} knots (stable for 20 min)`);
+        console.log(`   Wind: ${avgSpeed.toFixed(1)} knots (stable for 15 min)`);
 
-        // Mark as notified
+        // Mark as notified and persist to disk
         this.notificationLog[subId] = now;
+        this.saveNotificationLog();
         sentCount++;
       } catch (error) {
         console.error(`✗ Error sending notification: ${error.message}`);
@@ -298,8 +333,7 @@ export class NotificationManager {
       totalSubscriptions: this.subscriptions.length,
       notifiedToday: Object.keys(this.notificationLog).filter(key => {
         const lastTime = new Date(this.notificationLog[key]);
-        const now = new Date();
-        return lastTime.toDateString() === now.toDateString();
+        return this.getBangkokDateString(lastTime) === this.getBangkokDateString();
       }).length
     };
   }
@@ -308,17 +342,18 @@ export class NotificationManager {
    * Reset daily notification log (called at midnight)
    */
   resetDailyLog() {
-    const now = new Date();
+    const todayBangkok = this.getBangkokDateString();
     const keysToDelete = [];
 
     for (const [key, value] of Object.entries(this.notificationLog)) {
       const lastTime = new Date(value);
-      if (lastTime.toDateString() !== now.toDateString()) {
+      if (this.getBangkokDateString(lastTime) !== todayBangkok) {
         keysToDelete.push(key);
       }
     }
 
     keysToDelete.forEach(key => delete this.notificationLog[key]);
+    this.saveNotificationLog();
     console.log(`✓ Cleaned up ${keysToDelete.length} old notification records`);
   }
 }
