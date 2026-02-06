@@ -102,10 +102,10 @@ async function initialize() {
         }
 
         // Check if we should send push notifications
-        // Get last 4 measurements (20 minutes) for stability check
-        const recentMeasurements = dbManager.getLastMeasurements(4);
+        // Get last 3 measurements (15 minutes) for stability check
+        const recentMeasurements = dbManager.getLastMeasurements(3);
 
-        if (recentMeasurements && recentMeasurements.length >= 4) {
+        if (recentMeasurements && recentMeasurements.length >= 3) {
           // Send notifications if conditions are met (stable wind for 20 min)
           const result = await notificationManager.sendNotifications(recentMeasurements);
 

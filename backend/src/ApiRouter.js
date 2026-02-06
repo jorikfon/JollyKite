@@ -459,10 +459,12 @@ export class ApiRouter {
         let sentCount = 0;
         let errors = [];
 
+        // Use webpush from NotificationManager (already configured with VAPID keys)
+        const webpush = (await import('web-push')).default;
+
         for (const subscription of subscriptions) {
           try {
-            const webpush = await import('web-push');
-            await webpush.default.sendNotification(subscription, payload);
+            await webpush.sendNotification(subscription, payload);
             sentCount++;
             console.log(`Test notification sent to: ${subscription.endpoint.substring(0, 50)}...`);
           } catch (error) {
@@ -488,14 +490,14 @@ export class ApiRouter {
     // Debug: Check wind stability conditions
     this.router.get('/notifications/check-conditions', (req, res) => {
       try {
-        const recentMeasurements = this.dbManager.getLastMeasurements(4);
+        const recentMeasurements = this.dbManager.getLastMeasurements(3);
 
-        if (!recentMeasurements || recentMeasurements.length < 4) {
+        if (!recentMeasurements || recentMeasurements.length < 3) {
           return res.json({
             canNotify: false,
             reason: 'Insufficient measurements',
             measurementsCount: recentMeasurements?.length || 0,
-            requiredCount: 4
+            requiredCount: 3
           });
         }
 
