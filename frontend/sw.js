@@ -1,6 +1,6 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v2.5.13';
-const API_CACHE_NAME = 'jollykite-api-v2.5.13';
+const CACHE_NAME = 'jollykite-v2.5.14';
+const API_CACHE_NAME = 'jollykite-api-v2.5.14';
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке

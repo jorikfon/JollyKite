@@ -27,6 +27,8 @@ class MenuController {
     this.boardTypeButtons = [];
     this.weightInput = null;
     this.weightButtons = [];
+    this.dirOffsetInput = null;
+    this.dirOffsetButtons = [];
 
     this.isOpen = false;
   }
@@ -61,7 +63,13 @@ class MenuController {
       // Получить элементы веса
       this.weightInput = document.getElementById('riderWeight');
       this.weightButtons = Array.from(
-        this.settingsMenu.querySelectorAll('.weight-button')
+        this.settingsMenu.querySelectorAll('.weight-button:not(.dir-offset-button)')
+      );
+
+      // Получить элементы калибровки направления
+      this.dirOffsetInput = document.getElementById('windDirOffset');
+      this.dirOffsetButtons = Array.from(
+        this.settingsMenu.querySelectorAll('.dir-offset-button')
       );
 
       console.log('Weight input found:', !!this.weightInput);
@@ -75,6 +83,7 @@ class MenuController {
       this.updateUnitButtons();
       this.updateBoardTypeButtons();
       this.updateWeightInput();
+      this.updateDirOffsetInput();
       this.translateUI();
 
       console.log('✓ MenuController initialized');
@@ -162,6 +171,36 @@ class MenuController {
         const action = button.dataset.action;
         console.log(`Weight button ${index} clicked: action=${action}`);
         this.handleWeightButtonClick(action);
+      });
+    });
+
+    // Изменение калибровки направления через input
+    if (this.dirOffsetInput) {
+      this.dirOffsetInput.addEventListener('blur', () => {
+        const offset = parseInt(this.dirOffsetInput.value, 10);
+        if (!isNaN(offset)) {
+          this.handleDirOffsetChange(offset);
+        }
+      });
+
+      this.dirOffsetInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const offset = parseInt(this.dirOffsetInput.value, 10);
+          if (!isNaN(offset)) {
+            this.handleDirOffsetChange(offset);
+          }
+          e.target.blur();
+        }
+      });
+    }
+
+    // Кнопки +/- для калибровки направления
+    this.dirOffsetButtons.forEach((button) => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = button.dataset.action;
+        this.handleDirOffsetButtonClick(action);
       });
     });
 
@@ -455,6 +494,53 @@ class MenuController {
 
     const currentWeight = this.settings.getSetting('riderWeight') || 75;
     this.weightInput.value = currentWeight;
+  }
+
+  /**
+   * Обработать смену калибровки направления
+   * @param {number} offset - Смещение в градусах
+   */
+  handleDirOffsetChange(offset) {
+    if (offset < -180) offset = -180;
+    if (offset > 180) offset = 180;
+
+    this.settings.setSetting('windDirOffset', offset);
+    this.updateDirOffsetInput();
+    console.log('Wind direction offset changed to:', offset);
+
+    // Dispatch event to refresh wind display
+    window.dispatchEvent(new CustomEvent('riderSettingsChanged'));
+  }
+
+  /**
+   * Обработать клик по кнопке +/- калибровки
+   * @param {string} action - 'increase' or 'decrease'
+   */
+  handleDirOffsetButtonClick(action) {
+    if (!this.dirOffsetInput) return;
+
+    const currentOffset = parseInt(this.dirOffsetInput.value, 10) || 0;
+    const step = 5;
+
+    let newOffset = currentOffset;
+    if (action === 'increase') {
+      newOffset = Math.min(180, currentOffset + step);
+    } else if (action === 'decrease') {
+      newOffset = Math.max(-180, currentOffset - step);
+    }
+
+    this.dirOffsetInput.value = newOffset;
+    this.handleDirOffsetChange(newOffset);
+  }
+
+  /**
+   * Обновить значение калибровки в input
+   */
+  updateDirOffsetInput() {
+    if (!this.dirOffsetInput) return;
+
+    const currentOffset = this.settings.getSetting('windDirOffset') || 0;
+    this.dirOffsetInput.value = currentOffset;
   }
 
   /**

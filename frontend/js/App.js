@@ -117,10 +117,15 @@ class App {
 
             // Подписка на изменение настроек райдера
             window.addEventListener('riderSettingsChanged', () => {
-                console.log('🔄 Rider settings changed, updating kite recommendations...');
-                // Обновить рекомендации по размеру кайта
-                if (this.lastWindData && this.kiteSizeSlider) {
-                    this.kiteSizeSlider.onSettingsChange();
+                console.log('🔄 Rider settings changed, updating display...');
+                if (this.lastWindData) {
+                    // Re-fetch and re-apply offset for direction calibration changes
+                    this.updateWindData().catch(err => {
+                        console.error('Error refreshing wind data:', err);
+                    });
+                    if (this.kiteSizeSlider) {
+                        this.kiteSizeSlider.onSettingsChange();
+                    }
                 }
             });
 
@@ -292,6 +297,9 @@ class App {
                     console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
                 }
 
+                // Применение калибровки направления
+                this.applyWindDirOffset(windData);
+
                 // Получение информации о безопасности
                 const safety = this.windDataManager.getWindSafety(
                     windData.windDir,
@@ -337,6 +345,9 @@ class App {
                 this.lastUpdateTime = new Date(windData.timestamp);
                 console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
             }
+
+            // Применение калибровки направления
+            this.applyWindDirOffset(windData);
 
             // Получение информации о безопасности
             const safety = this.windDataManager.getWindSafety(
@@ -640,6 +651,21 @@ class App {
             windCardinal.textContent = this.degreesToCardinal(windData.windDir);
         }
 
+    }
+
+    /**
+     * Apply wind direction calibration offset from settings
+     */
+    applyWindDirOffset(windData) {
+        const offset = this.settingsManager.getSetting('windDirOffset') || 0;
+        if (offset === 0) return;
+
+        if (typeof windData.windDir === 'number') {
+            windData.windDir = ((windData.windDir + offset) % 360 + 360) % 360;
+        }
+        if (typeof windData.windDirAvg === 'number') {
+            windData.windDirAvg = ((windData.windDirAvg + offset) % 360 + 360) % 360;
+        }
     }
 
     degreesToCardinal(degrees) {
