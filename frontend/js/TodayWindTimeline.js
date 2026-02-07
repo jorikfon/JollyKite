@@ -378,12 +378,19 @@ class TodayWindTimeline {
                             }).join('')}
 
                             <!-- Wind speed labels on Y axis -->
-                            ${[0, maxSpeed * 0.5, maxSpeed].map((speed, i) => `
+                            ${[0, maxSpeed * 0.5, maxSpeed].map((speed, i) => {
+                                const yAxisUnit = this.settings ? this.settings.getSetting('windSpeedUnit') : 'knots';
+                                const yAxisSymbol = yAxisUnit === 'knots'
+                                    ? (this.i18n ? this.i18n.t('units.knotsShort') : 'kn')
+                                    : (this.i18n ? this.i18n.t('units.msShort') : 'm/s');
+                                const displaySpeed = yAxisUnit === 'ms' ? UnitConverter.knotsToMs(speed) : speed;
+                                const label = i === 2 ? `${displaySpeed.toFixed(0)} ${yAxisSymbol}` : displaySpeed.toFixed(0);
+                                return `
                                 <text x="-5" y="${height - (speed / maxSpeed) * height + 5}"
                                       text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
-                                    ${speed.toFixed(0)}
+                                    ${label}
                                 </text>
-                            `).join('')}
+                            `}).join('')}
 
                             ${dividerX !== null ? `
                                 <!-- Divider line between history and forecast -->

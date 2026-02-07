@@ -70,15 +70,9 @@ class KiteSizeSlider {
       this.createKiteCard(rec, index)
     ).join('');
 
-    // Get overall recommendation text
-    const recommendationText = this.calculator.getRecommendationText(windSpeed, boardType);
-
     // Update container with slider structure
     this.containerElement.innerHTML = `
       <div class="kite-slider-container">
-        <div class="kite-slider-header">
-          ${recommendationText}
-        </div>
         <div class="kite-slider-wrapper">
           <div class="kite-slider-fade kite-slider-fade--left"></div>
           <div class="kite-slider" id="kiteSlider">
@@ -113,7 +107,7 @@ class KiteSizeSlider {
 
     // Create weight display
     const kgLabel = this.i18n ? this.i18n.t('kite.kg') : 'кг';
-    const weightDisplay = recommendedWeight > 0 ? `${recommendedWeight} ${kgLabel}` : '-';
+    const weightDisplay = (recommendedWeight !== null && recommendedWeight > 0) ? `${recommendedWeight} ${kgLabel}` : '–';
 
     // Get suitability text
     const suitabilityText = this.calculator.getSuitabilityText(i18nKey);

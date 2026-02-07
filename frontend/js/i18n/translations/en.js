@@ -94,6 +94,9 @@ export default {
     accumulatingData: 'Accumulating data...',
     strengthening: 'Strengthening',
     weakening: 'Weakening',
+    directionStable: 'Direction stable',
+    directionVariable: 'Direction variable',
+    directionChanging: 'Direction changing',
   },
 
   // Notifications

@@ -58,8 +58,11 @@ class KiteSizeCalculator {
     // Round to nearest 1 kg
     const roundedWeight = Math.round(baseWeight);
 
-    // Keep weight in reasonable range (40-120 kg)
-    return Math.max(40, Math.min(120, roundedWeight));
+    // Return null if outside reasonable range (40-120 kg)
+    if (roundedWeight < 40 || roundedWeight > 120) {
+      return null;
+    }
+    return roundedWeight;
   }
 
   /**

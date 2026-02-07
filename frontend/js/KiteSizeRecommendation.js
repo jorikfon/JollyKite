@@ -62,7 +62,7 @@ class KiteSizeRecommendation {
     const { size, recommendedWeight, suitability } = recommendation;
 
     const kgLabel = this.i18n ? this.i18n.t('kite.kg') : 'кг';
-    const weightDisplay = suitability === 'none' ? '–' : `${recommendedWeight} ${kgLabel}`;
+    const weightDisplay = (suitability === 'none' || recommendedWeight === null) ? '–' : `${recommendedWeight} ${kgLabel}`;
 
     // Get suitability icon
     const icon = this.getSuitabilityIcon(suitability);

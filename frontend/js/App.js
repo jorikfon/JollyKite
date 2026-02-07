@@ -424,6 +424,39 @@ class App {
                 }
             }
         }
+
+        // Обновление тренда направления
+        this.updateDirectionTrend(trend);
+    }
+
+    updateDirectionTrend(trend) {
+        const dirIconEl = document.getElementById('dirTrendIcon');
+        const dirTextEl = document.getElementById('dirTrendText');
+        const dirTrendEl = document.getElementById('windDirTrend');
+
+        if (!dirIconEl || !dirTextEl || !dirTrendEl) return;
+
+        if (!trend || !trend.directionTrend || trend.directionTrend === 'insufficient_data') {
+            dirTrendEl.style.display = 'none';
+            return;
+        }
+
+        dirTrendEl.style.display = 'flex';
+        dirIconEl.textContent = trend.directionIcon;
+
+        const dirTextMap = {
+            'stable': 'trends.directionStable',
+            'variable': 'trends.directionVariable',
+            'changing': 'trends.directionChanging'
+        };
+        const dirKey = dirTextMap[trend.directionTrend] || 'trends.directionStable';
+        const dirText = this.i18nManager.t(dirKey);
+
+        if (trend.directionSpread > 0) {
+            dirTextEl.innerHTML = `<span style="font-weight: 600;">${dirText}</span> <span style="opacity: 0.7;">(±${trend.directionSpread}°)</span>`;
+        } else {
+            dirTextEl.innerHTML = `<span style="font-weight: 600;">${dirText}</span>`;
+        }
     }
 
     async updateWindTrend() {
@@ -461,7 +494,10 @@ class App {
             this.kiteSizeSlider.updateRecommendations(windData.windSpeedKnots);
         }
 
-        // Обновление индикатора на градиентном баре (всегда в узлах)
+        // Обновление рекомендации кайта в блоке ветра
+        this.updateRecommendedKite(windData.windSpeedKnots);
+
+        // Обновление индикатора на градиентном баре (позиция всегда в узлах - привязана к цветовым зонам)
         const windSpeedIndicator = document.getElementById('windSpeedIndicator');
         if (windSpeedIndicator) {
             const maxSpeed = 30;
@@ -469,6 +505,9 @@ class App {
             const percentage = (speed / maxSpeed) * 100;
             windSpeedIndicator.style.left = `${percentage}%`;
         }
+
+        // Обновление меток шкалы градиентного бара
+        this.updateWindBarLabels(currentUnit);
 
         // Обновление порывов ветра
         const windGustElement = document.getElementById('windGust');
@@ -506,6 +545,63 @@ class App {
 
         // Обновление направления и описания ветра
         this.updateWindDescription(windData);
+    }
+
+    updateWindBarLabels(currentUnit) {
+        const labelsContainer = document.getElementById('windBarLabels');
+        if (!labelsContainer) return;
+
+        const knotValues = [0, 5, 10, 15, 20, 25, 30];
+        const spans = labelsContainer.querySelectorAll('span');
+        if (spans.length !== knotValues.length) return;
+
+        knotValues.forEach((knots, i) => {
+            const displayValue = UnitConverter.convert(knots, 'knots', currentUnit);
+            const isLast = i === knotValues.length - 1;
+            spans[i].textContent = isLast
+                ? `${Math.round(displayValue)}+`
+                : `${Math.round(displayValue)}`;
+        });
+    }
+
+    updateRecommendedKite(windSpeedKnots) {
+        const el = document.getElementById('recommendedKite');
+        if (!el) return;
+
+        if (!this.kiteSizeSlider || !this.kiteSizeSlider.calculator) {
+            el.textContent = '';
+            return;
+        }
+
+        const riderWeight = this.settingsManager.getSetting('riderWeight') || 75;
+        const boardType = this.settingsManager.getSetting('boardType') || 'twintip';
+        const calcParams = config.kiteSize.calculation[boardType];
+
+        // Проверяем что ветер в допустимом диапазоне
+        if (windSpeedKnots < calcParams.minWind || windSpeedKnots > calcParams.maxWind) {
+            el.textContent = '';
+            return;
+        }
+
+        const calculator = this.kiteSizeSlider.calculator;
+        const optimalSize = calculator.calculateOptimalKiteSize(riderWeight, windSpeedKnots, boardType);
+
+        // Проверяем что оптимальный размер в разумном диапазоне доступных кайтов
+        const kiteSizes = config.kiteSize.sizes;
+        const maxSize = Math.max(...kiteSizes);
+        const minSize = Math.min(...kiteSizes);
+        if (optimalSize > maxSize * 1.3 || optimalSize < minSize * 0.7) {
+            el.textContent = '';
+            return;
+        }
+
+        const closestSize = calculator.findClosestKiteSize(optimalSize);
+
+        if (closestSize) {
+            el.innerHTML = `<span style="opacity: 0.5;">|</span> <span style="font-weight: 600;">🪁 ${closestSize}м</span>`;
+        } else {
+            el.textContent = '';
+        }
     }
 
     updateWindDescription(windData) {
