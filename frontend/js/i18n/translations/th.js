@@ -94,6 +94,9 @@ export default {
     accumulatingData: 'กำลังรวบรวมข้อมูล...',
     strengthening: 'แรงขึ้น',
     weakening: 'อ่อนลง',
+    directionStable: 'ทิศทางคงที่',
+    directionVariable: 'ทิศทางแปรปรวน',
+    directionChanging: 'ทิศทางเปลี่ยน',
   },
 
   // การแจ้งเตือน

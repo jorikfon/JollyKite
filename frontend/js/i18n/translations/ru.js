@@ -94,6 +94,9 @@ export default {
     accumulatingData: 'Накапливаем данные...',
     strengthening: 'Раздувает',
     weakening: 'Затихает',
+    directionStable: 'Направление стабильное',
+    directionVariable: 'Направление переменное',
+    directionChanging: 'Направление меняется',
   },
 
   // Уведомления

@@ -235,7 +235,7 @@
                         <div id="windSpeedIndicator" style="position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; border-radius: 2px; box-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5); left: 0%; transition: left 0.5s ease-out;"></div>
                     </div>
                     <!-- Метки на баре -->
-                    <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7);">
+                    <div id="windBarLabels" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7);">
                         <span>0</span>
                         <span>5</span>
                         <span>10</span>
@@ -269,10 +269,16 @@
                         <div style="flex: 1; text-align: left;">
                             <div id="windTitle" style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 3px;" data-i18n="trends.loading">Loading data...</div>
                             <div id="windSubtitle" style="font-size: 0.85rem; margin-top: 2px;">Please wait</div>
-                            <!-- Тренд ветра -->
+                            <!-- Тренд ветра + рекомендация кайта -->
                             <div id="windTrend" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
                                 <div id="trendIcon" style="font-size: 1.3em;">⏳</div>
                                 <div id="trendText" style="font-size: 0.8rem; line-height: 1.3;">--</div>
+                                <span id="recommendedKite" style="font-size: 0.8rem; line-height: 1.3;"></span>
+                            </div>
+                            <!-- Тренд направления -->
+                            <div id="windDirTrend" style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+                                <div id="dirTrendIcon" style="font-size: 1.3em;"></div>
+                                <div id="dirTrendText" style="font-size: 0.8rem; line-height: 1.3;"></div>
                             </div>
                         </div>
                     </div>

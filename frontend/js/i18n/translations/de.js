@@ -94,6 +94,9 @@ export default {
     accumulatingData: 'Daten sammeln...',
     strengthening: 'Verstärkend',
     weakening: 'Schwächend',
+    directionStable: 'Richtung stabil',
+    directionVariable: 'Richtung wechselnd',
+    directionChanging: 'Richtung ändert sich',
   },
 
   // Benachrichtigungen

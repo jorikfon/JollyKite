@@ -142,7 +142,7 @@ class WeekWindHistory {
             const historyData = await this.fetchHistoryData();
             console.log('WeekWindHistory: Received data:', historyData);
 
-            if (!historyData || historyData.length === 0) {
+            if (!historyData || !Array.isArray(historyData) || historyData.length === 0) {
                 console.warn('WeekWindHistory: No data received');
                 this.showNoData();
                 return;
@@ -160,6 +160,10 @@ class WeekWindHistory {
                 this.showNoData();
                 return;
             }
+
+            // Get current unit for display
+            const currentUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+            const unitSymbol = window.unitConverter?.getUnitSymbol(currentUnit) || 'kn';
 
             let html = '';
 
@@ -273,17 +277,21 @@ class WeekWindHistory {
                                           stroke-width="3" filter="url(#glow)"/>
 
                                     <!-- Wind speed labels -->
-                                    ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => `
+                                    ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => {
+                                        const displaySpeed = window.unitConverter ? window.unitConverter.convert(speed, 'knots', currentUnit) : speed;
+                                        const label = i === 2 ? `${displaySpeed.toFixed(0)} ${unitSymbol}` : displaySpeed.toFixed(0);
+                                        return `
                                         <text x="-5" y="${chartHeight - (speed / maxWindSpeed) * chartHeight + 5}"
                                               text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
-                                            ${speed.toFixed(0)}
+                                            ${label}
                                         </text>
-                                    `).join('')}
+                                    `}).join('')}
 
                                     <!-- Peak markers -->
                                     ${peaks.map((peak, i) => {
                                         const x = peak.timePos * chartWidth;
                                         const y = chartHeight - (peak.speed / maxWindSpeed) * chartHeight;
+                                        const displaySpeed = window.unitConverter ? window.unitConverter.convert(peak.speed, 'knots', currentUnit) : peak.speed;
                                         return `
                                             <g>
                                                 <circle cx="${x}" cy="${y}" r="5" fill="${this.getWindColor(peak.speed)}"
@@ -293,7 +301,7 @@ class WeekWindHistory {
                                                 <text x="${x}" y="${y - 12}" text-anchor="middle"
                                                       fill="white" font-size="15" font-weight="700"
                                                       style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
-                                                    ${peak.speed.toFixed(1)}
+                                                    ${displaySpeed.toFixed(1)}
                                                 </text>
                                             </g>
                                         `;

@@ -369,7 +369,8 @@ export class DatabaseManager {
         icon: '⏳',
         color: '#808080',
         change: 0,
-        percentChange: 0
+        percentChange: 0,
+        ...this.calculateDirectionStability()
       };
     }
 
@@ -389,7 +390,8 @@ export class DatabaseManager {
         icon: '⏳',
         color: '#808080',
         change: 0,
-        percentChange: 0
+        percentChange: 0,
+        ...this.calculateDirectionStability()
       };
     }
 
@@ -400,7 +402,8 @@ export class DatabaseManager {
         icon: '⏳',
         color: '#808080',
         change: 0,
-        percentChange: 0
+        percentChange: 0,
+        ...this.calculateDirectionStability()
       };
     }
 
@@ -441,6 +444,9 @@ export class DatabaseManager {
       }
     }
 
+    // Расчёт стабильности направления ветра
+    const directionData = this.calculateDirectionStability();
+
     return {
       trend,
       text,
@@ -449,7 +455,71 @@ export class DatabaseManager {
       change: parseFloat(change.toFixed(2)),
       percentChange: parseFloat(percentChange.toFixed(1)),
       currentSpeed: parseFloat(currentSpeed.toFixed(1)),
-      previousSpeed: parseFloat(previousSpeed.toFixed(1))
+      previousSpeed: parseFloat(previousSpeed.toFixed(1)),
+      ...directionData
+    };
+  }
+
+  /**
+   * Calculate wind direction stability using circular standard deviation
+   * Uses last 6 records (~30 min) of wind_direction data
+   */
+  calculateDirectionStability() {
+    const dirResult = this.db.exec(`
+      SELECT wind_direction FROM (
+        SELECT wind_direction FROM wind_data
+        WHERE wind_direction IS NOT NULL
+        ORDER BY timestamp DESC
+        LIMIT 6
+      )
+    `);
+
+    if (dirResult.length === 0 || dirResult[0].values.length < 3) {
+      return {
+        directionTrend: 'insufficient_data',
+        directionSpread: 0,
+        directionIcon: '',
+        directionText: ''
+      };
+    }
+
+    const directions = dirResult[0].values.map(v => v[0]);
+
+    // Circular mean and spread using sin/cos
+    let sumSin = 0, sumCos = 0;
+    for (const dir of directions) {
+      const rad = (dir * Math.PI) / 180;
+      sumSin += Math.sin(rad);
+      sumCos += Math.cos(rad);
+    }
+    const meanSin = sumSin / directions.length;
+    const meanCos = sumCos / directions.length;
+    const R = Math.sqrt(meanSin * meanSin + meanCos * meanCos); // 0..1
+    const spread = Math.round(Math.acos(Math.min(R, 1)) * (180 / Math.PI)); // degrees
+
+    let directionTrend, directionIcon, directionText;
+
+    if (spread < 15) {
+      directionTrend = 'stable';
+      directionIcon = '🧭';
+      directionText = 'Направление стабильное';
+    } else if (spread < 30) {
+      directionTrend = 'variable';
+      directionIcon = '↔️';
+      directionText = 'Направление переменное';
+    } else {
+      directionTrend = 'changing';
+      directionIcon = '🔄';
+      directionText = 'Направление меняется';
+    }
+
+    console.log(`[DirTrend] Spread: ${spread}°, R: ${R.toFixed(3)}, Trend: ${directionTrend}`);
+
+    return {
+      directionTrend,
+      directionSpread: spread,
+      directionIcon,
+      directionText
     };
   }
 

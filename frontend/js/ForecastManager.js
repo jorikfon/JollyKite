@@ -136,11 +136,15 @@ class ForecastManager {
             dayGroups[dayKey].push(hour);
         });
 
+        // Get current unit for display
+        const currentUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+        const unitSymbol = window.unitConverter?.getUnitSymbol(currentUnit) || 'kn';
+
         let forecastHTML = '';
         Object.entries(dayGroups).forEach(([dayKey, group], dayIndex) => {
             const dayName = this.getDayName(new Date(dayKey));
 
-            // Extract data for smooth curves
+            // Extract data for smooth curves (always in knots internally)
             const windSpeeds = group.map(h => parseFloat(h.speed));
             const waveHeights = group.map(h => h.waveHeight !== undefined ? parseFloat(h.waveHeight) : 0);
             const times = group.map(h => h.time);
@@ -250,17 +254,21 @@ class ForecastManager {
                                           stroke-width="3" filter="url(#glow)"/>
 
                                     <!-- Wind speed labels -->
-                                    ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => `
+                                    ${[0, maxWindSpeed * 0.5, maxWindSpeed].map((speed, i) => {
+                                        const displaySpeed = window.unitConverter ? window.unitConverter.convert(speed, 'knots', currentUnit) : speed;
+                                        const label = i === 2 ? `${displaySpeed.toFixed(0)} ${unitSymbol}` : displaySpeed.toFixed(0);
+                                        return `
                                         <text x="-5" y="${windHeight - (speed / maxWindSpeed) * windHeight + 5}"
                                               text-anchor="end" fill="rgba(255,255,255,0.7)" font-size="13">
-                                            ${speed.toFixed(0)}
+                                            ${label}
                                         </text>
-                                    `).join('')}
+                                    `}).join('')}
 
                                     <!-- Wind peak markers -->
                                     ${windPeaks.map((peak, i) => {
                                         const x = (peak.index / (windSpeeds.length - 1)) * chartWidth;
                                         const y = windHeight - (peak.value / maxWindSpeed) * windHeight;
+                                        const displayPeak = window.unitConverter ? window.unitConverter.convert(peak.value, 'knots', currentUnit) : peak.value;
                                         return `
                                             <g>
                                                 <circle cx="${x}" cy="${y}" r="5" fill="${this.getWindColor(peak.value)}"
@@ -270,7 +278,7 @@ class ForecastManager {
                                                 <text x="${x}" y="${y - 12}" text-anchor="middle"
                                                       fill="white" font-size="15" font-weight="700"
                                                       style="text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
-                                                    ${peak.value.toFixed(1)}
+                                                    ${displayPeak.toFixed(1)}
                                                 </text>
                                             </g>
                                         `;

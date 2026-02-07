@@ -20,6 +20,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+### IMPORTANT: Version Management
+
+**Before EVERY commit:**
+1. Increment version number in `frontend/js/settings/SettingsManager.js` (line 18)
+2. Version format: `X.Y.Z` (e.g., `2.5.10` → `2.5.11`)
+3. Increment patch version (Z) for bugfixes and minor changes
+4. Increment minor version (Y) for new features
+5. This ensures users get cache-busted updates via VersionManager
+
+**Example:**
+```javascript
+// In frontend/js/settings/SettingsManager.js
+static DEFAULT_SETTINGS = {
+  version: '2.5.11',  // ← Always update this before commit
+  // ...
+}
+```
+
 ### Local Development Server
 
 ```bash
