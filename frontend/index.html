@@ -442,6 +442,21 @@
                                 Используется для расчета оптимального размера кайта
                             </p>
                         </div>
+
+                        <!-- Калибровка направления ветра -->
+                        <div class="rider-setting">
+                            <label class="rider-setting-label" for="windDirOffset" data-i18n="menu.windDirOffset">Калибровка направления (°)</label>
+                            <div class="rider-weight-input">
+                                <input type="number" id="windDirOffset" min="-180" max="180" step="1" value="0" class="weight-input">
+                                <div class="weight-buttons">
+                                    <button class="weight-button weight-button--minus dir-offset-button" data-action="decrease">-</button>
+                                    <button class="weight-button weight-button--plus dir-offset-button" data-action="increase">+</button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-white/60 mt-2" data-i18n="menu.windDirOffsetHint">
+                                Коррекция направления ветра для калибровки на местности
+                            </p>
+                        </div>
                     </section>
 
                     <!-- Секция уведомлений -->

@@ -15,9 +15,10 @@ class SettingsManager {
     windSpeedUnit: 'knots', // knots, ms
     notificationsEnabled: false,
     theme: 'auto',          // auto, light, dark (для будущего)
-    version: '2.5.12',
+    version: '2.5.13',
     boardType: 'twintip',   // twintip, hydrofoil
     riderWeight: 75,        // kg (40-120)
+    windDirOffset: 0,       // degrees (-180 to +180) - calibration offset for wind direction
   };
 
   /**
@@ -31,6 +32,7 @@ class SettingsManager {
     version: (value) => typeof value === 'string',
     boardType: (value) => ['twintip', 'hydrofoil'].includes(value),
     riderWeight: (value) => typeof value === 'number' && value >= 40 && value <= 120,
+    windDirOffset: (value) => typeof value === 'number' && value >= -180 && value <= 180,
   };
 
   /**

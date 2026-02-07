@@ -25,6 +25,8 @@ export default {
     hydrofoil: 'Hydrofoil',
     riderWeight: 'Rider Weight (kg)',
     weightHint: 'Used to calculate optimal kite size',
+    windDirOffset: 'Direction Calibration (°)',
+    windDirOffsetHint: 'Wind direction offset for on-site calibration',
     close: 'Close',
   },
 
