@@ -1,25 +1,25 @@
 // Settings and i18n
-import I18nManager from './i18n/I18nManager.js?v=2.3.0';
-import SettingsManager from './settings/SettingsManager.js?v=2.3.0';
-import LocalStorageManager from './settings/LocalStorageManager.js?v=2.3.0';
-import MenuController from './settings/MenuController.js?v=2.3.0';
-import UnitConverter from './utils/UnitConverter.js?v=2.3.0';
+import I18nManager from './i18n/I18nManager.js';
+import SettingsManager from './settings/SettingsManager.js';
+import LocalStorageManager from './settings/LocalStorageManager.js';
+import MenuController from './settings/MenuController.js';
+import UnitConverter from './utils/UnitConverter.js';
 
 // App modules
-import config from './config.js?v=2.1.1';
-import WindUtils from './utils/WindUtils.js?v=2.1.1';
-import WindDataManager from './WindDataManager.js?v=2.1.1';
-import WindStreamManager from './WindStreamManager.js?v=2.1.1';
-import MapController from './MapController.js?v=2.1.1';
-import ForecastManager from './ForecastManager.js?v=2.1.1';
-import WindArrowController from './WindArrowController.js?v=2.1.1';
-import HistoryManager from './HistoryManager.js?v=2.1.1';
-import WindStatistics from './WindStatistics.js?v=2.1.1';
-import NotificationManager from './NotificationManager.js?v=2.1.1';
+import config from './config.js';
+import WindUtils from './utils/WindUtils.js';
+import WindDataManager from './WindDataManager.js';
+import WindStreamManager from './WindStreamManager.js';
+import MapController from './MapController.js';
+import ForecastManager from './ForecastManager.js';
+import WindArrowController from './WindArrowController.js';
+import HistoryManager from './HistoryManager.js';
+import WindStatistics from './WindStatistics.js';
+import NotificationManager from './NotificationManager.js';
 import KiteSizeSlider from './KiteSizeSlider.js';
-import TodayWindTimeline from './TodayWindTimeline.js?v=2.1.1';
-import WeekWindHistory from './WeekWindHistory.js?v=2.1.1';
-import { rippleManager } from './MaterialRipple.js?v=2.1.1';
+import TodayWindTimeline from './TodayWindTimeline.js';
+import WeekWindHistory from './WeekWindHistory.js';
+import { rippleManager } from './MaterialRipple.js';
 
 class App {
     constructor() {
@@ -297,9 +297,6 @@ class App {
                     console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
                 }
 
-                // Применение калибровки направления
-                this.applyWindDirOffset(windData);
-
                 // Получение информации о безопасности
                 const safety = this.windDataManager.getWindSafety(
                     windData.windDir,
@@ -345,9 +342,6 @@ class App {
                 this.lastUpdateTime = new Date(windData.timestamp);
                 console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
             }
-
-            // Применение калибровки направления
-            this.applyWindDirOffset(windData);
 
             // Получение информации о безопасности
             const safety = this.windDataManager.getWindSafety(
@@ -653,21 +647,6 @@ class App {
 
     }
 
-    /**
-     * Apply wind direction calibration offset from settings
-     */
-    applyWindDirOffset(windData) {
-        const offset = this.settingsManager.getSetting('windDirOffset') || 0;
-        if (offset === 0) return;
-
-        if (typeof windData.windDir === 'number') {
-            windData.windDir = ((windData.windDir + offset) % 360 + 360) % 360;
-        }
-        if (typeof windData.windDirAvg === 'number') {
-            windData.windDirAvg = ((windData.windDirAvg + offset) % 360 + 360) % 360;
-        }
-    }
-
     degreesToCardinal(degrees) {
         return WindUtils.degreesToCardinal(degrees);
     }
@@ -945,10 +924,19 @@ class App {
     }
 
     /**
-     * Update version display in UI from SettingsManager
+     * Update version display in UI from version.json (single source of truth)
      */
-    updateVersionDisplay() {
-        const version = SettingsManager.DEFAULT_SETTINGS.version;
+    async updateVersionDisplay() {
+        let version = SettingsManager.DEFAULT_SETTINGS.version;
+        try {
+            const response = await fetch('/version.json');
+            if (response.ok) {
+                const data = await response.json();
+                version = data.version;
+            }
+        } catch (e) {
+            // Fallback to SettingsManager default
+        }
         document.querySelectorAll('.app-version').forEach(el => {
             el.textContent = `JollyKite v${version}`;
         });

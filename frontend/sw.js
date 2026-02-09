@@ -1,6 +1,8 @@
 // JollyKite Service Worker
-const CACHE_NAME = 'jollykite-v2.5.14';
-const API_CACHE_NAME = 'jollykite-api-v2.5.14';
+// Version must match frontend/version.json
+const APP_VERSION = '2.6.0';
+const CACHE_NAME = `jollykite-v${APP_VERSION}`;
+const API_CACHE_NAME = `jollykite-api-v${APP_VERSION}`;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
 
 // Ресурсы для кэширования при установке
@@ -161,11 +163,27 @@ function isHTMLRequest(request) {
 // Обработка API запросов
 async function handleApiRequest(request) {
   const url = request.url;
-  
+
+  // POST/PUT/DELETE запросы НЕ кэшируются, всегда идут в сеть
+  if (request.method !== 'GET') {
+    try {
+      return await fetch(request);
+    } catch (error) {
+      console.log('[SW] Network failed for non-GET API request:', url);
+      return new Response(JSON.stringify({
+        error: 'Network error',
+        message: 'Не удалось выполнить запрос'
+      }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
   try {
-    // Попытка получить данные из сети
+    // Попытка получить данные из сети (только для GET)
     const response = await fetch(request);
-    
+
     if (response.ok) {
       // Кэшируем успешный ответ с временной меткой
       const cache = await caches.open(API_CACHE_NAME);
@@ -178,7 +196,7 @@ async function handleApiRequest(request) {
           'sw-cached-at': Date.now().toString()
         }
       });
-      
+
       await cache.put(request, responseWithTimestamp);
       console.log('[SW] API response cached:', url);
       return response;

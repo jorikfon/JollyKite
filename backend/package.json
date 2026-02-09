@@ -1,6 +1,6 @@
 {
   "name": "jollykite-backend",
-  "version": "1.0.0",
+  "version": "2.6.0",
   "description": "Backend service for JollyKite wind data collection and aggregation",
   "main": "server.js",
   "type": "module",

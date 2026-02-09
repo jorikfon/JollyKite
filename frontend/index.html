@@ -70,7 +70,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <!-- Main Application Styles -->
-    <link rel="stylesheet" href="./css/main.css?v=2.3.0">
+    <link rel="stylesheet" href="./css/main.css">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -443,20 +443,6 @@
                             </p>
                         </div>
 
-                        <!-- Калибровка направления ветра -->
-                        <div class="rider-setting">
-                            <label class="rider-setting-label" for="windDirOffset" data-i18n="menu.windDirOffset">Калибровка направления (°)</label>
-                            <div class="rider-weight-input">
-                                <input type="number" id="windDirOffset" min="-180" max="180" step="1" value="0" class="weight-input">
-                                <div class="weight-buttons">
-                                    <button class="weight-button weight-button--minus dir-offset-button" data-action="decrease">-</button>
-                                    <button class="weight-button weight-button--plus dir-offset-button" data-action="increase">+</button>
-                                </div>
-                            </div>
-                            <p class="text-xs text-white/60 mt-2" data-i18n="menu.windDirOffsetHint">
-                                Коррекция направления ветра для калибровки на местности
-                            </p>
-                        </div>
                     </section>
 
                     <!-- Секция уведомлений -->
@@ -490,13 +476,12 @@
 
     <!-- ES6 Module Import for App -->
     <script type="module">
-        import App from './js/App.js?v=2.5.7';
+        import App from './js/App.js';
 
         // Global app instance
         let jollyKiteApp;
 
         // Force Service Worker update
-        const APP_VERSION = '2.5.7';
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.getRegistrations().then(registrations => {
                 registrations.forEach(registration => {
@@ -508,7 +493,15 @@
 
         // Initialize the app when DOM is ready
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log(`Initializing JollyKite App v${APP_VERSION}...`);
+            // Fetch version from single source of truth
+            let appVersion = '...';
+            try {
+                const vResp = await fetch('/version.json');
+                const vData = await vResp.json();
+                appVersion = vData.version;
+            } catch (e) { /* fallback */ }
+
+            console.log(`Initializing JollyKite App v${appVersion}...`);
 
             try {
                 jollyKiteApp = new App();
@@ -554,8 +547,8 @@
                     return;
                 }
 
-                // Register Service Worker with forced update
-                navigator.serviceWorker.register('./sw.js?v=2.3.0', {
+                // Register Service Worker (VersionManager handles cache invalidation)
+                navigator.serviceWorker.register('./sw.js', {
                     updateViaCache: 'none'
                 }).then(registration => {
                     console.log('✓ Service Worker registered:', registration.scope);
