@@ -7,6 +7,7 @@ import { ArchiveManager } from './src/ArchiveManager.js';
 import { ApiRouter } from './src/ApiRouter.js';
 import { NotificationManager } from './src/NotificationManager.js';
 import { ForecastCollector } from './src/ForecastCollector.js';
+import { CalibrationManager } from './src/CalibrationManager.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ const archiveManager = new ArchiveManager('./data/wind_archive.db');
 const notificationManager = new NotificationManager('./data/subscriptions.json');
 const windCollector = new WindDataCollector(config, dbManager, archiveManager);
 const forecastCollector = new ForecastCollector(config);
+const calibrationManager = new CalibrationManager('./data/calibration.json');
 
 // Middleware
 app.use(cors());
@@ -36,7 +38,7 @@ app.use(express.json());
 app.use(express.static('../frontend'));
 
 // API Routes
-const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector);
+const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager);
 app.use('/api', apiRouter.getRouter());
 
 // Health check

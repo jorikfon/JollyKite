@@ -2,7 +2,7 @@
   "name": "Pak Nam Pran Kitesurfing - Wind Forecast",
   "short_name": "Pak Nam Pran",
   "description": "Wind forecast and kitesurfing conditions for Pak Nam Pran, Thailand",
-  "version": "2.4.3",
+  "version": "2.6.0",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1e293b",

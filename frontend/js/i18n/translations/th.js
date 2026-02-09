@@ -25,8 +25,6 @@ export default {
     hydrofoil: 'ไฮโดรฟอยล์',
     riderWeight: 'น้ำหนักนักเล่น (กก.)',
     weightHint: 'ใช้สำหรับคำนวณขนาดว่าวที่เหมาะสม',
-    windDirOffset: 'ปรับเทียบทิศทาง (°)',
-    windDirOffsetHint: 'ปรับทิศทางลมสำหรับการปรับเทียบในพื้นที่',
     close: 'ปิด',
   },
 

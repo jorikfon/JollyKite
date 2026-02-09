@@ -22,20 +22,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### IMPORTANT: Version Management
 
-**Before EVERY commit:**
-1. Increment version number in `frontend/js/settings/SettingsManager.js` (line 18)
-2. Version format: `X.Y.Z` (e.g., `2.5.10` → `2.5.11`)
-3. Increment patch version (Z) for bugfixes and minor changes
-4. Increment minor version (Y) for new features
-5. This ensures users get cache-busted updates via VersionManager
+**Before EVERY commit, update version in TWO files:**
+1. `frontend/version.json` — single source of truth for the entire app
+2. `frontend/sw.js` line 3 — `APP_VERSION` constant (must match version.json)
+
+**Version format:** `X.Y.Z` (e.g., `2.6.0` → `2.6.1`)
+- Patch (Z): bugfixes and minor changes
+- Minor (Y): new features
+
+**All other components read version automatically:**
+- Backend `/api/version` endpoint reads `version.json` on startup
+- Frontend UI fetches `/version.json` for display
+- VersionManager triggers cache invalidation via `/api/version`
+- `SettingsManager.js` has a fallback version (update if needed)
 
 **Example:**
+```json
+// frontend/version.json
+{ "version": "2.6.1" }
+```
 ```javascript
-// In frontend/js/settings/SettingsManager.js
-static DEFAULT_SETTINGS = {
-  version: '2.5.11',  // ← Always update this before commit
-  // ...
-}
+// frontend/sw.js (line 3)
+const APP_VERSION = '2.6.1';
 ```
 
 ### Local Development Server
@@ -122,7 +130,7 @@ Wind safety calculations are centralized in `WindUtils.js` (lines 74-125) and re
 - API requests: Network-first with 24h cache fallback
 - Map tiles: Always network (no caching to save space)
 
-**Cache versioning:** Update `CACHE_NAME` in `sw.js` when deploying changes (currently `jollykite-v1.1.8`)
+**Cache versioning:** Update `APP_VERSION` in `sw.js` and `frontend/version.json` when deploying changes. Cache names are derived automatically as `jollykite-v{APP_VERSION}`.
 
 ---
 
@@ -143,7 +151,7 @@ Wind safety calculations are centralized in `WindUtils.js` (lines 74-125) and re
 
 ### Updating Service Worker
 
-1. Increment `CACHE_NAME` in `sw.js` (e.g., `jollykite-v1.1.9`)
+1. Increment version in `frontend/version.json` and `APP_VERSION` in `sw.js`
 2. Update `CORE_ASSETS` array if adding new files
 3. Test by unregistering old SW: DevTools → Application → Service Workers → Unregister
 
@@ -264,7 +272,7 @@ git push origin main
 ### Common Issues
 
 **Service Worker not updating:**
-- Increment `CACHE_NAME` in `sw.js`
+- Increment `APP_VERSION` in `sw.js` and version in `frontend/version.json`
 - DevTools → Application → Service Workers → Unregister
 - Hard refresh (Cmd/Ctrl + Shift + R)
 

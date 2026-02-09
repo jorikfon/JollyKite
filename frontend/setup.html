@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>JollyKite - Wind Direction Calibration</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #windMap {
+            height: 400px;
+            width: 100%;
+            border-radius: 15px;
+            z-index: 1;
+            cursor: default !important;
+        }
+
+        .leaflet-container { cursor: default !important; }
+        .leaflet-grab, .leaflet-grab * { cursor: default !important; }
+        .wind-arrow-container { pointer-events: none; }
+
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+        .btn-primary:hover { background: linear-gradient(135deg, #38bdf8, #0ea5e9); }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .btn-danger:hover { background: linear-gradient(135deg, #f87171, #ef4444); }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 14px;
+            border-radius: 8px;
+            min-width: 44px;
+        }
+
+        .offset-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(14, 165, 233, 0.3);
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            width: 100px;
+            padding: 8px;
+            outline: none;
+        }
+        .offset-input:focus {
+            border-color: #0ea5e9;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-row:last-child { border-bottom: none; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-saved {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+        .status-unsaved {
+            background: rgba(234, 179, 8, 0.2);
+            color: #facc15;
+        }
+
+        .compass {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            position: relative;
+            margin: 0 auto;
+        }
+        .compass-label {
+            position: absolute;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.5);
+        }
+        .compass-n { top: 2px; left: 50%; transform: translateX(-50%); }
+        .compass-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .compass-e { right: 4px; top: 50%; transform: translateY(-50%); }
+        .compass-w { left: 4px; top: 50%; transform: translateY(-50%); }
+
+        .compass-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 50px;
+            transform-origin: bottom center;
+            border-radius: 2px;
+        }
+        .compass-arrow-raw {
+            background: rgba(239, 68, 68, 0.7);
+            margin-left: -2px;
+            margin-top: -50px;
+        }
+        .compass-arrow-corrected {
+            background: rgba(34, 197, 94, 0.9);
+            margin-left: -2px;
+            margin-top: -50px;
+        }
+
+        .spot-marker, .beach-marker, .parking-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-2xl mx-auto p-4 pb-8">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-white mb-1">Wind Direction Calibration</h1>
+            <p class="text-sm text-slate-400">JollyKite Setup</p>
+        </div>
+
+        <!-- Map -->
+        <div class="card mb-4 p-0 overflow-hidden">
+            <div id="windMap"></div>
+        </div>
+
+        <!-- Current Data -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-3 text-sky-400">Live Wind Data</h2>
+            <div class="data-row">
+                <span class="text-slate-400">Wind Speed</span>
+                <span id="windSpeed" class="font-bold">--</span>
+            </div>
+            <div class="data-row">
+                <span class="text-slate-400">Raw Direction</span>
+                <span id="rawDir" class="font-bold text-red-400">--</span>
+            </div>
+            <div class="data-row">
+                <span class="text-slate-400">Corrected Direction</span>
+                <span id="correctedDir" class="font-bold text-green-400">--</span>
+            </div>
+            <div class="data-row">
+                <span class="text-slate-400">Last Update</span>
+                <span id="lastUpdate" class="text-xs text-slate-500">--</span>
+            </div>
+        </div>
+
+        <!-- Compass Preview -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-3 text-sky-400">Direction Preview</h2>
+            <div class="flex items-center justify-around">
+                <div class="text-center">
+                    <div class="compass">
+                        <span class="compass-label compass-n">N</span>
+                        <span class="compass-label compass-s">S</span>
+                        <span class="compass-label compass-e">E</span>
+                        <span class="compass-label compass-w">W</span>
+                        <div id="rawArrow" class="compass-arrow compass-arrow-raw"></div>
+                        <div id="correctedArrow" class="compass-arrow compass-arrow-corrected"></div>
+                    </div>
+                    <div class="mt-2 text-xs">
+                        <span class="text-red-400 mr-3">--- Raw</span>
+                        <span class="text-green-400">--- Corrected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calibration Controls -->
+        <div class="card mb-4">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-sky-400">Calibration Offset</h2>
+                <span id="statusBadge" class="status-badge status-saved">Saved</span>
+            </div>
+
+            <div class="flex items-center justify-center gap-2 mb-4">
+                <button class="btn btn-sm bg-slate-600 hover:bg-slate-500" onclick="adjustOffset(-5)">-5</button>
+                <button class="btn btn-sm bg-slate-600 hover:bg-slate-500" onclick="adjustOffset(-1)">-1</button>
+                <input type="number" id="offsetInput" class="offset-input" min="-180" max="180" step="1" value="0">
+                <button class="btn btn-sm bg-slate-600 hover:bg-slate-500" onclick="adjustOffset(1)">+1</button>
+                <button class="btn btn-sm bg-slate-600 hover:bg-slate-500" onclick="adjustOffset(5)">+5</button>
+            </div>
+
+            <div class="text-center text-xs text-slate-500 mb-4">
+                Range: -180 to +180 degrees
+            </div>
+
+            <div class="flex gap-3">
+                <button id="saveBtn" class="btn btn-primary flex-1" onclick="saveOffset()">
+                    Save Offset
+                </button>
+                <button class="btn btn-danger" onclick="resetOffset()">
+                    Reset to 0
+                </button>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="card text-xs text-slate-500">
+            <p>This page adjusts the wind direction offset applied server-side to all users.</p>
+            <p class="mt-1">Positive offset rotates clockwise, negative counter-clockwise.</p>
+            <p class="mt-1">Data refreshes automatically every 5 seconds.</p>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // === Configuration ===
+        const SPOT = [12.346596280786017, 99.99817902532192];
+        const KITER = [12.3468, 100.0116];
+        const MAP_ZOOM = 14;
+        const CIRCLE_RADIUS = 0.006;
+        const REFRESH_INTERVAL = 5000;
+
+        // === State ===
+        let map = null;
+        let windArrowMarker = null;
+        let currentRawDir = null;
+        let currentSpeed = 0;
+        let savedOffset = 0;
+        let localOffset = 0;
+
+        // === Map Initialization ===
+        function initMap() {
+            const mapCenter = [SPOT[0], SPOT[1] + 0.00286];
+
+            map = L.map('windMap', {
+                center: mapCenter,
+                zoom: MAP_ZOOM,
+                dragging: false,
+                touchZoom: false,
+                doubleClickZoom: false,
+                scrollWheelZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                tap: false,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            // Tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            // Kiter marker
+            const kitesurferIcon = L.icon({
+                iconUrl: '/kiter.png',
+                iconSize: [100, 100],
+                iconAnchor: [50, 50]
+            });
+            L.marker(KITER, { icon: kitesurferIcon }).addTo(map);
+
+            // Spot marker
+            L.marker(SPOT, {
+                icon: L.divIcon({
+                    html: '<div class="spot-marker">JollyKite</div>',
+                    className: 'spot-icon',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+        }
+
+        // === Wind Arrow ===
+        function getWindSpeedColor(speed) {
+            const knots = parseFloat(speed) || 0;
+            if (knots < 5) return '#87CEEB';
+            if (knots < 10) return '#00CED1';
+            if (knots < 15) return '#00FF00';
+            if (knots < 20) return '#FFD700';
+            if (knots < 25) return '#FFA500';
+            if (knots < 30) return '#FF4500';
+            return '#8B0000';
+        }
+
+        function getDarkerColor(color) {
+            const map = {
+                '#87CEEB': '#4682B4', '#00CED1': '#008B8B', '#00FF00': '#00CC00',
+                '#FFD700': '#DAA520', '#FFA500': '#FF8C00', '#FF4500': '#DC143C', '#8B0000': '#660000'
+            };
+            return map[color] || color;
+        }
+
+        function createArrowSVG(speed) {
+            const color = getWindSpeedColor(speed);
+            const darkerColor = getDarkerColor(color);
+            return `
+                <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="arrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${darkerColor};stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="black" flood-opacity="0.3"/>
+                        </filter>
+                    </defs>
+                    <path d="M 30 5 L 40 25 L 35 25 L 35 50 L 25 50 L 25 25 L 20 25 Z"
+                          fill="url(#arrowGrad)" stroke="${darkerColor}" stroke-width="2" filter="url(#shadow)">
+                        <animate attributeName="opacity" values="0.8;1;0.8" dur="2s" repeatCount="indefinite"/>
+                    </path>
+                </svg>`;
+        }
+
+        function updateWindArrow(direction, speed) {
+            if (!map) return;
+
+            const angleRad = ((direction + 180) % 360) * (Math.PI / 180);
+            const offsetX = CIRCLE_RADIUS * Math.sin(angleRad);
+            const offsetY = CIRCLE_RADIUS * Math.cos(angleRad);
+            const arrowPosition = [KITER[0] + offsetY, KITER[1] + offsetX];
+
+            const windArrowIcon = L.divIcon({
+                html: createArrowSVG(speed),
+                className: 'wind-arrow-container',
+                iconSize: [60, 60],
+                iconAnchor: [30, 30]
+            });
+
+            if (windArrowMarker) {
+                windArrowMarker.setLatLng(arrowPosition);
+                windArrowMarker.setIcon(windArrowIcon);
+            } else {
+                windArrowMarker = L.marker(arrowPosition, { icon: windArrowIcon }).addTo(map);
+            }
+
+            // Apply rotation
+            setTimeout(() => {
+                const element = windArrowMarker.getElement();
+                if (element) {
+                    const finalRotation = direction + 180;
+                    const currentTransform = element.style.transform;
+                    const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+                    if (translateMatch) {
+                        element.style.transform = `${translateMatch[0]} rotate(${finalRotation}deg)`;
+                    } else {
+                        element.style.transform = `rotate(${finalRotation}deg)`;
+                    }
+                    element.style.transformOrigin = 'center';
+                }
+            }, 50);
+        }
+
+        // === Compass ===
+        function updateCompass(rawDir, correctedDir) {
+            const rawArrow = document.getElementById('rawArrow');
+            const correctedArrow = document.getElementById('correctedArrow');
+            if (rawDir !== null) {
+                rawArrow.style.transform = `translateX(-50%) rotate(${rawDir}deg)`;
+            }
+            if (correctedDir !== null) {
+                correctedArrow.style.transform = `translateX(-50%) rotate(${correctedDir}deg)`;
+            }
+        }
+
+        function degreesToCardinal(deg) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                                'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            return directions[Math.round(deg / 22.5) % 16];
+        }
+
+        // === Offset Controls ===
+        function adjustOffset(delta) {
+            const input = document.getElementById('offsetInput');
+            let val = parseInt(input.value, 10) || 0;
+            val = Math.max(-180, Math.min(180, val + delta));
+            input.value = val;
+            localOffset = val;
+            updatePreview();
+            updateStatusBadge();
+        }
+
+        function resetOffset() {
+            document.getElementById('offsetInput').value = 0;
+            localOffset = 0;
+            updatePreview();
+            updateStatusBadge();
+        }
+
+        function updateStatusBadge() {
+            const badge = document.getElementById('statusBadge');
+            if (localOffset !== savedOffset) {
+                badge.textContent = 'Unsaved';
+                badge.className = 'status-badge status-unsaved';
+            } else {
+                badge.textContent = 'Saved';
+                badge.className = 'status-badge status-saved';
+            }
+        }
+
+        function updatePreview() {
+            if (currentRawDir === null) return;
+            const corrected = ((currentRawDir + localOffset) % 360 + 360) % 360;
+
+            document.getElementById('correctedDir').textContent =
+                `${Math.round(corrected)} (${degreesToCardinal(corrected)})`;
+
+            updateCompass(currentRawDir, corrected);
+            updateWindArrow(corrected, currentSpeed);
+        }
+
+        async function saveOffset() {
+            const offset = parseInt(document.getElementById('offsetInput').value, 10);
+            if (isNaN(offset) || offset < -180 || offset > 180) {
+                alert('Invalid offset (-180 to +180)');
+                return;
+            }
+
+            try {
+                const resp = await fetch('/api/calibration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ offset })
+                });
+
+                const result = await resp.json();
+                if (result.success) {
+                    savedOffset = result.offset;
+                    localOffset = result.offset;
+                    updateStatusBadge();
+                    fetchCalibrationData();
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Network error: ' + e.message);
+            }
+        }
+
+        // === Data Fetching ===
+        async function fetchCalibrationData() {
+            try {
+                const resp = await fetch('/api/calibration');
+                const data = await resp.json();
+
+                savedOffset = data.offset;
+                localOffset = parseInt(document.getElementById('offsetInput').value, 10) || 0;
+
+                // Only update input if user hasn't changed it
+                if (localOffset === savedOffset || document.getElementById('offsetInput') !== document.activeElement) {
+                    document.getElementById('offsetInput').value = data.offset;
+                    localOffset = data.offset;
+                }
+
+                currentRawDir = data.rawDirection;
+                currentSpeed = data.windSpeed || 0;
+
+                // Update display
+                document.getElementById('windSpeed').textContent =
+                    data.windSpeed !== null ? `${data.windSpeed} knots` : '--';
+
+                document.getElementById('rawDir').textContent =
+                    currentRawDir !== null ? `${currentRawDir} (${degreesToCardinal(currentRawDir)})` : '--';
+
+                if (data.timestamp) {
+                    const ts = new Date(data.timestamp);
+                    document.getElementById('lastUpdate').textContent = ts.toLocaleString('en-US', {
+                        timeZone: 'Asia/Bangkok',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                    }) + ' (Bangkok)';
+                }
+
+                updatePreview();
+                updateStatusBadge();
+            } catch (e) {
+                console.error('Error fetching calibration data:', e);
+            }
+        }
+
+        // === Input Events ===
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('offsetInput');
+
+            input.addEventListener('input', () => {
+                localOffset = parseInt(input.value, 10) || 0;
+                updatePreview();
+                updateStatusBadge();
+            });
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveOffset();
+                    e.target.blur();
+                }
+            });
+
+            // Init map and start polling
+            initMap();
+            fetchCalibrationData();
+            setInterval(fetchCalibrationData, REFRESH_INTERVAL);
+        });
+    </script>
+</body>
+</html>

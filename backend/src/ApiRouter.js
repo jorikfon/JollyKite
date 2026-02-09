@@ -1,15 +1,33 @@
 import express from 'express';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Read version from single source of truth
+let appVersion = '0.0.0';
+try {
+  const versionData = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '../../frontend/version.json'), 'utf8')
+  );
+  appVersion = versionData.version;
+} catch (e) {
+  console.warn('Could not read version.json:', e.message);
+}
 
 /**
  * ApiRouter - defines all API endpoints for frontend
  */
 export class ApiRouter {
-  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector) {
+  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager) {
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
     this.windCollector = windCollector;
     this.notificationManager = notificationManager;
     this.forecastCollector = forecastCollector;
+    this.calibrationManager = calibrationManager;
     this.router = express.Router();
     this.sseClients = []; // Connected SSE clients
     this.setupRoutes();
@@ -41,12 +59,12 @@ export class ApiRouter {
   }
 
   setupRoutes() {
-    // Version endpoint for cache invalidation
+    // Version endpoint for cache invalidation (reads from frontend/version.json)
     this.router.get('/version', (req, res) => {
       res.json({
-        version: '2.2.1',
+        version: appVersion,
         timestamp: new Date().toISOString(),
-        serviceWorkerVersion: 'jollykite-v2.2.1'
+        serviceWorkerVersion: `jollykite-v${appVersion}`
       });
     });
 
@@ -143,7 +161,7 @@ export class ApiRouter {
             time: record.timestamp,
             avg_speed: parseFloat(record.wind_speed_knots) || 0,
             max_gust: parseFloat(record.wind_gust_knots || record.wind_speed_knots) || 0,
-            direction: parseInt(record.wind_direction) || 0
+            direction: this.calibrationManager.applyOffset(parseInt(record.wind_direction) || 0)
           });
         });
 
@@ -177,15 +195,21 @@ export class ApiRouter {
         const endHour = parseInt(req.query.end) || 20;
         const interval = parseInt(req.query.interval);
 
-        // If interval is specified, use interval-based aggregation
+        let data;
         if (interval && interval > 0) {
-          const data = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
-          res.json(data);
+          data = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
         } else {
-          // Default to hourly aggregation
-          const data = this.dbManager.getHourlyAggregateToday(startHour, endHour);
-          res.json(data);
+          data = this.dbManager.getHourlyAggregateToday(startHour, endHour);
         }
+
+        // Apply calibration offset to direction data
+        data.forEach(d => {
+          if (d.avg_direction !== undefined) {
+            d.avg_direction = this.calibrationManager.applyOffset(d.avg_direction);
+          }
+        });
+
+        res.json(data);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
@@ -196,6 +220,9 @@ export class ApiRouter {
       try {
         const hours = parseInt(req.params.hours) || 24;
         const stats = this.dbManager.getStatistics(hours);
+        if (stats && stats.avg_direction !== undefined) {
+          stats.avg_direction = this.calibrationManager.applyOffset(stats.avg_direction);
+        }
         res.json(stats);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -236,6 +263,15 @@ export class ApiRouter {
 
         // Get today's actual wind data (history)
         const historyData = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
+
+        // Apply calibration offset to direction data
+        if (historyData) {
+          historyData.forEach(d => {
+            if (d.avg_direction !== undefined) {
+              d.avg_direction = this.calibrationManager.applyOffset(d.avg_direction);
+            }
+          });
+        }
 
         if (!historyData || historyData.length === 0) {
           return res.json({
@@ -301,6 +337,48 @@ export class ApiRouter {
         });
       } catch (error) {
         console.error('Error generating full timeline:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get current calibration offset and live direction preview
+    this.router.get('/calibration', (req, res) => {
+      try {
+        const offset = this.calibrationManager.getOffset();
+        const latest = this.dbManager.getLatestData();
+        const rawDir = latest ? parseInt(latest.wind_direction || 0) : null;
+        const rawDirAvg = latest && latest.wind_direction_avg ? parseInt(latest.wind_direction_avg) : null;
+
+        res.json({
+          offset,
+          rawDirection: rawDir,
+          correctedDirection: rawDir !== null ? this.calibrationManager.applyOffset(rawDir) : null,
+          rawDirectionAvg: rawDirAvg,
+          correctedDirectionAvg: rawDirAvg !== null ? this.calibrationManager.applyOffset(rawDirAvg) : null,
+          windSpeed: latest ? parseFloat(latest.wind_speed_knots?.toFixed(1) || 0) : null,
+          timestamp: latest ? latest.timestamp : null
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Set calibration offset
+    this.router.post('/calibration', (req, res) => {
+      try {
+        const { offset } = req.body;
+        if (offset === undefined || offset === null) {
+          return res.status(400).json({ error: 'offset is required' });
+        }
+
+        const success = this.calibrationManager.setOffset(offset);
+        if (!success) {
+          return res.status(400).json({ error: 'Invalid offset value (must be integer -180 to +180)' });
+        }
+
+        console.log(`🧭 Wind direction calibration offset set to: ${offset}°`);
+        res.json({ success: true, offset: this.calibrationManager.getOffset() });
+      } catch (error) {
         res.status(500).json({ error: error.message });
       }
     });
@@ -522,18 +600,21 @@ export class ApiRouter {
   }
 
   /**
-   * Format wind data for API response
+   * Format wind data for API response (applies calibration offset to directions)
    */
   formatWindData(data) {
     if (!data) return null;
+
+    const rawDir = parseInt(data.wind_direction || 0);
+    const rawDirAvg = data.wind_direction_avg ? parseInt(data.wind_direction_avg) : null;
 
     return {
       timestamp: data.timestamp,
       windSpeedKnots: parseFloat(data.wind_speed_knots?.toFixed(1) || 0),
       windGustKnots: data.wind_gust_knots ? parseFloat(data.wind_gust_knots.toFixed(1)) : null,
       maxGustKnots: data.max_gust_knots ? parseFloat(data.max_gust_knots.toFixed(1)) : null,
-      windDir: parseInt(data.wind_direction || 0),
-      windDirAvg: data.wind_direction_avg ? parseInt(data.wind_direction_avg) : null,
+      windDir: this.calibrationManager.applyOffset(rawDir),
+      windDirAvg: this.calibrationManager.applyOffset(rawDirAvg),
       temperature: data.temperature ? parseFloat(data.temperature.toFixed(1)) : null,
       humidity: data.humidity ? parseFloat(data.humidity.toFixed(1)) : null,
       pressure: data.pressure ? parseFloat(data.pressure.toFixed(2)) : null

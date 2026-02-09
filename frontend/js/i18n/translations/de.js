@@ -25,8 +25,6 @@ export default {
     hydrofoil: 'Hydrofoil',
     riderWeight: 'Fahrergewicht (kg)',
     weightHint: 'Wird zur Berechnung der optimalen Kitegröße verwendet',
-    windDirOffset: 'Richtungskalibrierung (°)',
-    windDirOffsetHint: 'Windrichtungskorrektur für die Kalibrierung vor Ort',
     close: 'Schließen',
   },
 
