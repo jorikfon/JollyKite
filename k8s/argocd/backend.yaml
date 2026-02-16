@@ -34,9 +34,29 @@ spec:
               value: "3600000"
             - name: TZ
               value: "Asia/Bangkok"
+            - name: APNS_KEY_FILE
+              value: "/secrets/apns/apns-key"
+            - name: APNS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: apns-credentials
+                  key: APNS_KEY_ID
+            - name: APNS_TEAM_ID
+              valueFrom:
+                secretKeyRef:
+                  name: apns-credentials
+                  key: APNS_TEAM_ID
+            - name: APNS_BUNDLE_ID
+              valueFrom:
+                secretKeyRef:
+                  name: apns-credentials
+                  key: APNS_BUNDLE_ID
           volumeMounts:
             - name: data
               mountPath: /app/data
+            - name: apns-key
+              mountPath: /secrets/apns
+              readOnly: true
           resources:
             requests:
               memory: "128Mi"
@@ -48,6 +68,12 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: jollykite-data
+        - name: apns-key
+          secret:
+            secretName: apns-credentials
+            items:
+              - key: apns-key
+                path: apns-key
 ---
 apiVersion: v1
 kind: Service

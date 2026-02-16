@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import webpush from 'web-push';
+import { APNsProvider } from './APNsProvider.js';
 
 /**
  * NotificationManager - manages push notifications for wind conditions
+ * Supports both Web Push (PWA) and APNs (iOS)
  * Sends notifications when wind speed exceeds 10 knots with increasing trend
  * Maximum once per day per subscription
  */
@@ -20,6 +22,9 @@ export class NotificationManager {
       'BKbAJNbB1Rq1fphPamNav3wW4O9FFWvtZzD0NyxcEZwU_PtGv4_Sm7q2NQYfBBFQAlNb4pre7Z4Szhc2vJHYXYU', // Public Key
       '8bxTPyVz553qNZ9T4sXJrjKY3vyI2AVBQSXJDxBf9cA' // Private Key
     );
+
+    // Initialize APNs provider for iOS push notifications
+    this.apns = new APNsProvider();
 
     this.loadSubscriptions();
     this.loadNotificationLog();
@@ -314,9 +319,25 @@ export class NotificationManager {
       }
     }
 
+    // Send to iOS devices via APNs
+    let apnsResult = { sent: 0, failed: 0, total: 0 };
+    if (this.apns.enabled) {
+      apnsResult = await this.apns.sendToAll(
+        '🌬️ Отличные условия для кайтинга!',
+        `Ветер устойчиво держится ${avgSpeed.toFixed(1)} узлов последние 15 минут. Время на воду! 🪁`,
+        currentSpeed,
+        parseFloat(avgSpeed.toFixed(1))
+      );
+      if (apnsResult.sent > 0) {
+        console.log(`📱 APNs: ${apnsResult.sent} iOS notifications sent`);
+      }
+    }
+
     return {
-      sent: sentCount,
-      total: this.subscriptions.length,
+      sent: sentCount + apnsResult.sent,
+      webPush: sentCount,
+      apns: apnsResult.sent,
+      total: this.subscriptions.length + this.apns.devices.length,
       conditions: {
         speed: currentSpeed,
         avgSpeed: avgSpeed.toFixed(1),
@@ -334,7 +355,8 @@ export class NotificationManager {
       notifiedToday: Object.keys(this.notificationLog).filter(key => {
         const lastTime = new Date(this.notificationLog[key]);
         return this.getBangkokDateString(lastTime) === this.getBangkokDateString();
-      }).length
+      }).length,
+      apns: this.apns.getStats()
     };
   }
 

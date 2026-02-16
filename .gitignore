@@ -1,3 +1,11 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+apple/JollyKiteShared/.build/
+apple/JollyKiteShared/.swiftpm/
+
 # Logs
 logs
 *.log

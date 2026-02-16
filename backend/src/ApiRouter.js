@@ -565,6 +565,36 @@ export class ApiRouter {
       }
     });
 
+    // Register APNs device token (iOS)
+    this.router.post('/notifications/apns/register', (req, res) => {
+      try {
+        const { deviceToken } = req.body;
+        if (!deviceToken || typeof deviceToken !== 'string' || deviceToken.length < 32) {
+          return res.status(400).json({ error: 'Valid deviceToken required' });
+        }
+
+        const added = this.notificationManager.apns.addDevice(deviceToken);
+        res.json({ success: true, added });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Unregister APNs device token (iOS)
+    this.router.post('/notifications/apns/unregister', (req, res) => {
+      try {
+        const { deviceToken } = req.body;
+        if (!deviceToken) {
+          return res.status(400).json({ error: 'deviceToken required' });
+        }
+
+        const removed = this.notificationManager.apns.removeDevice(deviceToken);
+        res.json({ success: true, removed });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Debug: Check wind stability conditions
     this.router.get('/notifications/check-conditions', (req, res) => {
       try {
