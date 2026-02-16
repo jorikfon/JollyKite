@@ -4,39 +4,156 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**JollyKite** is a Progressive Web Application (PWA) for kitesurfers in Pak Nam Pran, Thailand. It provides real-time wind data, forecasts, and safety indicators for kitesurfing conditions.
-
-**Tech Stack:**
-- Vanilla JavaScript ES6 modules (class-based architecture)
-- Leaflet.js for interactive maps
-- Tailwind CSS (CDN-based)
-- Service Worker for offline capabilities
-- Ambient Weather Network API (real-time data)
-- Open-Meteo API (forecasts)
+**JollyKite** — full-stack kitesurfing weather platform for Pak Nam Pran, Thailand. Real-time wind data, forecasts, safety indicators, and push notifications across PWA and native iOS app.
 
 **Location:** Pak Nam Pran, Thailand (12.346596°N, 99.998179°E)
+**Language:** UI in Russian (Cyrillic). Primary audience — Russian-speaking kitesurfers.
+**Working hours:** 6:00–19:00 Bangkok time (data collection active only during this window).
+
+**Platform components:**
+
+| Component | Tech | Directory |
+|-----------|------|-----------|
+| Backend API | Node.js 20, Express, SQL.js, SSE | `backend/` |
+| PWA Frontend | Vanilla JS ES6, Leaflet.js, Tailwind CSS | `frontend/` |
+| iOS App | SwiftUI, iOS 17+, @Observable | `apple/JollyKite/` |
+| iOS Widgets | WidgetKit, AppIntents | `apple/JollyKiteWidgets/` |
+| Shared iOS Library | Swift Package | `apple/JollyKiteShared/` |
+| Deployment | Docker, k3s, ArgoCD, nginx | `k8s/`, `Dockerfile*`, `docker-compose*` |
+
+**Production URL:** `https://pnp.miko.ru`
+**API base:** `https://pnp.miko.ru/api`
+
+---
+
+## Project Structure
+
+```
+JollyKite/
+├── backend/                    # Node.js REST API + SSE
+│   ├── server.js               # Entry point (port 3000)
+│   ├── src/
+│   │   ├── ApiRouter.js        # All API endpoints
+│   │   ├── DatabaseManager.js  # SQL.js real-time wind DB
+│   │   ├── ArchiveManager.js   # Historical data DB
+│   │   ├── WindDataCollector.js # Ambient Weather fetcher
+│   │   ├── ForecastCollector.js # Open-Meteo fetcher
+│   │   ├── NotificationManager.js # Web Push + APNs coordinator
+│   │   ├── APNsProvider.js     # Apple Push (HTTP/2, JWT)
+│   │   └── CalibrationManager.js # Wind direction offset
+│   ├── package.json
+│   └── data/                   # SQLite DBs + JSON state (gitignored)
+├── frontend/                   # PWA
+│   ├── index.html              # Main entry
+│   ├── sw.js                   # Service Worker
+│   ├── manifest.json           # PWA manifest
+│   ├── version.json            # Single source of truth for version
+│   ├── js/
+│   │   ├── App.js              # Main coordinator
+│   │   ├── WindDataManager.js, MapController.js, ForecastManager.js ...
+│   │   ├── settings/           # SettingsManager, LocalStorageManager, MenuController
+│   │   ├── utils/              # UnitConverter, WindUtils, KiteSizeCalculator
+│   │   └── i18n/               # Internationalization
+│   ├── css/main.css
+│   └── icons/
+├── apple/                      # iOS (XcodeGen)
+│   ├── project.yml             # XcodeGen spec → generates .xcodeproj
+│   ├── JollyKite/              # iOS app target
+│   │   ├── JollyKiteApp.swift  # @main entry + AppDelegate (APNs)
+│   │   ├── ContentView.swift   # TabView (5 tabs)
+│   │   ├── Config/AppConstants.swift
+│   │   ├── Services/           # WindSSEService, PushNotificationService, HapticService
+│   │   ├── ViewModels/         # 5 @Observable view models
+│   │   └── Views/              # Dashboard/, Forecast/, Timeline/, Map/, Settings/, Shared/
+│   ├── JollyKiteWidgets/       # WidgetKit extension
+│   │   ├── JollyKiteWidgets.swift  # Widget bundle (3 widgets)
+│   │   ├── Providers/, Views/, Intents/, Models/, Services/
+│   │   └── Info.plist
+│   └── JollyKiteShared/        # Swift Package (shared models & services)
+│       ├── Package.swift
+│       ├── Sources/JollyKiteShared/
+│       │   ├── Models/         # WindData, SafetyLevel, WindForecast, KiteSize, WindUnit ...
+│       │   ├── Networking/     # APIClient, SSEClient, AmbientWeatherClient, OpenMeteoClient
+│       │   ├── Services/       # WindSafetyService, KiteSizeService, WorkingHoursService
+│       │   ├── Utils/          # PreferencesStore, SharedDataStore, UnitConverter, WindDataCache
+│       │   └── Extensions/     # Color+Hex, Date+Bangkok, Double+Formatting
+│       └── Tests/
+├── k8s/                        # Kubernetes deployment
+│   ├── argocd/
+│   │   ├── backend.yaml        # Backend Deployment + Service (APNs secrets)
+│   │   ├── nginx.yaml          # Nginx Deployment + Service
+│   │   └── kustomization.yaml
+│   └── jollykite.yaml.template # Full manifest template
+├── config/nginx.conf           # Nginx reverse proxy config
+├── Dockerfile                  # Backend (node:20-alpine)
+├── Dockerfile.nginx            # Frontend (nginx:alpine)
+├── docker-compose.yml          # Local dev
+├── docker-compose.prod.yml     # Production
+└── .github/                    # GitHub Actions CI/CD
+```
 
 ---
 
 ## Development Commands
 
-### IMPORTANT: Version Management
+### Backend
+
+```bash
+cd backend
+npm install
+npm start           # node server.js (port 3000)
+npm run dev          # node --watch server.js (auto-reload)
+```
+
+Backend serves both REST API and static frontend files from `../frontend`.
+
+### PWA Frontend
+
+No build step. Open `http://localhost:3000` when backend is running, or:
+
+```bash
+cd frontend
+python3 -m http.server 8000   # Static server (no API)
+```
+
+HTTPS or localhost required for Service Worker.
+
+### iOS App
+
+```bash
+cd apple
+xcodegen generate              # Generate .xcodeproj from project.yml
+open JollyKite.xcodeproj       # Open in Xcode
+```
+
+Build: `Cmd+B` in Xcode, or:
+```bash
+xcodebuild build -scheme JollyKite -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
+```
+
+XcodeGen must be installed: `brew install xcodegen`
+
+After adding/removing Swift files, re-run `xcodegen generate`.
+
+### Docker
+
+```bash
+docker compose up              # Local dev (backend + nginx)
+docker compose -f docker-compose.prod.yml up   # Production
+```
+
+### Kubernetes (k3s + ArgoCD)
+
+Push to `main` → GitHub Actions builds images → ArgoCD syncs from `k8s/argocd/`.
+
+---
+
+## Version Management
 
 **Before EVERY commit, update version in TWO files:**
-1. `frontend/version.json` — single source of truth for the entire app
-2. `frontend/sw.js` line 3 — `APP_VERSION` constant (must match version.json)
+1. `frontend/version.json` — single source of truth
+2. `frontend/sw.js` line 3 — `APP_VERSION` constant (must match)
 
-**Version format:** `X.Y.Z` (e.g., `2.6.0` → `2.6.1`)
-- Patch (Z): bugfixes and minor changes
-- Minor (Y): new features
-
-**All other components read version automatically:**
-- Backend `/api/version` endpoint reads `version.json` on startup
-- Frontend UI fetches `/version.json` for display
-- VersionManager triggers cache invalidation via `/api/version`
-- `SettingsManager.js` has a fallback version (update if needed)
-
-**Example:**
 ```json
 // frontend/version.json
 { "version": "2.6.1" }
@@ -46,175 +163,203 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 const APP_VERSION = '2.6.1';
 ```
 
-### Local Development Server
-
-```bash
-# Node.js server (recommended for PWA testing)
-npm start
-
-# Alternative: Python HTTP server
-python3 -m http.server 8000
-
-# Alternative: PHP server
-php -S localhost:8000
-```
-
-Server runs at: `http://localhost:8000`
-
-**Note:** HTTPS or localhost is required for Service Worker and PWA features to work.
-
-### Testing
-
-There are no automated tests in this project. Testing is done manually in browsers:
-- Chrome/Edge: Full PWA support
-- Safari (iOS): Add to Home Screen support
-- Firefox: Basic PWA support
-
-**PWA Testing Checklist:**
-1. Open DevTools → Application → Manifest (verify manifest.json)
-2. Check Service Workers registration
-3. Test offline mode (disconnect network)
-4. Run Lighthouse audit (target: 95+ score)
-5. Test "Add to Home Screen" on mobile devices
+Version auto-propagates to: backend `/api/version`, frontend UI, Service Worker cache name (`jollykite-v{VERSION}`).
 
 ---
 
 ## Architecture
 
-### Core Module Pattern
+### Backend (Node.js)
 
-The application follows a **class-based coordinator pattern** where `App.js` orchestrates all managers:
+**Entry:** `backend/server.js` initializes 6 managers and sets up cron jobs.
+
+**Cron schedule (Bangkok time):**
+- Every 5 min (6:00–19:00): Wind data collection from Ambient Weather
+- Every hour at :00: Archive hourly aggregates
+- Daily at 00:05: Cleanup data older than 7 days
+
+**Managers:**
+
+| Manager | Responsibility |
+|---------|---------------|
+| `DatabaseManager` | SQL.js in-memory DB, 1-minute wind data granularity |
+| `ArchiveManager` | Historical hourly aggregated data |
+| `WindDataCollector` | Ambient Weather API → knots conversion, multi-station averaging |
+| `ForecastCollector` | Open-Meteo API → 3-day hourly forecast with correction factors |
+| `NotificationManager` | Web Push (VAPID) + APNs, daily rate limit, 15-min wind stability check |
+| `CalibrationManager` | Wind direction offset (persistent JSON) |
+
+**APNs Provider** (`backend/src/APNsProvider.js`):
+- HTTP/2 + JWT auth using Node.js built-in `http2` and `crypto` (zero npm deps)
+- Reads `.p8` key from `APNS_KEY_FILE` env var
+- JWT cached for 50 minutes
+- Gracefully disabled if no key configured
+
+### PWA Frontend
+
+**Coordinator pattern:** `App.js` orchestrates all managers.
 
 ```
-App.js (main coordinator)
-├── WindDataManager.js    - Fetches wind data from APIs
-├── MapController.js      - Manages Leaflet map and markers
-├── ForecastManager.js    - Displays 3-day wind forecast
-├── WindArrowController.js - Visual wind direction indicator
-├── HistoryManager.js     - LocalStorage for historical data
-└── WindStatistics.js     - Calculates wind trends
+App.js
+├── WindDataManager.js     # API fetching (30s interval)
+├── MapController.js       # Leaflet map + markers
+├── ForecastManager.js     # 3-day forecast display
+├── WindArrowController.js # Wind direction arrow
+├── HistoryManager.js      # LocalStorage persistence
+├── WindStatistics.js      # Trend calculations
+├── TodayWindTimeline.js   # Today's hourly chart
+├── WeekWindHistory.js     # Weekly history charts
+└── NotificationManager.js # Web Push subscription
 ```
 
-**Data Flow:**
-1. `App.init()` initializes all managers
-2. `WindDataManager` fetches data every 30 seconds
-3. `App.updateWindData()` receives data and updates:
-   - UI display (`updateWindDisplay`)
-   - Map wind arrow (`WindArrowController.updateWind`)
-   - Statistics cache (`WindStatistics.addMeasurement`)
-   - LocalStorage history (`HistoryManager.saveWindData`)
+**Config:** All constants in `frontend/js/config.js`. Do NOT hardcode values elsewhere.
 
-### Configuration System
+**Service Worker caching:**
+- Core assets: Cache-first
+- API requests: Network-first with 24h fallback
+- Map tiles: Network only
 
-**All constants centralized in `js/config.js`:**
-- API endpoints and locations
-- Wind safety thresholds (offshore: 225°-315°, onshore: 45°-135°)
-- Update intervals (30s for data, 5min for trend)
-- Map settings, conversions, and UI constants
+### iOS App (SwiftUI)
 
-**To change behavior, edit `config.js` - DO NOT hardcode values elsewhere.**
+**Target:** iOS 17.0+, uses `@Observable` pattern.
 
-### Wind Safety Logic
+**App structure:**
+- `JollyKiteApp.swift` — entry point with `UIApplicationDelegateAdaptor` for APNs token handling
+- `ContentView.swift` — `TabView` with 5 tabs (Dashboard, Forecast, Timeline, Map, Settings)
+- 5 `@Observable` ViewModels (Dashboard, Forecast, Map, Timeline, Settings)
+- `PushNotificationService` — APNs registration, permission flow, server token sync
+- `WindSSEService` — wraps `SSEClient` actor for real-time streaming
+- `HapticService` — UIKit haptic feedback
 
-**Critical for kitesurfing safety:**
-- **Offshore (225°-315°)**: DANGEROUS - wind blowing from land to sea (red warning). Risk of being blown offshore.
-- **Onshore (45°-135°)**: SAFE - wind blowing from sea to land (green). Safe conditions.
-- **Sideshore**: Moderate - wind parallel to beach (yellow/orange)
+**JollyKiteShared (Swift Package):**
+Shared between app and widgets. Contains all models, networking, services, and utilities.
+Key types: `WindData`, `SafetyLevel`, `WindForecast`, `WindUnit`, `KiteSizeRecommendation`, `PreferencesStore`, `SharedDataStore`, `JollyKiteAPIClient`, `SSEClient`.
 
-Wind safety calculations are centralized in `WindUtils.js` (lines 74-125) and referenced throughout.
+**Widgets (WidgetKit):**
+3 widget families: home screen (small/medium/large), lock screen (circular/rectangular/inline).
+`WindTimelineProvider` with smart refresh (15min during working hours, 1hr off-hours).
+App Group `group.com.jollykite.shared` for data sharing.
 
-### Service Worker (sw.js)
-
-**Caching Strategy:**
-- Core assets: Cache-first (HTML, CSS, JS, icons)
-- API requests: Network-first with 24h cache fallback
-- Map tiles: Always network (no caching to save space)
-
-**Cache versioning:** Update `APP_VERSION` in `sw.js` and `frontend/version.json` when deploying changes. Cache names are derived automatically as `jollykite-v{APP_VERSION}`.
+**Bundle IDs:** `com.jollykite.app`, `com.jollykite.app.widgets`
 
 ---
 
-## Common Development Tasks
+## API Endpoints
 
-### Adding New Wind Data Sources
+All endpoints prefixed with `/api`.
 
-1. Add API endpoint to `config.js` → `api` section
-2. Create fetch method in `WindDataManager.js`
-3. Ensure data is converted to knots using `WindUtils` conversion methods
-4. Update `App.updateWindData()` to handle new data source
+### Wind Data
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/wind/current` | Latest wind measurement |
+| GET | `/wind/stream` | SSE real-time stream |
+| GET | `/wind/history/:hours?` | Last N hours (default 24) |
+| GET | `/wind/history/week?days=7` | Weekly grouped by day |
+| GET | `/wind/today/gradient?start=6&end=20&interval=5` | Today's aggregated data |
+| GET | `/wind/statistics/:hours?` | Min/max/avg/trend stats |
+| GET | `/wind/trend` | Trend direction |
+| GET | `/wind/forecast` | 3-day Open-Meteo forecast |
+| GET | `/wind/today/full` | History + forecast combined |
+| POST | `/wind/collect` | Force immediate collection |
 
-### Modifying Wind Safety Rules
+### Calibration
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/calibration` | Current direction offset |
+| POST | `/calibration` | Set offset (body: `{ offset: number }`, ±180°) |
 
-1. Edit thresholds in `config.js` → `windSafety` section
-2. Wind safety logic is in `WindUtils.getWindSafety()`
-3. Color mappings in `config.windSafety.levels`
+### Archive
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/archive/days/:days?` | Archived data (default 30) |
+| GET | `/archive/day/:date` | Specific day (YYYY-MM-DD) |
+| GET | `/archive/statistics/:days?` | Archive statistics |
+| GET | `/archive/patterns/:days?` | Wind patterns by hour |
+| POST | `/archive/hourly` | Force archiving |
 
-### Updating Service Worker
+### Notifications
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/notifications/subscribe` | Web Push subscription |
+| POST | `/notifications/unsubscribe` | Web Push unsubscribe |
+| GET | `/notifications/stats` | Notification statistics |
+| POST | `/notifications/test` | Send test notification |
+| GET | `/notifications/check-conditions` | Debug wind stability |
+| POST | `/notifications/apns/register` | Register iOS device token |
+| POST | `/notifications/apns/unregister` | Unregister iOS device |
 
-1. Increment version in `frontend/version.json` and `APP_VERSION` in `sw.js`
-2. Update `CORE_ASSETS` array if adding new files
-3. Test by unregistering old SW: DevTools → Application → Service Workers → Unregister
-
-### Adding New Locations
-
-1. Add coordinates to `config.js` → `locations`
-2. Add marker in `MapController.addMarkers()`
-3. Use Leaflet's `L.marker()` with custom `divIcon` for emoji markers
-
-### Changing Update Intervals
-
-Edit `config.js` → `intervals`:
-- `autoUpdate`: Wind data refresh (default: 30s)
-- `trendAnalysis`: Statistics window (default: 5min)
+### Other
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/version` | App version + SW version |
+| GET | `/debug/db-stats` | Database statistics |
 
 ---
 
-## API Integration
+## Wind Safety Logic
+
+**Critical for kitesurfing safety (Pak Nam Pran beach orientation):**
+
+| Direction | Range | Level | Meaning |
+|-----------|-------|-------|---------|
+| Offshore | 225°–315° | DANGEROUS (red) | Wind blows from land to sea. Risk of being blown offshore. |
+| Onshore | 45°–135° | SAFE (green) | Wind blows from sea to land. Safe return to shore. |
+| Sideshore | other | MODERATE (yellow/orange) | Wind parallel to beach. |
+
+**Notification trigger:** Wind stable above 8 knots for 15 minutes (3 consecutive measurements at 5-min intervals), direction stable (variance ≤45°), gusts not critical (max−avg ≤8kn), trend not decreasing sharply. Max 1 notification per day per subscription.
+
+Safety calculations: `frontend/js/utils/WindUtils.js`, `apple/JollyKiteShared/Sources/.../WindSafetyService.swift`.
+
+---
+
+## External APIs
 
 ### Ambient Weather Network
+- **Endpoint:** `https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504`
+- Public slug, no auth required
+- Returns device array with `lastData` object
+- **Speeds in MPH** → must convert to knots
 
-**Endpoint:** Configured in `config.api.ambientWeather`
-**Usage:** Real-time wind speed, direction, gusts, temperature
-**Rate Limit:** Public slug, no authentication required
-**Data Format:** Returns device array with `lastData` object
-
-**Important:** All speeds from API are in MPH - MUST convert to knots using `WindUtils.mphToKnots()`
-
-### Open-Meteo Forecast API
-
-**Endpoint:** Configured in `config.api.openMeteo`
-**Usage:** 3-day hourly wind forecast
-**Parameters:** `latitude`, `longitude`, `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m`
-**Data Format:** Returns hourly arrays indexed by hour
-
-**Important:** Wind speeds from API are in km/h - MUST convert to knots using `WindUtils.kmhToKnots()`
+### Open-Meteo Forecast
+- **Endpoint:** `https://api.open-meteo.com/v1/forecast`
+- Free tier, no auth
+- Parameters: `latitude`, `longitude`, `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m`
+- **Speeds in km/h** → must convert to knots
 
 ---
 
-## PWA Deployment
+## Deployment
 
-### GitHub Pages (Recommended)
+### Production Stack (k3s)
 
-**Important:** When deploying, remember to increment the Service Worker cache version in `sw.js` to ensure users get the latest updates.
-
-```bash
-# 1. Update cache version in sw.js (e.g., jollykite-v1.1.9)
-# 2. Commit and push to GitHub
-git add .
-git commit -m "Update JollyKite PWA"
-git push origin main
-
-# 3. Enable in repo Settings → Pages → Source: main branch (if not already enabled)
-# URL: https://YOUR_USERNAME.github.io/JollyKite/
+```
+Internet → Nginx (NodePort) → Backend (ClusterIP:3000)
+                                ├── /api/* → Express API
+                                └── /* → static frontend
 ```
 
-### Other Options
+**Namespace:** `jollykite`
+**Images:** `ghcr.io/jorikfon/jollykite/backend:latest`, `ghcr.io/jorikfon/jollykite/nginx:latest`
+**Persistent storage:** 1Gi PVC at `/app/data` (SQLite DBs, subscriptions, device tokens)
 
-- **Vercel**: `vercel` (auto-deploy)
-- **Netlify**: Drag & drop or `netlify deploy --prod`
-- **Cloudflare Pages**: Connect GitHub repo
+**APNs secrets in k3s:**
+```bash
+kubectl -n jollykite create secret generic apns-credentials \
+  --from-file=apns-key=AuthKey_XXXXXXXX.p8 \
+  --from-literal=APNS_KEY_ID=XXXXXXXX \
+  --from-literal=APNS_TEAM_ID=XXXXXXXXXX \
+  --from-literal=APNS_BUNDLE_ID=com.jollykite.app
+```
 
-**HTTPS is required for PWA features (Service Worker, Add to Home Screen).**
+**Deploy flow:** push to `main` → GitHub Actions builds Docker images → ArgoCD syncs `k8s/argocd/`.
+
+### Nginx Config (`config/nginx.conf`)
+
+- `/` → frontend static files (no-cache)
+- `/api/wind/stream` → SSE proxy (buffering off, 24h timeout)
+- `/api/*` → backend proxy
+- Images/fonts: 1-year cache
+- JS/CSS: no-cache (version-controlled via SW)
 
 ---
 
@@ -222,106 +367,99 @@ git push origin main
 
 ### Code Style
 
+**JavaScript (PWA + Backend):**
 - ES6 modules with explicit imports/exports
-- Class-based architecture (no functional components)
-- Async/await for API calls (not promises)
-- Config-driven (avoid hardcoded values)
+- Class-based architecture
+- Async/await (not raw promises)
+- Config-driven — no hardcoded values
 
-### Naming Conventions
+**Swift (iOS):**
+- SwiftUI with `@Observable` (not `ObservableObject`)
+- `@EnvironmentObject` for `PreferencesStore`
+- `@Environment` for `PushNotificationService`
+- Shared models in `JollyKiteShared` package
 
-- Classes: PascalCase (`WindDataManager`)
-- Methods: camelCase (`fetchCurrentWindData`)
-- Config constants: camelCase objects (`config.windSafety`)
-- Files: PascalCase for classes, kebab-case for others
+### Naming
 
-### Wind Data Format
-
-**Standard wind data object:**
-```javascript
-{
-  windSpeedKnots: number,      // Current speed in knots
-  windGustKnots: number,       // Current gust in knots
-  maxGustKnots: number,        // Max daily gust
-  windDir: number,             // Direction in degrees (0-360)
-  windDirAvg: number,          // 10-min average direction
-  temperature: number,         // Temperature (Fahrenheit)
-  humidity: number,            // Humidity percentage
-  pressure: number,            // Barometric pressure
-  timestamp: Date,             // Data timestamp
-  safety: {                    // Added by getWindSafety()
-    level: string,
-    text: string,
-    color: string,
-    isOffshore: boolean,
-    isOnshore: boolean
-  }
-}
-```
+| Context | Convention | Example |
+|---------|-----------|---------|
+| JS classes | PascalCase | `WindDataManager` |
+| JS methods | camelCase | `fetchCurrentWindData` |
+| JS files | PascalCase (classes), kebab-case (other) | `WindUtils.js` |
+| Swift types | PascalCase | `DashboardViewModel` |
+| Swift files | PascalCase | `WindSpeedGaugeView.swift` |
+| API endpoints | kebab-case | `/api/wind/current` |
 
 ### Error Handling
-
-- All API calls wrapped in try/catch
+- All API calls in try/catch
 - Errors logged to console
-- UI shows friendly Russian error messages
-- Offline mode gracefully falls back to cached data
+- UI shows Russian error messages
+- PWA: offline fallback to cached data (up to 24h)
+- iOS: `LoadingStateView` for loading/error states
+
+---
+
+## Common Tasks
+
+### Adding a new backend endpoint
+1. Add route in `backend/src/ApiRouter.js`
+2. Implement logic in the appropriate manager
+3. Test: `curl http://localhost:3000/api/your-endpoint`
+
+### Adding a new iOS view
+1. Create `.swift` file in appropriate `Views/` subdirectory
+2. Re-run `xcodegen generate` in `apple/`
+3. Wire to ViewModel and navigation in `ContentView.swift`
+
+### Modifying wind safety thresholds
+- PWA: `frontend/js/config.js` → `windSafety` section
+- iOS: `apple/JollyKiteShared/Sources/.../WindSafetyService.swift`
+- Backend notifications: `backend/src/NotificationManager.js` → `checkWindStability()`
+
+### Updating Service Worker
+1. Bump version in `frontend/version.json` and `frontend/sw.js` (`APP_VERSION`)
+2. Update `CORE_ASSETS` if adding new files
+3. Test: DevTools → Application → Service Workers → Unregister → Hard refresh
+
+### Updating iOS app after file changes
+```bash
+cd apple && xcodegen generate
+```
 
 ---
 
 ## Debugging
 
-### Common Issues
+### Backend
+- Health check: `GET /health`
+- DB stats: `GET /api/debug/db-stats`
+- Notification debug: `GET /api/notifications/check-conditions`
+- Logs use markers: `✓` success, `⚠` warning, `✗`/`❌` error
 
-**Service Worker not updating:**
-- Increment `APP_VERSION` in `sw.js` and version in `frontend/version.json`
-- DevTools → Application → Service Workers → Unregister
-- Hard refresh (Cmd/Ctrl + Shift + R)
+### PWA
+- DevTools → Application: Manifest, Service Workers, Cache Storage, LocalStorage
+- Console markers: `✓` init success, `⚠` warning, `❌` error
+- Service Worker issues: increment `APP_VERSION`, unregister old SW, hard refresh
 
-**Wind data not loading:**
-- Check browser console for API errors
-- Verify API endpoints in `config.js`
-- Test API directly in browser/Postman
-- Check network requests in DevTools
-
-**Map not displaying:**
-- Ensure Leaflet CSS/JS loaded (check Network tab)
-- Verify `config.map.containerId` matches HTML element ID
-- Check for JavaScript errors in console
-
-**PWA not installable:**
-- Must be served over HTTPS (or localhost)
-- Check manifest.json is valid
-- Verify all icon paths are correct
-- Service Worker must be registered successfully
-
-### Browser DevTools
-
-**Application Tab:**
-- Manifest: Verify PWA metadata
-- Service Workers: Check registration status
-- Storage → Local Storage: View wind history
-- Cache Storage: Inspect cached assets
-
-**Console Logging:**
-The app logs initialization steps - look for:
-- `✓` markers indicate successful initialization
-- `⚠` markers indicate warnings (non-critical)
-- `❌` markers indicate errors (critical)
+### iOS
+- Xcode Console for SSE connection logs
+- Push notifications: check `PushNotificationService` authorization state in Settings
+- Widget: check `SharedDataStore` data via App Group container
 
 ---
 
 ## Important Notes
 
-- **Language**: UI is in Russian (Cyrillic) - primary audience is Russian-speaking kitesurfers
-- **Location-specific**: Hardcoded for Pak Nam Pran, Thailand - not easily portable to other spots
-- **No Build Process**: Pure vanilla JS, no bundler/transpiler required
-- **Mobile-first**: Designed primarily for mobile use on the beach
-- **Offline-capable**: Full functionality in offline mode using cached data (up to 24h)
+- **No automated tests for PWA/backend.** Manual browser testing. iOS shared package has unit tests (`swift test` in `apple/JollyKiteShared/`).
+- **Location-specific.** Hardcoded for Pak Nam Pran — wind safety directions are beach-orientation dependent.
+- **No build process for PWA.** Pure vanilla JS, no bundler.
+- **Mobile-first.** Designed for use on the beach.
+- **APNs is optional.** Backend works without `.p8` key — `APNsProvider` gracefully disables itself.
 
 ---
 
 ## Resources
 
-- **Deployment Guide**: See `DEPLOY.md` for detailed deployment instructions
-- **Wind Documentation**: See `docs/WIND_DIRECTION.md` for safety guidelines
-- **Cache Strategy**: See `docs/CACHE.md` for caching details
-- **Contact**: Telegram @gypsy_mermaid (project maintainer)
+- **Wind Safety:** `docs/WIND_DIRECTION.md`
+- **Deployment:** `DEPLOY.md`
+- **Contact:** Telegram @gypsy_mermaid
