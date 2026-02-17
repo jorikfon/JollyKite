@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 // MARK: - Preferences Store
 
@@ -37,7 +38,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             }
             return unit
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.windUnit) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue.rawValue, forKey: Keys.windUnit)
+        }
     }
 
     // MARK: - Language
@@ -51,7 +55,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             }
             return lang
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.language) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue.rawValue, forKey: Keys.language)
+        }
     }
 
     // MARK: - Rider Weight
@@ -62,7 +69,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             let value = defaults.double(forKey: Keys.riderWeight)
             return value > 0 ? value : KiteSizeService.defaultWeight
         }
-        set { defaults.set(newValue, forKey: Keys.riderWeight) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue, forKey: Keys.riderWeight)
+        }
     }
 
     // MARK: - Board Type
@@ -76,7 +86,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             }
             return type
         }
-        set { defaults.set(newValue.rawValue, forKey: Keys.boardType) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue.rawValue, forKey: Keys.boardType)
+        }
     }
 
     // MARK: - Server URL
@@ -90,7 +103,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             }
             return URL(string: "https://pnp.miko.ru/api")!
         }
-        set { defaults.set(newValue.absoluteString, forKey: Keys.serverURL) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue.absoluteString, forKey: Keys.serverURL)
+        }
     }
 
     // MARK: - Notifications
@@ -98,7 +114,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
     /// Whether push notifications are enabled.
     public var notificationsEnabled: Bool {
         get { defaults.bool(forKey: Keys.notificationsEnabled) }
-        set { defaults.set(newValue, forKey: Keys.notificationsEnabled) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue, forKey: Keys.notificationsEnabled)
+        }
     }
 
     // MARK: - Haptic Feedback
@@ -110,7 +129,10 @@ public final class PreferencesStore: ObservableObject, @unchecked Sendable {
             if defaults.object(forKey: Keys.hapticFeedback) == nil { return true }
             return defaults.bool(forKey: Keys.hapticFeedback)
         }
-        set { defaults.set(newValue, forKey: Keys.hapticFeedback) }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue, forKey: Keys.hapticFeedback)
+        }
     }
 
     // MARK: - Factory for API Client

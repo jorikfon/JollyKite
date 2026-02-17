@@ -5,6 +5,11 @@ struct TimelineTabView: View {
     @EnvironmentObject private var preferences: PreferencesStore
     @State private var viewModel: TimelineViewModel?
     @State private var selectedSegment = 0
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    private var isLandscape: Bool {
+        verticalSizeClass == .compact
+    }
 
     var body: some View {
         NavigationStack {
@@ -17,6 +22,7 @@ struct TimelineTabView: View {
             }
             .navigationTitle("Графики")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isLandscape ? .hidden : .automatic, for: .navigationBar)
         }
         .onAppear {
             if viewModel == nil {
@@ -37,7 +43,8 @@ struct TimelineTabView: View {
                     Text("Неделя").tag(1)
                 }
                 .pickerStyle(.segmented)
-                .padding()
+                .padding(.horizontal, isLandscape ? 8 : 16)
+                .padding(.vertical, isLandscape ? 4 : 8)
 
                 TabView(selection: $selectedSegment) {
                     ScrollView {
@@ -45,9 +52,12 @@ struct TimelineTabView: View {
                             history: vm.todayEntries,
                             forecast: vm.forecastEntries,
                             currentHour: vm.currentHour,
+                            currentMinute: vm.currentMinute,
+                            correctionFactor: vm.correctionFactor,
                             unit: vm.windUnit
                         )
-                        .padding()
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, isLandscape ? 4 : 8)
                     }
                     .tag(0)
 
@@ -56,7 +66,8 @@ struct TimelineTabView: View {
                             days: vm.weekHistory,
                             unit: vm.windUnit
                         )
-                        .padding()
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, isLandscape ? 4 : 8)
                     }
                     .tag(1)
                 }

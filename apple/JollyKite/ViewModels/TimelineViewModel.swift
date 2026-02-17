@@ -67,4 +67,12 @@ final class TimelineViewModel {
     var currentHour: Int? {
         todayTimeline?.currentTime?.hour
     }
+
+    var currentMinute: Int? {
+        todayTimeline?.currentTime?.minute
+    }
+
+    var correctionFactor: Double {
+        todayTimeline?.correctionFactor ?? 1.0
+    }
 }

@@ -57,6 +57,19 @@ enum AppConstants {
             default: return windDangerous
             }
         }
+
+        /// Detailed PWA-matching color scale for timeline gradient.
+        static func windSpeedColorDetailed(_ knots: Double) -> Color {
+            switch knots {
+            case ..<5: return Color(hex: "#87CEEB")
+            case 5..<10: return Color(hex: "#00CED1")
+            case 10..<15: return Color(hex: "#00FF00")
+            case 15..<20: return Color(hex: "#FFD700")
+            case 20..<25: return Color(hex: "#FFA500")
+            case 25..<30: return Color(hex: "#FF4500")
+            default: return Color(hex: "#8B0000")
+            }
+        }
     }
 
     // MARK: - Kite Sizes
