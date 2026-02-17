@@ -1,6 +1,36 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Direction Stability
+
+/// Wind direction stability assessment from backend /api/wind/trend.
+public enum DirectionStability: String, Codable, Sendable, Hashable {
+    case stable
+    case variable
+    case changing
+    case insufficientData = "insufficient_data"
+
+    /// Localized Russian label.
+    public var labelRu: String {
+        switch self {
+        case .stable: return "Стабильное"
+        case .variable: return "Переменное"
+        case .changing: return "Меняется"
+        case .insufficientData: return "Нет данных"
+        }
+    }
+
+    /// SF Symbol name for the stability indicator.
+    public var sfSymbol: String {
+        switch self {
+        case .stable: return "safari"
+        case .variable: return "arrow.left.arrow.right"
+        case .changing: return "arrow.trianglehead.2.clockwise"
+        case .insufficientData: return "hourglass"
+        }
+    }
+}
+
 // MARK: - Wind Trend
 
 /// Wind trend data from GET /api/wind/trend.
@@ -14,6 +44,10 @@ public struct WindTrend: Codable, Sendable, Hashable {
     public let percentChange: Double
     public let currentSpeed: Double?
     public let previousSpeed: Double?
+    public let directionTrend: DirectionStability?
+    public let directionSpread: Double?
+    public let directionIcon: String?
+    public let directionText: String?
 
     public init(
         trend: TrendDirection,
@@ -23,7 +57,11 @@ public struct WindTrend: Codable, Sendable, Hashable {
         change: Double,
         percentChange: Double,
         currentSpeed: Double? = nil,
-        previousSpeed: Double? = nil
+        previousSpeed: Double? = nil,
+        directionTrend: DirectionStability? = nil,
+        directionSpread: Double? = nil,
+        directionIcon: String? = nil,
+        directionText: String? = nil
     ) {
         self.trend = trend
         self.text = text
@@ -33,6 +71,10 @@ public struct WindTrend: Codable, Sendable, Hashable {
         self.percentChange = percentChange
         self.currentSpeed = currentSpeed
         self.previousSpeed = previousSpeed
+        self.directionTrend = directionTrend
+        self.directionSpread = directionSpread
+        self.directionIcon = directionIcon
+        self.directionText = directionText
     }
 
     /// SwiftUI color parsed from hex string.

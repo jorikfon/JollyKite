@@ -10,6 +10,11 @@ struct WindEntry: TimelineEntry {
     let unit: WindUnit
     let forecast: [WindForecastEntry]
     let isPlaceholder: Bool
+    let todayHistory: [TodayFullTimeline.TimelineEntry]
+    let todayForecast: [WindForecastEntry]
+    let currentHour: Int?
+    let currentMinute: Int?
+    let directionStability: DirectionStability?
 
     // MARK: - Convenience
 
@@ -47,7 +52,12 @@ struct WindEntry: TimelineEntry {
         safety: .good,
         unit: .knots,
         forecast: [],
-        isPlaceholder: true
+        isPlaceholder: true,
+        todayHistory: [],
+        todayForecast: [],
+        currentHour: nil,
+        currentMinute: nil,
+        directionStability: nil
     )
 
     static let empty = WindEntry(
@@ -58,6 +68,11 @@ struct WindEntry: TimelineEntry {
         safety: .low,
         unit: .knots,
         forecast: [],
-        isPlaceholder: false
+        isPlaceholder: false,
+        todayHistory: [],
+        todayForecast: [],
+        currentHour: nil,
+        currentMinute: nil,
+        directionStability: nil
     )
 }

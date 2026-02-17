@@ -38,6 +38,7 @@
 		7DE75A85C2A1E594DC8548DD /* WindInlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF8512B47F37FB8CC97074 /* WindInlineView.swift */; };
 		83ACFCDC9DB5F9D7EBD90534 /* WidgetConfigurationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B4F69C4D5BAD1AC1649F36 /* WidgetConfigurationIntent.swift */; };
 		867CEF79D9089931866BFEC8 /* WindDetailsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93FFBF17FAE37660A060C3E /* WindDetailsCardView.swift */; };
+		870EF51BB4E2C44ECD148894 /* WidgetTimelineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7027898799434CCE3DA44F7 /* WidgetTimelineChartView.swift */; };
 		8A8292B46102454C0BC2F55B /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6952D973B3EC6FEB5A452F6 /* MapViewModel.swift */; };
 		92503962D80FC163AF9AF288 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907404F8A22DC2BC4A8A798C /* DashboardViewModel.swift */; };
 		9304570467D889B6EED5CC6A /* GradientBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC49992D859E0B27076CF8C1 /* GradientBarView.swift */; };
@@ -136,6 +137,7 @@
 		EB8542C76657DD0AB4C2756B /* JollyKiteShared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = JollyKiteShared; path = JollyKiteShared; sourceTree = SOURCE_ROOT; };
 		F4BD118A1E0D3BACADE0FB9E /* WindTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindTimelineProvider.swift; sourceTree = "<group>"; };
 		F6E9485A82D648DF559F3B95 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F7027898799434CCE3DA44F7 /* WidgetTimelineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetTimelineChartView.swift; sourceTree = "<group>"; };
 		F9B6546F422E4C755E34C7F1 /* TodayTimelineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayTimelineChartView.swift; sourceTree = "<group>"; };
 		FC05AFFDE16369C921020A23 /* ForecastDayCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastDayCardView.swift; sourceTree = "<group>"; };
 		FCA494009EC0761A0491294B /* SafetyBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyBadgeView.swift; sourceTree = "<group>"; };
@@ -281,6 +283,7 @@
 			isa = PBXGroup;
 			children = (
 				8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */,
+				F7027898799434CCE3DA44F7 /* WidgetTimelineChartView.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -504,6 +507,7 @@
 				FF318445AEE74BF3186A426C /* ToggleWindUnitIntent.swift in Sources */,
 				83ACFCDC9DB5F9D7EBD90534 /* WidgetConfigurationIntent.swift in Sources */,
 				377822F5A6B2F3ECB0E1A3C4 /* WidgetDataService.swift in Sources */,
+				870EF51BB4E2C44ECD148894 /* WidgetTimelineChartView.swift in Sources */,
 				0BF5D2E98FCB4F8FA5B22B68 /* WindCircularView.swift in Sources */,
 				9F2FB25A3F6FEBB6E29A06CA /* WindEntry.swift in Sources */,
 				7DE75A85C2A1E594DC8548DD /* WindInlineView.swift in Sources */,

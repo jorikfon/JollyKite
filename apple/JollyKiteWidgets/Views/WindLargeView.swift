@@ -12,9 +12,17 @@ struct WindLargeView: View {
                     Text(entry.safety.labelRu)
                         .font(.headline)
                         .foregroundStyle(entry.safety.color)
-                    Text(entry.shoreType.labelRu)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Text(entry.shoreType.labelRu)
+                        if let stability = entry.directionStability, stability != .insufficientData {
+                            Text("•")
+                            Image(systemName: stability.sfSymbol)
+                                .font(.caption2)
+                            Text(stability.labelRu)
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
 
                 Spacer()
@@ -41,8 +49,17 @@ struct WindLargeView: View {
                 }
             }
 
-            // Forecast bar
-            if !entry.forecast.isEmpty {
+            // Timeline chart or forecast bar fallback
+            if !entry.todayHistory.isEmpty || !entry.todayForecast.isEmpty {
+                Divider()
+                WidgetTimelineChartView(
+                    history: entry.todayHistory,
+                    forecast: entry.todayForecast,
+                    currentHour: entry.currentHour,
+                    currentMinute: entry.currentMinute,
+                    unit: entry.unit
+                )
+            } else if !entry.forecast.isEmpty {
                 Divider()
                 ForecastBarView(entries: Array(entry.forecast.prefix(8)), unit: entry.unit)
             }

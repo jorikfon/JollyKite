@@ -41,11 +41,14 @@ public actor WindDataService: WindDataServiceProtocol {
     public func forecast() async throws -> [WindForecastEntry] {
         let entries = try await apiClient.fetchForecast()
         await cache.save(forecast: entries)
+        store.lastForecast = entries
         return entries
     }
 
     public func trend() async throws -> WindTrend {
-        try await apiClient.fetchTrend()
+        let trend = try await apiClient.fetchTrend()
+        store.lastWindTrend = trend
+        return trend
     }
 
     public func statistics(hours: Int = 24) async throws -> WindStatistics {
@@ -53,6 +56,8 @@ public actor WindDataService: WindDataServiceProtocol {
     }
 
     public func todayTimeline() async throws -> TodayFullTimeline {
-        try await apiClient.fetchTodayTimeline()
+        let timeline = try await apiClient.fetchTodayTimeline()
+        store.lastTodayTimeline = timeline
+        return timeline
     }
 }

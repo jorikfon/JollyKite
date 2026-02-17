@@ -22,6 +22,8 @@ public final class SharedDataStore: @unchecked Sendable {
         static let lastWindData = "lastWindData"
         static let lastForecast = "lastForecast"
         static let lastUpdateTimestamp = "lastUpdateTimestamp"
+        static let lastTodayTimeline = "lastTodayTimeline"
+        static let lastWindTrend = "lastWindTrend"
     }
 
     /// Last known wind data. Written by iPhone app, read by widgets/watch.
@@ -51,6 +53,36 @@ public final class SharedDataStore: @unchecked Sendable {
                 defaults.set(data, forKey: Keys.lastForecast)
             } else {
                 defaults.removeObject(forKey: Keys.lastForecast)
+            }
+        }
+    }
+
+    /// Last today's timeline data. Written by iPhone app, read by widgets.
+    public var lastTodayTimeline: TodayFullTimeline? {
+        get {
+            guard let data = defaults.data(forKey: Keys.lastTodayTimeline) else { return nil }
+            return try? JSONDecoder.shared.decode(TodayFullTimeline.self, from: data)
+        }
+        set {
+            if let newValue, let data = try? JSONEncoder.shared.encode(newValue) {
+                defaults.set(data, forKey: Keys.lastTodayTimeline)
+            } else {
+                defaults.removeObject(forKey: Keys.lastTodayTimeline)
+            }
+        }
+    }
+
+    /// Last wind trend data. Written by iPhone app, read by widgets.
+    public var lastWindTrend: WindTrend? {
+        get {
+            guard let data = defaults.data(forKey: Keys.lastWindTrend) else { return nil }
+            return try? JSONDecoder.shared.decode(WindTrend.self, from: data)
+        }
+        set {
+            if let newValue, let data = try? JSONEncoder.shared.encode(newValue) {
+                defaults.set(data, forKey: Keys.lastWindTrend)
+            } else {
+                defaults.removeObject(forKey: Keys.lastWindTrend)
             }
         }
     }

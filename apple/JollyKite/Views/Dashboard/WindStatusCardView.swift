@@ -39,6 +39,17 @@ struct WindStatusCardView: View {
                 .foregroundStyle(trend.swiftUIColor)
             }
 
+            // Direction stability row
+            if let trend, let dirStability = trend.directionTrend, dirStability != .insufficientData {
+                HStack(spacing: 6) {
+                    Image(systemName: dirStability.sfSymbol)
+                        .font(.subheadline.bold())
+                    Text(dirStability.labelRu)
+                        .font(.subheadline)
+                }
+                .foregroundStyle(dirStability == .stable ? .green : dirStability == .variable ? .yellow : .orange)
+            }
+
             // Kite recommendation row
             if let rec = kiteRecommendation,
                rec.suitability != .tooWeak,
