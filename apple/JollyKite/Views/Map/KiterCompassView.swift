@@ -8,9 +8,9 @@ struct KiterCompassView: View {
     let safety: SafetyLevel
     let shoreType: ShoreType?
 
-    private let compassSize: CGFloat = 130
+    private let compassSize: CGFloat = 180
     private let ringInset: CGFloat = 16
-    private let arrowSize: CGFloat = 20
+    private let arrowSize: CGFloat = 28
 
     /// Downwind direction: where the kiter gets pulled TO
     private var downwindDegrees: Double {
@@ -24,31 +24,49 @@ struct KiterCompassView: View {
     var body: some View {
         VStack(spacing: 6) {
             ZStack {
-                // 1. Pull zone arc — 120° glow on downwind side
-                PullZoneArc(centerAngle: downwindDegrees, spanDegrees: 120)
-                    .fill(safety.color.opacity(0.15))
+                // 1. Wind window — 3 layered arcs (green → yellow → red)
+                PullZoneArc(centerAngle: downwindDegrees, spanDegrees: 160)
+                    .fill(Color.green.opacity(0.25))
                     .frame(width: compassSize - ringInset * 2, height: compassSize - ringInset * 2)
                     .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: downwindDegrees)
 
-                // 2. Compass ring
+                PullZoneArc(centerAngle: downwindDegrees, spanDegrees: 80)
+                    .fill(Color.yellow.opacity(0.35))
+                    .frame(width: compassSize - ringInset * 2, height: compassSize - ringInset * 2)
+                    .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: downwindDegrees)
+
+                PullZoneArc(centerAngle: downwindDegrees, spanDegrees: 40)
+                    .fill(Color.red.opacity(0.45))
+                    .frame(width: compassSize - ringInset * 2, height: compassSize - ringInset * 2)
+                    .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: downwindDegrees)
+
+                // 2. Wind axis dashed line
+                WindAxisLine()
+                    .stroke(safety.color.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .frame(width: compassSize - ringInset * 2, height: compassSize - ringInset * 2)
+                    .rotationEffect(.degrees(windDirectionDegrees))
+                    .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: windDirectionDegrees)
+
+                // 3. Compass ring
                 Circle()
                     .stroke(Color.secondary.opacity(0.3), lineWidth: 1.5)
                     .frame(width: compassSize - ringInset * 2, height: compassSize - ringInset * 2)
 
-                // 3. Cardinal labels
+                // 4. Cardinal labels
                 cardinalLabels
 
-                // 4. Kiter image
+                // 5. Kiter image
                 Image("Kiter")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 50, height: 50)
 
-                // 5. Pull arrow on ring edge
+                // 6. Pull arrow on ring edge
                 PullArrowShape()
                     .fill(safety.color)
                     .frame(width: arrowSize, height: arrowSize)
-                    .shadow(color: safety.color.opacity(0.5), radius: 3)
+                    .shadow(color: safety.color.opacity(0.7), radius: 2)
+                    .shadow(color: safety.color.opacity(0.3), radius: 8)
                     .offset(y: -ringRadius)
                     .rotationEffect(.degrees(downwindDegrees))
                     .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: downwindDegrees)
@@ -71,7 +89,7 @@ struct KiterCompassView: View {
                 Text(label)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .offset(y: -(compassSize / 2 - 4))
+                    .offset(y: -(compassSize / 2 - 6))
                     .rotationEffect(.degrees(angle))
             }
         }
@@ -121,6 +139,18 @@ private struct PullZoneArc: Shape {
         path.move(to: center)
         path.addArc(center: center, radius: radius, startAngle: .degrees(start), endAngle: .degrees(end), clockwise: false)
         path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Wind Axis Line
+
+/// A dashed vertical line through the center, rotated to wind direction.
+private struct WindAxisLine: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: 0))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.height))
         return path
     }
 }

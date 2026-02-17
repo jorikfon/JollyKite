@@ -13,6 +13,14 @@ final class MapViewModel {
         longitude: AppConstants.Location.longitude
     )
 
+    /// Annotation offset: 200m north, 150m east (towards the sea)
+    var annotationCoordinate: CLLocationCoordinate2D {
+        CLLocationCoordinate2D(
+            latitude: AppConstants.Location.latitude + 200.0 / 111_320.0,
+            longitude: AppConstants.Location.longitude + 150.0 / (111_320.0 * cos(AppConstants.Location.latitude * .pi / 180))
+        )
+    }
+
     var cameraPosition: MapCameraPosition {
         .region(MKCoordinateRegion(
             center: spotCoordinate,

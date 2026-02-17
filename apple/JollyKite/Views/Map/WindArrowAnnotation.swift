@@ -8,6 +8,7 @@ struct WindArrowAnnotation: View {
     let unit: WindUnit
     let safety: SafetyLevel
     let shoreType: ShoreType?
+    let mapHeading: Double
 
     var body: some View {
         KiterCompassView(
@@ -17,5 +18,6 @@ struct WindArrowAnnotation: View {
             safety: safety,
             shoreType: shoreType
         )
+        .rotationEffect(.degrees(-mapHeading))
     }
 }

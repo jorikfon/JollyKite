@@ -14,6 +14,7 @@ struct MapView: View {
             span: MKCoordinateSpan(latitudeDelta: 0.02, longitudeDelta: 0.02)
         )
     )
+    @State private var mapHeading: Double = 0
 
     var body: some View {
         NavigationStack {
@@ -21,7 +22,7 @@ struct MapView: View {
                 if let vm = viewModel {
                     Annotation(
                         AppConstants.Location.nameRu,
-                        coordinate: vm.spotCoordinate,
+                        coordinate: vm.annotationCoordinate,
                         anchor: .center
                     ) {
                         WindArrowAnnotation(
@@ -30,10 +31,14 @@ struct MapView: View {
                             speedText: vm.windSpeedText,
                             unit: vm.windUnit,
                             safety: vm.safety,
-                            shoreType: vm.shoreType
+                            shoreType: vm.shoreType,
+                            mapHeading: mapHeading
                         )
                     }
                 }
+            }
+            .onMapCameraChange(frequency: .continuous) { context in
+                mapHeading = context.camera.heading
             }
             .mapStyle(.standard(elevation: .realistic))
             .navigationTitle("Карта")

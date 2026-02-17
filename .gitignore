@@ -145,6 +145,9 @@ backend/data/*.db-shm
 backend/node_modules/
 backend/package-lock.json
 
+# Local data with credentials
+lx-data/
+
 # K8s deployment (contains infrastructure details)
 k8s/deploy.env
 k8s/jollykite.yaml
