@@ -123,4 +123,43 @@ final class DashboardViewModel {
     var lastUpdateText: String {
         windData?.timestamp.relativeString ?? ""
     }
+
+    // MARK: - Dashboard Card Properties
+
+    var conditionNameRu: String {
+        let speed = windData?.windSpeedKnots ?? 0
+        switch speed {
+        case ..<5: return "Штиль"
+        case 5..<12: return "Лёгкий ветер"
+        case 12..<20: return "Умеренный ветер"
+        case 20..<30: return "Сильный ветер"
+        default: return "Экстремальный ветер"
+        }
+    }
+
+    var conditionIcon: String {
+        let speed = windData?.windSpeedKnots ?? 0
+        switch speed {
+        case ..<5: return "🍃"
+        case 5..<12: return "💨"
+        case 12..<20: return "🌬️"
+        case 20..<30: return "💨"
+        default: return "⚡"
+        }
+    }
+
+    var safetySubtitleRu: String {
+        let safetyLabel = safety.labelRu
+        let shoreLabel = windData?.direction.shoreType.labelRu ?? ""
+        if shoreLabel.isEmpty {
+            return safetyLabel
+        }
+        return "\(safetyLabel) • \(shoreLabel)"
+    }
+
+    var trendDescriptionRu: String? {
+        guard let trend, trend.hasData else { return nil }
+        let sign = trend.percentChange >= 0 ? "+" : ""
+        return "\(trend.trend.labelRu) \(sign)\(trend.percentChange.oneDecimal)% (за 30 мин)"
+    }
 }

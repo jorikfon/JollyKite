@@ -43,7 +43,9 @@ public final class JollyKiteAPIClient: APIClient {
         maxRetries: Int = 3,
         normalTimeout: TimeInterval = 10
     ) {
-        self.baseURL = baseURL
+        // Ensure trailing slash so relative paths resolve correctly
+        let urlString = baseURL.absoluteString
+        self.baseURL = urlString.hasSuffix("/") ? baseURL : URL(string: urlString + "/")!
         self.maxRetries = maxRetries
         self.normalTimeout = normalTimeout
 
@@ -80,31 +82,31 @@ public final class JollyKiteAPIClient: APIClient {
     // MARK: - APIClient Conformance
 
     public func fetchCurrentWind() async throws -> WindData {
-        try await request(path: "/wind/current")
+        try await request(path: "wind/current")
     }
 
     public func fetchForecast() async throws -> [WindForecastEntry] {
-        try await request(path: "/wind/forecast")
+        try await request(path: "wind/forecast")
     }
 
     public func fetchTrend() async throws -> WindTrend {
-        try await request(path: "/wind/trend")
+        try await request(path: "wind/trend")
     }
 
     public func fetchHistory(hours: Int = 24) async throws -> [WindData] {
-        try await request(path: "/wind/history/\(hours)")
+        try await request(path: "wind/history/\(hours)")
     }
 
     public func fetchWeekHistory(days: Int = 7) async throws -> [WeekHistoryDay] {
-        try await request(path: "/wind/history/week?days=\(days)")
+        try await request(path: "wind/history/week?days=\(days)")
     }
 
     public func fetchStatistics(hours: Int = 24) async throws -> WindStatistics {
-        try await request(path: "/wind/statistics/\(hours)")
+        try await request(path: "wind/statistics/\(hours)")
     }
 
     public func fetchTodayTimeline() async throws -> TodayFullTimeline {
-        try await request(path: "/wind/today/full?interval=5")
+        try await request(path: "wind/today/full?interval=5")
     }
 
     // MARK: - Private

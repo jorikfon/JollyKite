@@ -26,9 +26,11 @@ struct MapView: View {
                     ) {
                         WindArrowAnnotation(
                             degrees: vm.windDirectionDegrees,
+                            speedKnots: vm.windSpeedKnots,
                             speedText: vm.windSpeedText,
                             unit: vm.windUnit,
-                            safety: vm.safety
+                            safety: vm.safety,
+                            shoreType: vm.shoreType
                         )
                     }
                 }

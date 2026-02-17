@@ -6,47 +6,47 @@ import JollyKiteShared
 final class SettingsViewModel {
     private let preferences: PreferencesStore
 
-    init(preferences: PreferencesStore) {
-        self.preferences = preferences
-    }
-
     var windUnit: WindUnit {
-        get { preferences.windUnit }
-        set { preferences.windUnit = newValue }
+        didSet { preferences.windUnit = windUnit }
     }
 
     var language: AppLanguage {
-        get { preferences.language }
-        set { preferences.language = newValue }
+        didSet { preferences.language = language }
     }
 
     var riderWeight: Double {
-        get { preferences.riderWeight }
-        set { preferences.riderWeight = newValue }
+        didSet { preferences.riderWeight = riderWeight }
     }
 
     var boardType: BoardType {
-        get { preferences.boardType }
-        set { preferences.boardType = newValue }
+        didSet { preferences.boardType = boardType }
     }
 
     var hapticFeedback: Bool {
-        get { preferences.hapticFeedback }
-        set { preferences.hapticFeedback = newValue }
+        didSet { preferences.hapticFeedback = hapticFeedback }
     }
 
     var notificationsEnabled: Bool {
-        get { preferences.notificationsEnabled }
-        set { preferences.notificationsEnabled = newValue }
+        didSet { preferences.notificationsEnabled = notificationsEnabled }
     }
 
     var serverURLString: String {
-        get { preferences.serverURL.absoluteString }
-        set {
-            if let url = URL(string: newValue) {
+        didSet {
+            if let url = URL(string: serverURLString) {
                 preferences.serverURL = url
             }
         }
+    }
+
+    init(preferences: PreferencesStore) {
+        self.preferences = preferences
+        self.windUnit = preferences.windUnit
+        self.language = preferences.language
+        self.riderWeight = preferences.riderWeight
+        self.boardType = preferences.boardType
+        self.hapticFeedback = preferences.hapticFeedback
+        self.notificationsEnabled = preferences.notificationsEnabled
+        self.serverURLString = preferences.serverURL.absoluteString
     }
 
     var appVersion: String {

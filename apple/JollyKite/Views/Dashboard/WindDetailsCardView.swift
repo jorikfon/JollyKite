@@ -13,7 +13,7 @@ struct WindDetailsCardView: View {
                     .font(.headline)
                 Spacer()
                 if let trend, trend.hasData {
-                    Label(trend.trend.sfSymbol, systemImage: trend.sfSymbol)
+                    Label(trend.trend.labelRu, systemImage: trend.sfSymbol)
                         .font(.caption)
                         .foregroundStyle(trend.swiftUIColor)
                 }
@@ -36,16 +36,10 @@ struct WindDetailsCardView: View {
                     icon: "arrow.up.forward"
                 )
                 detailCell(
-                    title: "Температура",
-                    value: windData?.temperatureCelsius.map { "\(Int($0))" } ?? "--",
-                    unit: "°C",
-                    icon: "thermometer.medium"
-                )
-                detailCell(
-                    title: "Влажность",
-                    value: windData?.humidity.map { "\(Int($0))" } ?? "--",
-                    unit: "%",
-                    icon: "humidity"
+                    title: "Давление",
+                    value: windData?.pressure.map { String(format: "%.0f", $0 * 33.8639) } ?? "--",
+                    unit: "мм",
+                    icon: "barometer"
                 )
             }
         }

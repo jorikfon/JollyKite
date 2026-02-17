@@ -16,7 +16,9 @@ public actor SSEClient {
         sseTimeout: TimeInterval = 30,
         reconnectDelay: TimeInterval = 5
     ) {
-        self.baseURL = baseURL
+        // Ensure trailing slash so relative paths resolve correctly
+        let urlString = baseURL.absoluteString
+        self.baseURL = urlString.hasSuffix("/") ? baseURL : URL(string: urlString + "/")!
         self.sseTimeout = sseTimeout
         self.reconnectDelay = reconnectDelay
 
@@ -89,7 +91,7 @@ public actor SSEClient {
     }
 
     private func streamEvents(continuation: AsyncStream<WindStreamUpdate>.Continuation) async throws {
-        guard let url = URL(string: "/api/wind/stream", relativeTo: baseURL) else {
+        guard let url = URL(string: "wind/stream", relativeTo: baseURL) else {
             throw APIError.invalidURL
         }
 

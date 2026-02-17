@@ -5,8 +5,10 @@ struct WindDirectionCompassView: View {
     let degrees: Double
     let label: String
 
+    private let compassSize: CGFloat = 140
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             ZStack {
                 // Compass ring
                 Circle()
@@ -16,10 +18,9 @@ struct WindDirectionCompassView: View {
                 ForEach(["С", "В", "Ю", "З"], id: \.self) { point in
                     let angle = cardinalAngle(for: point)
                     Text(point)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .offset(y: -60)
-                        .rotationEffect(.degrees(-angle))
+                        .offset(y: -(compassSize / 2 - 10))
                         .rotationEffect(.degrees(angle))
                 }
 
@@ -29,18 +30,11 @@ struct WindDirectionCompassView: View {
                     .foregroundStyle(Color.accentColor)
                     .rotationEffect(.degrees(degrees))
                     .animation(.easeInOut(duration: AppConstants.Intervals.animationDuration), value: degrees)
-
-                VStack(spacing: 0) {
-                    Spacer()
-                    Text(label)
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("\(Int(degrees))°")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 4)
             }
+            .frame(width: compassSize, height: compassSize)
 
+            Text("\(label)  \(Int(degrees))°")
+                .font(.system(size: 14, weight: .semibold))
             Text("Направление")
                 .font(.caption2)
                 .foregroundStyle(.secondary)

@@ -73,6 +73,18 @@ public enum TrendDirection: String, Codable, Sendable, Hashable, CaseIterable {
         }
     }
 
+    /// Localized Russian label for the trend.
+    public var labelRu: String {
+        switch self {
+        case .increasingStrong: return "Раздувает"
+        case .increasing: return "Усиление"
+        case .stable: return "Стабильно"
+        case .decreasing: return "Ослабление"
+        case .decreasingStrong: return "Стихает"
+        case .insufficientData: return "Нет данных"
+        }
+    }
+
     /// Whether the wind is getting stronger.
     public var isStrengthening: Bool {
         self == .increasing || self == .increasingStrong

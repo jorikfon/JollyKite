@@ -24,8 +24,6 @@
 /// ├── Networking/      - API clients
 /// │   ├── APIClient         - Backend API (protocol + implementation)
 /// │   ├── SSEClient         - Server-Sent Events for real-time
-/// │   ├── OpenMeteoClient   - Direct forecast fallback
-/// │   ├── AmbientWeatherClient - Direct weather fallback
 /// │   └── APIError          - Typed error enum
 /// ├── Services/        - Business logic
 /// │   ├── WindSafetyService - Safety calculation

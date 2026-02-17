@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,10 +13,12 @@
 		0799A1575B690011A71B1DA4 /* ForecastBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */; };
 		0BF5D2E98FCB4F8FA5B22B68 /* WindCircularView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B053E217A3E0F0B504D27425 /* WindCircularView.swift */; };
 		1282DF58493B45980771029F /* TimelineViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F1CAD90994149531A7BBC53 /* TimelineViewModel.swift */; };
+		169E740A9478E1EA5493D948 /* WindHeroCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4286D8BACDD5F0B09851D3B3 /* WindHeroCardView.swift */; };
 		16EBC80467B696AE3C789B3F /* WindSSEService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81797B17AB84F714F4706E6 /* WindSSEService.swift */; };
 		17D38770C88BC7C583DFC409 /* Color+Wind.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA4DBD93933F5D9E6AEB445F /* Color+Wind.swift */; };
 		1802B0CF46243BF2B68DE2DB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FC7CAAC044C2DB9C65BFAC9 /* ContentView.swift */; };
 		19BA22FE0299F583F6301D22 /* WindRectangularView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2515524C8CDF84E8BC3A9BE1 /* WindRectangularView.swift */; };
+		22699218CD93E60DA25D4D51 /* WindStatusCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49161BFD26BC4D47F893F3A4 /* WindStatusCardView.swift */; };
 		28D0D054D2659F9A7832A7D3 /* HapticService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB7FA9ED4937C3030BBD9A5 /* HapticService.swift */; };
 		2F728222366905676BD9ECBD /* WeekHistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECA05BCCA63306E32C7CEE9 /* WeekHistoryChartView.swift */; };
 		31073637B0085F3CAF1646F0 /* JollyKiteWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FB34699598158AAFA73CEC /* JollyKiteWidgets.swift */; };
@@ -24,7 +26,9 @@
 		3345D9BBFC72604960EC6ABD /* WindArrowAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3875BCEEF79A6E18F59FCF45 /* WindArrowAnnotation.swift */; };
 		377822F5A6B2F3ECB0E1A3C4 /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B4DEA5189046227A24DAF93 /* WidgetDataService.swift */; };
 		444AE773D0642D9078BC58A1 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFF86268109029974B62353 /* MapView.swift */; };
+		4AD074FB9531BC5AB8329F32 /* WindDirectionKiterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DABE8677A5A33B93D4FD11C /* WindDirectionKiterView.swift */; };
 		4B300987F03738347C6EF150 /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A282F81841FB60F311DA42FE /* LoadingStateView.swift */; };
+		51E27003506D0D3B745D6012 /* KiterCompassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C4E8F660C21914A4243E67 /* KiterCompassView.swift */; };
 		554207784DBD790A92691842 /* JollyKiteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B26C3E2255CF8A8AB9E697 /* JollyKiteApp.swift */; };
 		664B159C82A18FAFE0E9CA34 /* WindSpeedGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFAAD0595053EAA0565CC39B /* WindSpeedGaugeView.swift */; };
 		68D8447CC94EC195BA551E38 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6E9485A82D648DF559F3B95 /* SettingsView.swift */; };
@@ -90,11 +94,13 @@
 		26F367E830DA7151CBB0BFE1 /* JollyKite.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JollyKite.entitlements; sourceTree = "<group>"; };
 		27A38CBD0AF74964B261E5AB /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		2B4DEA5189046227A24DAF93 /* WidgetDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataService.swift; sourceTree = "<group>"; };
-		2E7B574650373C0AFEA8A04D /* JollyKiteWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JollyKiteWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		2E7B574650373C0AFEA8A04D /* JollyKiteWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = JollyKiteWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		2FC7CAAC044C2DB9C65BFAC9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3875BCEEF79A6E18F59FCF45 /* WindArrowAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindArrowAnnotation.swift; sourceTree = "<group>"; };
 		3BB7FA9ED4937C3030BBD9A5 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
+		4286D8BACDD5F0B09851D3B3 /* WindHeroCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindHeroCardView.swift; sourceTree = "<group>"; };
 		43B4F69C4D5BAD1AC1649F36 /* WidgetConfigurationIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetConfigurationIntent.swift; sourceTree = "<group>"; };
+		49161BFD26BC4D47F893F3A4 /* WindStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindStatusCardView.swift; sourceTree = "<group>"; };
 		4AFF86268109029974B62353 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		4D8FA60D0D5CE4388C7B21E5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4F1CAD90994149531A7BBC53 /* TimelineViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineViewModel.swift; sourceTree = "<group>"; };
@@ -109,8 +115,10 @@
 		8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastBarView.swift; sourceTree = "<group>"; };
 		907404F8A22DC2BC4A8A798C /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		92AEB497E54FE6EE207CDBAD /* JollyKiteWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JollyKiteWidgets.entitlements; sourceTree = "<group>"; };
+		95C4E8F660C21914A4243E67 /* KiterCompassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KiterCompassView.swift; sourceTree = "<group>"; };
 		98B26C3E2255CF8A8AB9E697 /* JollyKiteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JollyKiteApp.swift; sourceTree = "<group>"; };
 		9CD491B75EE62233335C9218 /* TimelineTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineTabView.swift; sourceTree = "<group>"; };
+		9DABE8677A5A33B93D4FD11C /* WindDirectionKiterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindDirectionKiterView.swift; sourceTree = "<group>"; };
 		A282F81841FB60F311DA42FE /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
 		A93FFBF17FAE37660A060C3E /* WindDetailsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindDetailsCardView.swift; sourceTree = "<group>"; };
 		AC49992D859E0B27076CF8C1 /* GradientBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientBarView.swift; sourceTree = "<group>"; };
@@ -125,7 +133,7 @@
 		C5FB34699598158AAFA73CEC /* JollyKiteWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JollyKiteWidgets.swift; sourceTree = "<group>"; };
 		C69B948DB0EE6F2193B0546B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DFAAD0595053EAA0565CC39B /* WindSpeedGaugeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindSpeedGaugeView.swift; sourceTree = "<group>"; };
-		EB8542C76657DD0AB4C2756B /* JollyKiteShared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = JollyKiteShared; sourceTree = SOURCE_ROOT; };
+		EB8542C76657DD0AB4C2756B /* JollyKiteShared */ = {isa = PBXFileReference; lastKnownFileType = folder; name = JollyKiteShared; path = JollyKiteShared; sourceTree = SOURCE_ROOT; };
 		F4BD118A1E0D3BACADE0FB9E /* WindTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindTimelineProvider.swift; sourceTree = "<group>"; };
 		F6E9485A82D648DF559F3B95 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F9B6546F422E4C755E34C7F1 /* TodayTimelineChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayTimelineChartView.swift; sourceTree = "<group>"; };
@@ -234,7 +242,10 @@
 				FCA494009EC0761A0491294B /* SafetyBadgeView.swift */,
 				A93FFBF17FAE37660A060C3E /* WindDetailsCardView.swift */,
 				505824543FBD60A551A978FB /* WindDirectionCompassView.swift */,
+				9DABE8677A5A33B93D4FD11C /* WindDirectionKiterView.swift */,
+				4286D8BACDD5F0B09851D3B3 /* WindHeroCardView.swift */,
 				DFAAD0595053EAA0565CC39B /* WindSpeedGaugeView.swift */,
+				49161BFD26BC4D47F893F3A4 /* WindStatusCardView.swift */,
 			);
 			path = Dashboard;
 			sourceTree = "<group>";
@@ -250,6 +261,7 @@
 		444C380C4F1122184639A3F3 /* Map */ = {
 			isa = PBXGroup;
 			children = (
+				95C4E8F660C21914A4243E67 /* KiterCompassView.swift */,
 				4AFF86268109029974B62353 /* MapView.swift */,
 				3875BCEEF79A6E18F59FCF45 /* WindArrowAnnotation.swift */,
 			);
@@ -441,7 +453,10 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					501316417504D338956BD860 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = XM6SL4JUGF;
+					};
+					9E7F88B607C06CB147DEEDC8 = {
+						DevelopmentTeam = XM6SL4JUGF;
 					};
 				};
 			};
@@ -458,6 +473,7 @@
 			packageReferences = (
 				B90BEAF066DDCFC9A966211B /* XCLocalSwiftPackageReference "JollyKiteShared" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -517,6 +533,7 @@
 				28D0D054D2659F9A7832A7D3 /* HapticService.swift in Sources */,
 				554207784DBD790A92691842 /* JollyKiteApp.swift in Sources */,
 				D9487FB4E174E0BE3BA27949 /* KiteSizeSliderView.swift in Sources */,
+				51E27003506D0D3B745D6012 /* KiterCompassView.swift in Sources */,
 				4B300987F03738347C6EF150 /* LoadingStateView.swift in Sources */,
 				444AE773D0642D9078BC58A1 /* MapView.swift in Sources */,
 				8A8292B46102454C0BC2F55B /* MapViewModel.swift in Sources */,
@@ -531,8 +548,11 @@
 				3345D9BBFC72604960EC6ABD /* WindArrowAnnotation.swift in Sources */,
 				867CEF79D9089931866BFEC8 /* WindDetailsCardView.swift in Sources */,
 				D2B4C0732B3959C1C1688FE5 /* WindDirectionCompassView.swift in Sources */,
+				4AD074FB9531BC5AB8329F32 /* WindDirectionKiterView.swift in Sources */,
+				169E740A9478E1EA5493D948 /* WindHeroCardView.swift in Sources */,
 				16EBC80467B696AE3C789B3F /* WindSSEService.swift in Sources */,
 				664B159C82A18FAFE0E9CA34 /* WindSpeedGaugeView.swift in Sources */,
+				22699218CD93E60DA25D4D51 /* WindStatusCardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -601,7 +621,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = XM6SL4JUGF;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -685,7 +705,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = XM6SL4JUGF;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -712,7 +732,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = JollyKiteWidgets/JollyKiteWidgets.entitlements;
-				DEVELOPMENT_TEAM = XM6SL4JUGF;
 				INFOPLIST_FILE = JollyKiteWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -729,7 +748,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = JollyKiteWidgets/JollyKiteWidgets.entitlements;
-				DEVELOPMENT_TEAM = XM6SL4JUGF;
 				INFOPLIST_FILE = JollyKiteWidgets/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

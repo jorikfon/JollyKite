@@ -46,37 +46,24 @@ struct DashboardView: View {
         } else {
             ScrollView {
                 VStack(spacing: 16) {
-                    SafetyBadgeView(
-                        safety: vm.safety,
-                        shoreType: vm.windData?.direction.shoreType
+                    WindHeroCardView(
+                        speedKnots: vm.windData?.windSpeedKnots ?? 0,
+                        directionText: vm.directionText,
+                        gustKnots: vm.windData?.windGustKnots,
+                        maxGustKnots: vm.windData?.maxGustKnots,
+                        windUnit: vm.windUnit
                     )
 
-                    HStack(spacing: 16) {
-                        WindSpeedGaugeView(
-                            speed: vm.windData?.windSpeedKnots ?? 0,
-                            unit: vm.windUnit
-                        )
-                        WindDirectionCompassView(
-                            degrees: vm.directionDegrees,
-                            label: vm.directionText
-                        )
-                    }
-                    .frame(height: 180)
-
-                    GradientBarView(speed: vm.windData?.windSpeedKnots ?? 0)
-
-                    WindDetailsCardView(
-                        windData: vm.windData,
+                    WindStatusCardView(
+                        conditionIcon: vm.conditionIcon,
+                        conditionName: vm.conditionNameRu,
+                        safetySubtitle: vm.safetySubtitleRu,
+                        safetyColor: vm.safety.color,
                         trend: vm.trend,
-                        unit: vm.windUnit
+                        trendDescription: vm.trendDescriptionRu,
+                        kiteRecommendation: vm.kiteRecommendation,
+                        riderWeight: preferences.riderWeight
                     )
-
-                    if let rec = vm.kiteRecommendation {
-                        KiteSizeSliderView(
-                            recommendation: rec,
-                            windSpeed: vm.windData?.windSpeedKnots ?? 0
-                        )
-                    }
 
                     if let timestamp = vm.windData?.timestamp {
                         Text("Обновлено: \(timestamp.relativeString)")

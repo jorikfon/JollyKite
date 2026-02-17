@@ -60,4 +60,12 @@ final class MapViewModel {
     var windDirectionDegrees: Double {
         windData?.direction.degrees ?? 0
     }
+
+    var windSpeedKnots: Double {
+        windData?.windSpeedKnots ?? 0
+    }
+
+    var shoreType: ShoreType? {
+        windData?.direction.shoreType
+    }
 }
