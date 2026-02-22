@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		005851A5DECB81718428EBC6 /* ToggleWindUnitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1AD869FF72FAA20C0C30F5 /* ToggleWindUnitIntent.swift */; };
 		02CD7401AA507F28C8A7BED8 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A38CBD0AF74964B261E5AB /* DashboardView.swift */; };
+		040D37356254C70056EA912B /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B4DEA5189046227A24DAF93 /* WidgetDataService.swift */; };
 		06DCA2BC72E915478B47996D /* JollyKiteWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2E7B574650373C0AFEA8A04D /* JollyKiteWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		0758FE045C12C7FE7D2F3571 /* WindSmallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0B9B4BB53CEB761258E36C /* WindSmallView.swift */; };
 		0799A1575B690011A71B1DA4 /* ForecastBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */; };
@@ -23,16 +25,22 @@
 		2F728222366905676BD9ECBD /* WeekHistoryChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECA05BCCA63306E32C7CEE9 /* WeekHistoryChartView.swift */; };
 		31073637B0085F3CAF1646F0 /* JollyKiteWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FB34699598158AAFA73CEC /* JollyKiteWidgets.swift */; };
 		31A09DA27678277B33C38876 /* ForecastChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6740F813749491FA04321230 /* ForecastChartView.swift */; };
+		324F85357A5FF9A907507391 /* WindSmallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA0B9B4BB53CEB761258E36C /* WindSmallView.swift */; };
 		3345D9BBFC72604960EC6ABD /* WindArrowAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3875BCEEF79A6E18F59FCF45 /* WindArrowAnnotation.swift */; };
+		33C35DFECC715DBF87315D89 /* WindHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F81D725645A08A7DFF17CBF /* WindHomeWidget.swift */; };
 		377822F5A6B2F3ECB0E1A3C4 /* WidgetDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B4DEA5189046227A24DAF93 /* WidgetDataService.swift */; };
+		3F0824AD793D315526FBE341 /* JollyKiteShared in Frameworks */ = {isa = PBXBuildFile; productRef = 1D4B9B6D738946BC5262A2D0 /* JollyKiteShared */; };
 		444AE773D0642D9078BC58A1 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AFF86268109029974B62353 /* MapView.swift */; };
 		4AD074FB9531BC5AB8329F32 /* WindDirectionKiterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DABE8677A5A33B93D4FD11C /* WindDirectionKiterView.swift */; };
 		4B300987F03738347C6EF150 /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A282F81841FB60F311DA42FE /* LoadingStateView.swift */; };
 		51E27003506D0D3B745D6012 /* KiterCompassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C4E8F660C21914A4243E67 /* KiterCompassView.swift */; };
 		554207784DBD790A92691842 /* JollyKiteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98B26C3E2255CF8A8AB9E697 /* JollyKiteApp.swift */; };
+		597C9AE42658DFC6B8907562 /* WindTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4BD118A1E0D3BACADE0FB9E /* WindTimelineProvider.swift */; };
 		664B159C82A18FAFE0E9CA34 /* WindSpeedGaugeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFAAD0595053EAA0565CC39B /* WindSpeedGaugeView.swift */; };
 		68D8447CC94EC195BA551E38 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6E9485A82D648DF559F3B95 /* SettingsView.swift */; };
 		6A3FF99EED6FAE257C376202 /* WindTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4BD118A1E0D3BACADE0FB9E /* WindTimelineProvider.swift */; };
+		6B8D4484C938657B911FCCA3 /* WindEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F80447BFDFB44D45759AED /* WindEntry.swift */; };
+		6C1A0F9423A0CE0D1773898A /* JollyKiteMacWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A2558C9C691A06D05867D77F /* JollyKiteMacWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6C774CF572C3A85EB2C182C4 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C8AB376AF88D46DD8FFF4FD /* AppConstants.swift */; };
 		6E9D666B3BDBF07C547F911E /* TimelineTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD491B75EE62233335C9218 /* TimelineTabView.swift */; };
 		7DE75A85C2A1E594DC8548DD /* WindInlineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFAF8512B47F37FB8CC97074 /* WindInlineView.swift */; };
@@ -40,6 +48,7 @@
 		867CEF79D9089931866BFEC8 /* WindDetailsCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93FFBF17FAE37660A060C3E /* WindDetailsCardView.swift */; };
 		870EF51BB4E2C44ECD148894 /* WidgetTimelineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7027898799434CCE3DA44F7 /* WidgetTimelineChartView.swift */; };
 		8A8292B46102454C0BC2F55B /* MapViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6952D973B3EC6FEB5A452F6 /* MapViewModel.swift */; };
+		8D0833AED5EC59EA5D1673EC /* JollyKiteMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B23F92F20E9A8D57A374F7 /* JollyKiteMacApp.swift */; };
 		92503962D80FC163AF9AF288 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 907404F8A22DC2BC4A8A798C /* DashboardViewModel.swift */; };
 		9304570467D889B6EED5CC6A /* GradientBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC49992D859E0B27076CF8C1 /* GradientBarView.swift */; };
 		959DC99FDBE1003D6F912E3F /* AnimatedNumberView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86655A4FDF261D70151EEA5E /* AnimatedNumberView.swift */; };
@@ -47,21 +56,36 @@
 		9D327CD629B6FE42D4E96427 /* JollyKiteShared in Frameworks */ = {isa = PBXBuildFile; productRef = 54EA0DD25DA0F92CE28F126E /* JollyKiteShared */; };
 		9F2FB25A3F6FEBB6E29A06CA /* WindEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F80447BFDFB44D45759AED /* WindEntry.swift */; };
 		A31A000EB72F242CDF8BEB0D /* ForecastDayCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC05AFFDE16369C921020A23 /* ForecastDayCardView.swift */; };
+		A35AB7DBAB2142A2B3905B5B /* JollyKiteMacWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4421B96FC09E05B008F2E8B6 /* JollyKiteMacWidgets.swift */; };
 		A577667CB254D13DE548B6A1 /* WindLargeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17929A78AD8D84E925A7D363 /* WindLargeView.swift */; };
+		A5A638F1415861F6F68DBD9D /* WindLargeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17929A78AD8D84E925A7D363 /* WindLargeView.swift */; };
 		A5B1B0858D0232ABBCDE19AF /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162F85F0D6B49C13E6A7B5FF /* SettingsViewModel.swift */; };
 		A7943A28306035DB38131707 /* ForecastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22995B96EF954E8B33AE37F3 /* ForecastViewModel.swift */; };
 		ADD6E37C6A8DBBF46326A0A8 /* SafetyBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA494009EC0761A0491294B /* SafetyBadgeView.swift */; };
 		B1A222127216587C208C6B35 /* TodayTimelineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B6546F422E4C755E34C7F1 /* TodayTimelineChartView.swift */; };
+		BE72EECE0F0022C67F9175DF /* JollyKiteShared in Frameworks */ = {isa = PBXBuildFile; productRef = 74BFF06AFD336815B634D3E9 /* JollyKiteShared */; };
+		BE81CBF8C5BFB8B398D5689A /* ForecastBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */; };
 		D2B4C0732B3959C1C1688FE5 /* WindDirectionCompassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505824543FBD60A551A978FB /* WindDirectionCompassView.swift */; };
 		D8F33BA0657D9CD5BF6401DB /* ForecastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20C06D8CE14F7918D6B88061 /* ForecastView.swift */; };
 		D9487FB4E174E0BE3BA27949 /* KiteSizeSliderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77E9C7D7967FC8A4D7F611E9 /* KiteSizeSliderView.swift */; };
 		DC4F00F03DF87ABB8BB7FB9F /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7315FEA9BEF5D4CA1488EA6A /* PushNotificationService.swift */; };
+		DD84B6911046EC08E1E5F2AE /* WindMediumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259B688E9BAE4A75CA85F319 /* WindMediumView.swift */; };
 		E3526E3D80C58BF5746032D9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4D8FA60D0D5CE4388C7B21E5 /* Assets.xcassets */; };
+		E6AE46CD99573C36A79D0154 /* WidgetConfigurationIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B4F69C4D5BAD1AC1649F36 /* WidgetConfigurationIntent.swift */; };
+		ECCBAF7AC8E240E2559B6087 /* WindHomeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F81D725645A08A7DFF17CBF /* WindHomeWidget.swift */; };
+		F05C147319158C30D9F26F45 /* WidgetTimelineChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7027898799434CCE3DA44F7 /* WidgetTimelineChartView.swift */; };
 		F3FD6CA0ADB117B7C08836F1 /* WindMediumView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 259B688E9BAE4A75CA85F319 /* WindMediumView.swift */; };
 		FF318445AEE74BF3186A426C /* ToggleWindUnitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B1AD869FF72FAA20C0C30F5 /* ToggleWindUnitIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		9D50A5778914109DA1487AC1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DF89FC79A8FCC4C18F2B604F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B6DC497C560CF804FCFF7177;
+			remoteInfo = JollyKiteMacWidgets;
+		};
 		D78CE50C99ACB01EE482D6DF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = DF89FC79A8FCC4C18F2B604F /* Project object */;
@@ -83,11 +107,23 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DD8F3DAD40D0F4712EDD71C8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6C1A0F9423A0CE0D1773898A /* JollyKiteMacWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		162F85F0D6B49C13E6A7B5FF /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		17929A78AD8D84E925A7D363 /* WindLargeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindLargeView.swift; sourceTree = "<group>"; };
+		195DED5A463ED013494CE432 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		20C06D8CE14F7918D6B88061 /* ForecastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastView.swift; sourceTree = "<group>"; };
 		22995B96EF954E8B33AE37F3 /* ForecastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastViewModel.swift; sourceTree = "<group>"; };
 		2515524C8CDF84E8BC3A9BE1 /* WindRectangularView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindRectangularView.swift; sourceTree = "<group>"; };
@@ -99,8 +135,10 @@
 		2FC7CAAC044C2DB9C65BFAC9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3875BCEEF79A6E18F59FCF45 /* WindArrowAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindArrowAnnotation.swift; sourceTree = "<group>"; };
 		3BB7FA9ED4937C3030BBD9A5 /* HapticService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticService.swift; sourceTree = "<group>"; };
+		41A910F3A0654272163D05A1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4286D8BACDD5F0B09851D3B3 /* WindHeroCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindHeroCardView.swift; sourceTree = "<group>"; };
 		43B4F69C4D5BAD1AC1649F36 /* WidgetConfigurationIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetConfigurationIntent.swift; sourceTree = "<group>"; };
+		4421B96FC09E05B008F2E8B6 /* JollyKiteMacWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JollyKiteMacWidgets.swift; sourceTree = "<group>"; };
 		49161BFD26BC4D47F893F3A4 /* WindStatusCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindStatusCardView.swift; sourceTree = "<group>"; };
 		4AFF86268109029974B62353 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 		4D8FA60D0D5CE4388C7B21E5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -108,11 +146,13 @@
 		505824543FBD60A551A978FB /* WindDirectionCompassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindDirectionCompassView.swift; sourceTree = "<group>"; };
 		5B1AD869FF72FAA20C0C30F5 /* ToggleWindUnitIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleWindUnitIntent.swift; sourceTree = "<group>"; };
 		6740F813749491FA04321230 /* ForecastChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastChartView.swift; sourceTree = "<group>"; };
+		6F81D725645A08A7DFF17CBF /* WindHomeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindHomeWidget.swift; sourceTree = "<group>"; };
 		7315FEA9BEF5D4CA1488EA6A /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		77E9C7D7967FC8A4D7F611E9 /* KiteSizeSliderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KiteSizeSliderView.swift; sourceTree = "<group>"; };
 		7BA0E4AFD17BAD45431B3657 /* JollyKite.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JollyKite.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C8AB376AF88D46DD8FFF4FD /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		86655A4FDF261D70151EEA5E /* AnimatedNumberView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimatedNumberView.swift; sourceTree = "<group>"; };
+		8E7F01FBFD87B2EB52B97F68 /* JollyKiteMacWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JollyKiteMacWidgets.entitlements; sourceTree = "<group>"; };
 		8EEE4AD765CB7E29EC3811EB /* ForecastBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForecastBarView.swift; sourceTree = "<group>"; };
 		907404F8A22DC2BC4A8A798C /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		92AEB497E54FE6EE207CDBAD /* JollyKiteWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JollyKiteWidgets.entitlements; sourceTree = "<group>"; };
@@ -120,11 +160,15 @@
 		98B26C3E2255CF8A8AB9E697 /* JollyKiteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JollyKiteApp.swift; sourceTree = "<group>"; };
 		9CD491B75EE62233335C9218 /* TimelineTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineTabView.swift; sourceTree = "<group>"; };
 		9DABE8677A5A33B93D4FD11C /* WindDirectionKiterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindDirectionKiterView.swift; sourceTree = "<group>"; };
+		A2558C9C691A06D05867D77F /* JollyKiteMacWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JollyKiteMacWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A282F81841FB60F311DA42FE /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
+		A2B23F92F20E9A8D57A374F7 /* JollyKiteMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JollyKiteMacApp.swift; sourceTree = "<group>"; };
+		A8B615B188E1D12BA606AD24 /* JollyKiteMacApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JollyKiteMacApp.entitlements; sourceTree = "<group>"; };
 		A93FFBF17FAE37660A060C3E /* WindDetailsCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindDetailsCardView.swift; sourceTree = "<group>"; };
 		AC49992D859E0B27076CF8C1 /* GradientBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradientBarView.swift; sourceTree = "<group>"; };
 		AFAF8512B47F37FB8CC97074 /* WindInlineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindInlineView.swift; sourceTree = "<group>"; };
 		B053E217A3E0F0B504D27425 /* WindCircularView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindCircularView.swift; sourceTree = "<group>"; };
+		B1AEBAB322C40FEA4B701657 /* JollyKiteMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JollyKiteMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5F80447BFDFB44D45759AED /* WindEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindEntry.swift; sourceTree = "<group>"; };
 		B6952D973B3EC6FEB5A452F6 /* MapViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewModel.swift; sourceTree = "<group>"; };
 		B81797B17AB84F714F4706E6 /* WindSSEService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindSSEService.swift; sourceTree = "<group>"; };
@@ -150,6 +194,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				9D327CD629B6FE42D4E96427 /* JollyKiteShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		857AB3C76CF31CFB3BD18260 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3F0824AD793D315526FBE341 /* JollyKiteShared in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9053F581D77D3C3CDAA1B13D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE72EECE0F0022C67F9175DF /* JollyKiteShared in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -220,6 +280,8 @@
 			isa = PBXGroup;
 			children = (
 				7BA0E4AFD17BAD45431B3657 /* JollyKite.app */,
+				B1AEBAB322C40FEA4B701657 /* JollyKiteMac.app */,
+				A2558C9C691A06D05867D77F /* JollyKiteMacWidgets.appex */,
 				2E7B574650373C0AFEA8A04D /* JollyKiteWidgets.appex */,
 			);
 			name = Products;
@@ -229,6 +291,8 @@
 			isa = PBXGroup;
 			children = (
 				8C3C26A48ABC57DB182AD3B9 /* JollyKite */,
+				637A799B95F8BAD7E8A9BDA9 /* JollyKiteMacApp */,
+				626292E0B26588698CF78263 /* JollyKiteMacWidgets */,
 				FCED198D7B25E9EBC19478B9 /* JollyKiteWidgets */,
 				110824CC96E97F473118F2B0 /* Packages */,
 				2930E137C84339CDB31B7643 /* Products */,
@@ -270,6 +334,26 @@
 			path = Map;
 			sourceTree = "<group>";
 		};
+		626292E0B26588698CF78263 /* JollyKiteMacWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				195DED5A463ED013494CE432 /* Info.plist */,
+				8E7F01FBFD87B2EB52B97F68 /* JollyKiteMacWidgets.entitlements */,
+				4421B96FC09E05B008F2E8B6 /* JollyKiteMacWidgets.swift */,
+			);
+			path = JollyKiteMacWidgets;
+			sourceTree = "<group>";
+		};
+		637A799B95F8BAD7E8A9BDA9 /* JollyKiteMacApp */ = {
+			isa = PBXGroup;
+			children = (
+				41A910F3A0654272163D05A1 /* Info.plist */,
+				A8B615B188E1D12BA606AD24 /* JollyKiteMacApp.entitlements */,
+				A2B23F92F20E9A8D57A374F7 /* JollyKiteMacApp.swift */,
+			);
+			path = JollyKiteMacApp;
+			sourceTree = "<group>";
+		};
 		6771C0900FDD15A27193E938 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
@@ -293,6 +377,7 @@
 			children = (
 				6AFEE1414E767A792CF0A04C /* Components */,
 				B053E217A3E0F0B504D27425 /* WindCircularView.swift */,
+				6F81D725645A08A7DFF17CBF /* WindHomeWidget.swift */,
 				AFAF8512B47F37FB8CC97074 /* WindInlineView.swift */,
 				17929A78AD8D84E925A7D363 /* WindLargeView.swift */,
 				259B688E9BAE4A75CA85F319 /* WindMediumView.swift */,
@@ -405,6 +490,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		49B074E786127F14316B1D78 /* JollyKiteMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ADA795A28D1E00F35BB2DAF8 /* Build configuration list for PBXNativeTarget "JollyKiteMac" */;
+			buildPhases = (
+				F8C4C496D71E9C4B0CCB7BA2 /* Sources */,
+				9053F581D77D3C3CDAA1B13D /* Frameworks */,
+				DD8F3DAD40D0F4712EDD71C8 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BE23E53623CEE69DD8CD2200 /* PBXTargetDependency */,
+			);
+			name = JollyKiteMac;
+			packageProductDependencies = (
+				74BFF06AFD336815B634D3E9 /* JollyKiteShared */,
+			);
+			productName = JollyKiteMac;
+			productReference = B1AEBAB322C40FEA4B701657 /* JollyKiteMac.app */;
+			productType = "com.apple.product-type.application";
+		};
 		501316417504D338956BD860 /* JollyKite */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CD42AD1C0ECC6FB902E4D17 /* Build configuration list for PBXNativeTarget "JollyKite" */;
@@ -446,6 +552,25 @@
 			productReference = 2E7B574650373C0AFEA8A04D /* JollyKiteWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		B6DC497C560CF804FCFF7177 /* JollyKiteMacWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 615C3CB6232E7935AB72B42D /* Build configuration list for PBXNativeTarget "JollyKiteMacWidgets" */;
+			buildPhases = (
+				14FA6138C60013D54D383BA2 /* Sources */,
+				857AB3C76CF31CFB3BD18260 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = JollyKiteMacWidgets;
+			packageProductDependencies = (
+				1D4B9B6D738946BC5262A2D0 /* JollyKiteShared */,
+			);
+			productName = JollyKiteMacWidgets;
+			productReference = A2558C9C691A06D05867D77F /* JollyKiteMacWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -455,10 +580,16 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					49B074E786127F14316B1D78 = {
+						DevelopmentTeam = XM6SL4JUGF;
+					};
 					501316417504D338956BD860 = {
 						DevelopmentTeam = XM6SL4JUGF;
 					};
 					9E7F88B607C06CB147DEEDC8 = {
+						DevelopmentTeam = XM6SL4JUGF;
+					};
+					B6DC497C560CF804FCFF7177 = {
 						DevelopmentTeam = XM6SL4JUGF;
 					};
 				};
@@ -481,6 +612,8 @@
 			projectRoot = "";
 			targets = (
 				501316417504D338956BD860 /* JollyKite */,
+				49B074E786127F14316B1D78 /* JollyKiteMac */,
+				B6DC497C560CF804FCFF7177 /* JollyKiteMacWidgets */,
 				9E7F88B607C06CB147DEEDC8 /* JollyKiteWidgets */,
 			);
 		};
@@ -498,6 +631,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		14FA6138C60013D54D383BA2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BE81CBF8C5BFB8B398D5689A /* ForecastBarView.swift in Sources */,
+				A35AB7DBAB2142A2B3905B5B /* JollyKiteMacWidgets.swift in Sources */,
+				005851A5DECB81718428EBC6 /* ToggleWindUnitIntent.swift in Sources */,
+				E6AE46CD99573C36A79D0154 /* WidgetConfigurationIntent.swift in Sources */,
+				040D37356254C70056EA912B /* WidgetDataService.swift in Sources */,
+				F05C147319158C30D9F26F45 /* WidgetTimelineChartView.swift in Sources */,
+				6B8D4484C938657B911FCCA3 /* WindEntry.swift in Sources */,
+				ECCBAF7AC8E240E2559B6087 /* WindHomeWidget.swift in Sources */,
+				A5A638F1415861F6F68DBD9D /* WindLargeView.swift in Sources */,
+				DD84B6911046EC08E1E5F2AE /* WindMediumView.swift in Sources */,
+				324F85357A5FF9A907507391 /* WindSmallView.swift in Sources */,
+				597C9AE42658DFC6B8907562 /* WindTimelineProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		875D5000028D18A42935DE42 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -510,6 +662,7 @@
 				870EF51BB4E2C44ECD148894 /* WidgetTimelineChartView.swift in Sources */,
 				0BF5D2E98FCB4F8FA5B22B68 /* WindCircularView.swift in Sources */,
 				9F2FB25A3F6FEBB6E29A06CA /* WindEntry.swift in Sources */,
+				33C35DFECC715DBF87315D89 /* WindHomeWidget.swift in Sources */,
 				7DE75A85C2A1E594DC8548DD /* WindInlineView.swift in Sources */,
 				A577667CB254D13DE548B6A1 /* WindLargeView.swift in Sources */,
 				F3FD6CA0ADB117B7C08836F1 /* WindMediumView.swift in Sources */,
@@ -560,6 +713,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F8C4C496D71E9C4B0CCB7BA2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D0833AED5EC59EA5D1673EC /* JollyKiteMacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -567,6 +728,11 @@
 			isa = PBXTargetDependency;
 			target = 9E7F88B607C06CB147DEEDC8 /* JollyKiteWidgets */;
 			targetProxy = D78CE50C99ACB01EE482D6DF /* PBXContainerItemProxy */;
+		};
+		BE23E53623CEE69DD8CD2200 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B6DC497C560CF804FCFF7177 /* JollyKiteMacWidgets */;
+			targetProxy = 9D50A5778914109DA1487AC1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -643,17 +809,49 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
 			};
 			name = Debug;
+		};
+		24E9E74E40A3F2FF3A04D147 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = JollyKiteMacApp/JollyKiteMacApp.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = JollyKiteMacApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jollykite.mac;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		373DCE3849FB9E70D191E2A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = JollyKiteMacWidgets/JollyKiteMacWidgets.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = JollyKiteMacWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jollykite.mac.widgets;
+				SDKROOT = macosx;
+			};
+			name = Release;
 		};
 		4F0E5C11664605FB1DEC7866 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -670,6 +868,38 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5C5076EE313DBAB90551B7EA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = JollyKiteMacWidgets/JollyKiteMacWidgets.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = JollyKiteMacWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jollykite.mac.widgets;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		644630FB726E256D261716F4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = JollyKiteMacApp/JollyKiteMacApp.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = JollyKiteMacApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jollykite.mac;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
@@ -721,11 +951,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
@@ -776,6 +1006,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		615C3CB6232E7935AB72B42D /* Build configuration list for PBXNativeTarget "JollyKiteMacWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C5076EE313DBAB90551B7EA /* Debug */,
+				373DCE3849FB9E70D191E2A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ADA795A28D1E00F35BB2DAF8 /* Build configuration list for PBXNativeTarget "JollyKiteMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				644630FB726E256D261716F4 /* Debug */,
+				24E9E74E40A3F2FF3A04D147 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		B055E8C1E71873B3B4B0C996 /* Build configuration list for PBXNativeTarget "JollyKiteWidgets" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -804,11 +1052,19 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1D4B9B6D738946BC5262A2D0 /* JollyKiteShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JollyKiteShared;
+		};
 		54EA0DD25DA0F92CE28F126E /* JollyKiteShared */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = JollyKiteShared;
 		};
 		612D8BEA6FF81F9B4A82A97E /* JollyKiteShared */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = JollyKiteShared;
+		};
+		74BFF06AFD336815B634D3E9 /* JollyKiteShared */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = JollyKiteShared;
 		};

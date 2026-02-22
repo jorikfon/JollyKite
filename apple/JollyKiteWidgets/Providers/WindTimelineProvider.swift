@@ -27,7 +27,7 @@ struct WindTimelineProvider: TimelineProvider {
             // Smart refresh: shorter interval during working hours
             let refreshInterval: TimeInterval
             if WorkingHoursService.isWithinWorkingHours() {
-                refreshInterval = 15 * 60  // 15 minutes during working hours
+                refreshInterval = 5 * 60  // 5 minutes during working hours
             } else {
                 refreshInterval = 60 * 60  // 1 hour outside working hours
             }

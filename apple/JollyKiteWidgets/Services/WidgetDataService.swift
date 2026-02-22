@@ -35,25 +35,21 @@ struct WidgetDataService {
     }
 
     private func fetchTimeline(client: JollyKiteAPIClient) async -> TodayFullTimeline? {
-        if let cached = store.lastTodayTimeline {
-            return cached
-        }
-        let result = try? await client.fetchTodayTimeline()
-        if let result {
+        // Always fetch fresh data; fall back to cache only on failure
+        if let result = try? await client.fetchTodayTimeline() {
             store.lastTodayTimeline = result
+            return result
         }
-        return result
+        return store.lastTodayTimeline
     }
 
     private func fetchTrend(client: JollyKiteAPIClient) async -> WindTrend? {
-        if let cached = store.lastWindTrend {
-            return cached
-        }
-        let result = try? await client.fetchTrend()
-        if let result {
+        // Always fetch fresh data; fall back to cache only on failure
+        if let result = try? await client.fetchTrend() {
             store.lastWindTrend = result
+            return result
         }
-        return result
+        return store.lastWindTrend
     }
 
     private func makeEntry(

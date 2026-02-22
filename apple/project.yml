@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.jollykite
   deploymentTarget:
     iOS: "17.0"
+    macOS: "14.0"
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
   groupSortPosition: top
@@ -62,5 +63,60 @@ targets:
     entitlements:
       path: JollyKiteWidgets/JollyKiteWidgets.entitlements
       properties:
+        com.apple.security.application-groups:
+          - group.com.jollykite.shared
+
+  JollyKiteMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: JollyKiteMacApp
+        excludes:
+          - "**/.DS_Store"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jollykite.mac
+        INFOPLIST_FILE: JollyKiteMacApp/Info.plist
+        CODE_SIGN_ENTITLEMENTS: JollyKiteMacApp/JollyKiteMacApp.entitlements
+    dependencies:
+      - package: JollyKiteShared
+      - target: JollyKiteMacWidgets
+        embed: true
+    entitlements:
+      path: JollyKiteMacApp/JollyKiteMacApp.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.application-groups:
+          - group.com.jollykite.shared
+
+  JollyKiteMacWidgets:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: JollyKiteMacWidgets
+        excludes:
+          - "**/.DS_Store"
+      - path: JollyKiteWidgets
+        excludes:
+          - "**/.DS_Store"
+          - JollyKiteWidgets.swift
+          - Views/WindCircularView.swift
+          - Views/WindRectangularView.swift
+          - Views/WindInlineView.swift
+          - Info.plist
+          - JollyKiteWidgets.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jollykite.mac.widgets
+        INFOPLIST_FILE: JollyKiteMacWidgets/Info.plist
+        CODE_SIGN_ENTITLEMENTS: JollyKiteMacWidgets/JollyKiteMacWidgets.entitlements
+    dependencies:
+      - package: JollyKiteShared
+    entitlements:
+      path: JollyKiteMacWidgets/JollyKiteMacWidgets.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
         com.apple.security.application-groups:
           - group.com.jollykite.shared
