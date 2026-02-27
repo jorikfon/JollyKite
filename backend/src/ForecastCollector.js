@@ -19,14 +19,15 @@ export class ForecastCollector {
   /**
    * Fetch wind forecast from Open-Meteo
    */
-  async fetchWindForecast() {
+  async fetchWindForecast(baseUrl = null) {
     const [lat, lon] = this.spotLocation;
     const timezone = 'Asia/Bangkok';
     const daysToShow = 3;
+    const apiBase = baseUrl || this.forecastApiUrl;
 
     try {
       // Fetch wind forecast with precipitation probability
-      const windUrl = `${this.forecastApiUrl}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability&timezone=${timezone}&forecast_days=${daysToShow}`;
+      const windUrl = `${apiBase}?latitude=${lat}&longitude=${lon}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability&timezone=${timezone}&forecast_days=${daysToShow}`;
 
       console.log(`📡 Fetching wind forecast from Open-Meteo...`);
       const windController = new AbortController();
