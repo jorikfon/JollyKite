@@ -1,12 +1,14 @@
 /**
- * WindDataCollector - collects wind data from Ambient Weather API
- * and archives hourly aggregated data
+ * WindDataCollector - collects wind data from multiple weather stations
+ * and archives hourly aggregated data per station
  */
 export class WindDataCollector {
   constructor(config, dbManager, archiveManager) {
     this.config = config;
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
+    this.stations = config.stations || [];
+    this.primaryStationId = this.stations.find(s => s.isPrimary)?.id || 'pak_nam_pran';
   }
 
   /**
@@ -60,79 +62,81 @@ export class WindDataCollector {
   }
 
   /**
-   * Average wind data from multiple stations
+   * Fetch wind data from Weathercloud station
    */
-  averageStationData(dataArray) {
-    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-
-    // Use most recent timestamp
-    const latestTimestamp = dataArray.reduce((latest, data) => {
-      return new Date(data.timestamp) > new Date(latest) ? data.timestamp : latest;
-    }, dataArray[0].timestamp);
-
-    return {
-      timestamp: latestTimestamp,
-      windSpeedKnots: avg(dataArray.map(d => d.windSpeedKnots)),
-      windGustKnots: Math.max(...dataArray.map(d => d.windGustKnots)),
-      maxGustKnots: Math.max(...dataArray.map(d => d.maxGustKnots)),
-      windDir: this.calculateDominantDirection(dataArray.map(d => d.windDir)),
-      windDirAvg: this.calculateDominantDirection(dataArray.map(d => d.windDirAvg)),
-      temperature: avg(dataArray.map(d => d.temperature || 0)),
-      humidity: avg(dataArray.map(d => d.humidity || 0)),
-      pressure: avg(dataArray.map(d => d.pressure || 0))
-    };
-  }
-
-  /**
-   * Fetch current wind data from Ambient Weather API
-   * Supports multiple stations (comma-separated URLs in config)
-   */
-  async fetchWindData() {
+  async fetchFromWeathercloud(station) {
     try {
-      // Parse station URLs from config (comma-separated)
-      const stationUrls = this.config.ambientWeatherApi.split(',').map(url => url.trim());
+      const response = await fetch(station.url, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
+      });
 
-      console.log(`📡 Fetching data from ${stationUrls.length} station(s)...`);
-
-      // Fetch from all stations in parallel
-      const results = await Promise.all(
-        stationUrls.map(url => this.fetchFromStation(url))
-      );
-
-      // Filter out failed stations
-      const validResults = results.filter(r => r !== null);
-
-      if (validResults.length === 0) {
-        throw new Error('No data from any weather station');
+      if (!response.ok) {
+        console.warn(`Station ${station.id} returned ${response.status}`);
+        return null;
       }
 
-      console.log(`✓ Got data from ${validResults.length}/${stationUrls.length} station(s)`);
+      const data = await response.json();
+      if (!data.wspd && data.wspd !== 0) return null;
 
-      // If only one station, return its data
-      if (validResults.length === 1) {
-        return validResults[0];
-      }
-
-      // Average data from multiple stations
-      return this.averageStationData(validResults);
+      const msToKnots = 1.94384;
+      return {
+        timestamp: new Date(data.epoch * 1000).toISOString(),
+        windSpeedKnots: data.wspd * msToKnots,
+        windGustKnots: data.wspdhi ? data.wspdhi * msToKnots : null,
+        maxGustKnots: data.wspdhi ? data.wspdhi * msToKnots : null,
+        windDir: data.wdir || 0,
+        windDirAvg: data.wdiravg || null,
+        temperature: null,
+        humidity: null,
+        pressure: data.bar || null
+      };
     } catch (error) {
-      console.error('Error fetching wind data:', error.message);
-      throw error;
+      console.warn(`Station ${station.id} error:`, error.message);
+      return null;
     }
   }
 
   /**
-   * Collect and store wind data
+   * Collect and store wind data from all stations
+   * Returns primary station data for backward compatibility (SSE, notifications)
    */
   async collectWindData() {
-    try {
-      const windData = await this.fetchWindData();
-      this.dbManager.insertWindData(windData);
-      return windData;
-    } catch (error) {
-      console.error('Error collecting wind data:', error.message);
-      throw error;
+    console.log(`📡 Fetching data from ${this.stations.length} station(s)...`);
+
+    const results = await Promise.allSettled(
+      this.stations.map(station =>
+        station.type === 'weathercloud'
+          ? this.fetchFromWeathercloud(station)
+          : this.fetchFromStation(station.url)
+      )
+    );
+
+    let primaryData = null;
+    let successCount = 0;
+
+    for (let i = 0; i < results.length; i++) {
+      const station = this.stations[i];
+      if (results[i].status === 'fulfilled' && results[i].value) {
+        const data = results[i].value;
+        this.dbManager.insertWindData(data, station.id);
+        successCount++;
+        if (station.isPrimary) primaryData = data;
+      } else {
+        const reason = results[i].status === 'rejected' ? results[i].reason?.message : 'no data';
+        console.warn(`  ⚠ ${station.id}: ${reason}`);
+      }
     }
+
+    console.log(`✓ Got data from ${successCount}/${this.stations.length} station(s)`);
+
+    if (successCount === 0) {
+      throw new Error('No data from any weather station');
+    }
+
+    return primaryData;
   }
 
   /**
@@ -162,53 +166,65 @@ export class WindDataCollector {
   }
 
   /**
-   * Archive hourly aggregated data
+   * Aggregate raw measurement rows into hourly summary
+   */
+  _aggregateHourlyData(hourlyData) {
+    const speeds = hourlyData.map(d => d.wind_speed_knots);
+    const gusts = hourlyData.map(d => d.wind_gust_knots).filter(g => g !== null);
+    const directions = hourlyData.map(d => d.wind_direction);
+    const temperatures = hourlyData.map(d => d.temperature).filter(t => t !== null);
+    const humidities = hourlyData.map(d => d.humidity).filter(h => h !== null);
+    const pressures = hourlyData.map(d => d.pressure).filter(p => p !== null);
+
+    return {
+      avgWindSpeed: speeds.reduce((a, b) => a + b, 0) / speeds.length,
+      minWindSpeed: Math.min(...speeds),
+      maxWindSpeed: Math.max(...speeds),
+      avgWindGust: gusts.length > 0 ? gusts.reduce((a, b) => a + b, 0) / gusts.length : null,
+      maxWindGust: gusts.length > 0 ? Math.max(...gusts) : null,
+      avgWindDirection: directions.reduce((a, b) => a + b, 0) / directions.length,
+      dominantWindDirection: this.calculateDominantDirection(directions),
+      avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : null,
+      avgHumidity: humidities.length > 0 ? humidities.reduce((a, b) => a + b, 0) / humidities.length : null,
+      avgPressure: pressures.length > 0 ? pressures.reduce((a, b) => a + b, 0) / pressures.length : null,
+      measurementCount: hourlyData.length
+    };
+  }
+
+  /**
+   * Archive hourly aggregated data for all stations
    */
   async archiveHourlyData() {
     try {
-      const hourlyData = this.dbManager.getDataForArchiving();
-
-      if (hourlyData.length === 0) {
-        console.log('No data to archive for the last hour');
-        return null;
-      }
-
-      // Calculate aggregates
-      const speeds = hourlyData.map(d => d.wind_speed_knots);
-      const gusts = hourlyData.map(d => d.wind_gust_knots).filter(g => g !== null);
-      const directions = hourlyData.map(d => d.wind_direction);
-      const temperatures = hourlyData.map(d => d.temperature).filter(t => t !== null);
-      const humidities = hourlyData.map(d => d.humidity).filter(h => h !== null);
-      const pressures = hourlyData.map(d => d.pressure).filter(p => p !== null);
-
-      const aggregatedData = {
-        avgWindSpeed: speeds.reduce((a, b) => a + b, 0) / speeds.length,
-        minWindSpeed: Math.min(...speeds),
-        maxWindSpeed: Math.max(...speeds),
-        avgWindGust: gusts.length > 0 ? gusts.reduce((a, b) => a + b, 0) / gusts.length : null,
-        maxWindGust: gusts.length > 0 ? Math.max(...gusts) : null,
-        avgWindDirection: directions.reduce((a, b) => a + b, 0) / directions.length,
-        dominantWindDirection: this.calculateDominantDirection(directions),
-        avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : null,
-        avgHumidity: humidities.length > 0 ? humidities.reduce((a, b) => a + b, 0) / humidities.length : null,
-        avgPressure: pressures.length > 0 ? pressures.reduce((a, b) => a + b, 0) / pressures.length : null,
-        measurementCount: hourlyData.length
-      };
-
       // Get hour timestamp (start of the hour)
       const lastHour = new Date();
       lastHour.setHours(lastHour.getHours() - 1);
       lastHour.setMinutes(0, 0, 0);
       const hourTimestamp = lastHour.toISOString();
 
-      // Archive the data
-      this.archiveManager.archiveHourlyData(hourTimestamp, aggregatedData);
+      let archivedCount = 0;
 
-      console.log(`✓ Archived data for hour: ${hourTimestamp}`);
-      console.log(`  Average wind: ${aggregatedData.avgWindSpeed.toFixed(1)} knots`);
-      console.log(`  Measurements: ${aggregatedData.measurementCount}`);
+      for (const station of this.stations) {
+        const hourlyData = this.dbManager.getDataForArchiving(station.id);
 
-      return aggregatedData;
+        if (hourlyData.length === 0) {
+          continue;
+        }
+
+        const aggregatedData = this._aggregateHourlyData(hourlyData);
+        this.archiveManager.archiveHourlyData(hourTimestamp, aggregatedData, station.id);
+        archivedCount++;
+
+        console.log(`  ✓ ${station.id}: ${aggregatedData.avgWindSpeed.toFixed(1)} kn avg, ${aggregatedData.measurementCount} measurements`);
+      }
+
+      if (archivedCount === 0) {
+        console.log('No data to archive for the last hour');
+        return null;
+      }
+
+      console.log(`✓ Archived data for ${archivedCount} station(s), hour: ${hourTimestamp}`);
+      return { archivedStations: archivedCount, hourTimestamp };
     } catch (error) {
       console.error('Error archiving hourly data:', error.message);
       throw error;

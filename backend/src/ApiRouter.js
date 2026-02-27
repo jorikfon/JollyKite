@@ -21,13 +21,15 @@ try {
  * ApiRouter - defines all API endpoints for frontend
  */
 export class ApiRouter {
-  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager) {
+  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, stations = []) {
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
     this.windCollector = windCollector;
     this.notificationManager = notificationManager;
     this.forecastCollector = forecastCollector;
     this.calibrationManager = calibrationManager;
+    this.forecastModelManager = forecastModelManager;
+    this.stations = stations;
     this.router = express.Router();
     this.sseClients = []; // Connected SSE clients
     this.setupRoutes();
@@ -239,14 +241,113 @@ export class ApiRouter {
       }
     });
 
-    // Get wind forecast from Open-Meteo
+    // Get list of forecast models with accuracy metrics
+    this.router.get('/wind/forecast/models', (req, res) => {
+      try {
+        if (!this.forecastModelManager) {
+          return res.status(503).json({ error: 'Forecast model service not available' });
+        }
+
+        const metrics = this.forecastModelManager.getModelAccuracyMetrics();
+        const bestModel = this.forecastModelManager.getBestModel();
+
+        const models = this.forecastModelManager.models.map(m => {
+          const accuracy = metrics.find(a => a.model_id === m.id);
+          return {
+            id: m.id,
+            name: m.name,
+            isBest: m.id === bestModel,
+            accuracy: accuracy ? {
+              rmseSpeed: accuracy.rmse_speed ? parseFloat(accuracy.rmse_speed.toFixed(2)) : null,
+              maeSpeed: accuracy.mae_speed ? parseFloat(accuracy.mae_speed.toFixed(2)) : null,
+              rmseDirection: accuracy.rmse_direction ? parseFloat(accuracy.rmse_direction.toFixed(1)) : null,
+              maeDirection: accuracy.mae_direction ? parseFloat(accuracy.mae_direction.toFixed(1)) : null,
+              correlationSpeed: accuracy.correlation_speed ? parseFloat(accuracy.correlation_speed.toFixed(3)) : null,
+              correctionFactor: accuracy.correction_factor ? parseFloat(accuracy.correction_factor.toFixed(3)) : null,
+              evaluationCount: accuracy.eval_count || 0,
+              score: accuracy.score ? parseFloat(accuracy.score.toFixed(4)) : null
+            } : null
+          };
+        });
+
+        res.json({ models, bestModel, evaluationPeriodDays: 14 });
+      } catch (error) {
+        console.error('Forecast models API error:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Compare all forecast models side-by-side
+    this.router.get('/wind/forecast/compare', async (req, res) => {
+      try {
+        if (!this.forecastModelManager) {
+          return res.status(503).json({ error: 'Forecast model service not available' });
+        }
+
+        const forecasts = await this.forecastModelManager.fetchAllModelForecasts();
+        forecasts.bestModel = this.forecastModelManager.getBestModel();
+        res.json(forecasts);
+      } catch (error) {
+        console.error('Forecast compare API error:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Debug: Force save forecast snapshots
+    this.router.post('/wind/forecast/snapshot', async (req, res) => {
+      try {
+        if (!this.forecastModelManager) {
+          return res.status(503).json({ error: 'Forecast model service not available' });
+        }
+        const count = await this.forecastModelManager.saveForcastSnapshots();
+        res.json({ success: true, modelsSaved: count });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Debug: Force accuracy evaluation
+    this.router.post('/wind/forecast/evaluate', async (req, res) => {
+      try {
+        if (!this.forecastModelManager) {
+          return res.status(503).json({ error: 'Forecast model service not available' });
+        }
+        await this.forecastModelManager.evaluateAccuracy();
+        const metrics = this.forecastModelManager.getModelAccuracyMetrics();
+        res.json({ success: true, metrics });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get wind forecast from Open-Meteo (supports ?model= query param)
     this.router.get('/wind/forecast', async (req, res) => {
       try {
         if (!this.forecastCollector) {
           return res.status(503).json({ error: 'Forecast service not available' });
         }
 
-        const forecast = await this.forecastCollector.fetchWindForecast();
+        let modelId = req.query.model;
+        let baseUrl = null;
+
+        if (this.forecastModelManager) {
+          modelId = modelId || this.forecastModelManager.getBestModel();
+          const modelDef = this.forecastModelManager.models.find(m => m.id === modelId);
+          if (modelDef) {
+            baseUrl = modelDef.baseUrl;
+          }
+        }
+
+        const forecast = await this.forecastCollector.fetchWindForecast(baseUrl);
+
+        // Apply model-specific correction and tag entries
+        if (this.forecastModelManager && modelId) {
+          const correctionFactor = this.forecastModelManager.getCorrectionFactor(modelId);
+          const corrected = this.forecastCollector.applyCorrection(forecast, correctionFactor);
+          corrected.forEach(entry => { entry.model = modelId; });
+          return res.json(corrected);
+        }
+
         res.json(forecast);
       } catch (error) {
         console.error('Forecast API error:', error);
@@ -298,7 +399,12 @@ export class ApiRouter {
           });
         }
 
-        const fullForecast = await this.forecastCollector.fetchWindForecast();
+        // Use best model if forecast model manager is available
+        const bestModelId = this.forecastModelManager ? this.forecastModelManager.getBestModel() : null;
+        const bestModelDef = bestModelId && this.forecastModelManager
+          ? this.forecastModelManager.models.find(m => m.id === bestModelId)
+          : null;
+        const fullForecast = await this.forecastCollector.fetchWindForecast(bestModelDef?.baseUrl || null);
 
         // Filter forecast for today only
         const todayForecast = fullForecast.filter(f => {
@@ -329,12 +435,16 @@ export class ApiRouter {
         // Apply correction factor to future forecast
         const correctedForecast = this.forecastCollector.applyCorrection(futureForecast, correctionFactor);
 
-        res.json({
+        const response = {
           history: historyData,
           forecast: correctedForecast,
           correctionFactor: parseFloat(correctionFactor.toFixed(2)),
           currentTime: { hour: currentHour, minute: currentMinute }
-        });
+        };
+        if (bestModelId) {
+          response.model = bestModelId;
+        }
+        res.json(response);
       } catch (error) {
         console.error('Error generating full timeline:', error);
         res.status(500).json({ error: error.message });
@@ -590,6 +700,107 @@ export class ApiRouter {
 
         const removed = this.notificationManager.apns.removeDevice(deviceToken);
         res.json({ success: true, removed });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // === Station endpoints ===
+
+    // Get list of all stations (metadata)
+    this.router.get('/stations', (req, res) => {
+      try {
+        res.json(this.stations.map(s => ({
+          id: s.id,
+          name: s.name,
+          lat: s.lat,
+          lon: s.lon,
+          elevation: s.elevation,
+          isPrimary: s.isPrimary,
+          type: s.type
+        })));
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get current wind data from all stations
+    this.router.get('/stations/current', (req, res) => {
+      try {
+        const allLatest = this.dbManager.getLatestDataAllStations();
+        const result = {};
+
+        for (const station of this.stations) {
+          const data = allLatest.find(d => d.station_id === station.id);
+          result[station.id] = {
+            station: {
+              id: station.id,
+              name: station.name,
+              lat: station.lat,
+              lon: station.lon,
+              isPrimary: station.isPrimary
+            },
+            wind: data ? this.formatWindData(data) : null
+          };
+        }
+
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get current wind data for a specific station
+    this.router.get('/stations/:id/current', (req, res) => {
+      try {
+        const stationId = req.params.id;
+        const station = this.stations.find(s => s.id === stationId);
+        if (!station) {
+          return res.status(404).json({ error: `Station '${stationId}' not found` });
+        }
+
+        const data = this.dbManager.getLatestData(stationId);
+        if (!data) {
+          return res.status(404).json({ error: 'No wind data available for this station' });
+        }
+        res.json(this.formatWindData(data));
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get wind history for a specific station
+    this.router.get('/stations/:id/history/:hours?', (req, res) => {
+      try {
+        const stationId = req.params.id;
+        const station = this.stations.find(s => s.id === stationId);
+        if (!station) {
+          return res.status(404).json({ error: `Station '${stationId}' not found` });
+        }
+
+        const hours = parseInt(req.params.hours) || 24;
+        const data = this.dbManager.getDataByHours(hours, stationId);
+        res.json(data.map(d => this.formatWindData(d)));
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get wind statistics for a specific station
+    this.router.get('/stations/:id/statistics/:hours?', (req, res) => {
+      try {
+        const stationId = req.params.id;
+        const station = this.stations.find(s => s.id === stationId);
+        if (!station) {
+          return res.status(404).json({ error: `Station '${stationId}' not found` });
+        }
+
+        const hours = parseInt(req.params.hours) || 24;
+        const stats = this.dbManager.getStatistics(hours, stationId);
+        if (stats && stats.avg_direction !== undefined) {
+          stats.avg_direction = this.calibrationManager.applyOffset(stats.avg_direction);
+        }
+        res.json(stats);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }

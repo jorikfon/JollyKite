@@ -8,13 +8,55 @@ import { ApiRouter } from './src/ApiRouter.js';
 import { NotificationManager } from './src/NotificationManager.js';
 import { ForecastCollector } from './src/ForecastCollector.js';
 import { CalibrationManager } from './src/CalibrationManager.js';
+import { ForecastModelManager } from './src/ForecastModelManager.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Configuration
 const config = {
-  ambientWeatherApi: process.env.AMBIENT_WEATHER_API || 'https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504',
+  stations: [
+    {
+      id: 'pak_nam_pran',
+      name: 'Pak Nam Pran Beach',
+      slug: 'e63ff0d2119b8c024b5aad24cc59a504',
+      type: 'ambient',
+      url: 'https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504',
+      lat: 12.3466, lon: 99.9982,
+      elevation: 5,
+      isPrimary: true
+    },
+    {
+      id: 'pvf2_thap_tai',
+      name: 'PVF2 Thap Tai',
+      slug: 'b3b6f7cf28a0062332615508b42e3b1f',
+      type: 'ambient',
+      url: 'https://lightning.ambientweather.net/devices?public.slug=b3b6f7cf28a0062332615508b42e3b1f',
+      lat: 12.4698, lon: 99.944,
+      elevation: 63,
+      isPrimary: false
+    },
+    {
+      id: 'hua_hin',
+      name: 'WS-2902D Hua Hin',
+      slug: '4ee225c9a4702440b0f1066444b72b09',
+      type: 'ambient',
+      url: 'https://lightning.ambientweather.net/devices?public.slug=4ee225c9a4702440b0f1066444b72b09',
+      lat: 12.556, lon: 99.948,
+      elevation: 18,
+      isPrimary: false
+    },
+    {
+      id: 'surfspot_wc',
+      name: 'Surfspot (Weathercloud)',
+      type: 'weathercloud',
+      deviceId: '9393576058',
+      url: 'https://app.weathercloud.net/device/values/9393576058',
+      lat: 12.5536, lon: 99.9639,
+      elevation: 0,
+      isPrimary: false
+    }
+  ],
   openMeteoApi: process.env.OPEN_METEO_API || 'https://api.open-meteo.com/v1/forecast',
   dataCollectionInterval: parseInt(process.env.DATA_COLLECTION_INTERVAL) || 60000, // 1 minute
   archiveInterval: parseInt(process.env.ARCHIVE_INTERVAL) || 3600000, // 1 hour
@@ -29,6 +71,7 @@ const notificationManager = new NotificationManager('./data/subscriptions.json')
 const windCollector = new WindDataCollector(config, dbManager, archiveManager);
 const forecastCollector = new ForecastCollector(config);
 const calibrationManager = new CalibrationManager('./data/calibration.json');
+const forecastModelManager = new ForecastModelManager('./data/forecast_snapshots.db', forecastCollector, archiveManager, dbManager);
 
 // Middleware
 app.use(cors());
@@ -38,7 +81,7 @@ app.use(express.json());
 app.use(express.static('../frontend'));
 
 // API Routes
-const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager);
+const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, config.stations);
 app.use('/api', apiRouter.getRouter());
 
 // Health check
@@ -58,6 +101,7 @@ async function initialize() {
     // Initialize databases
     await dbManager.initialize();
     await archiveManager.initialize();
+    await forecastModelManager.initialize();
     console.log('✓ Databases initialized');
 
     // Collect initial data only during working hours (6:00-19:00 Bangkok time)
@@ -144,6 +188,44 @@ async function initialize() {
     });
     console.log('✓ Cleanup scheduler started (daily at 00:05)');
 
+    // Schedule forecast snapshot saving (every 3 hours, 5:00-20:00 Bangkok time = UTC-7 → 22:00-13:00 UTC)
+    cron.schedule('0 */3 * * *', async () => {
+      try {
+        const currentHour = new Date().toLocaleString('en-US', {
+          timeZone: 'Asia/Bangkok',
+          hour: 'numeric',
+          hour12: false
+        });
+        const hour = parseInt(currentHour);
+        if (hour >= 5 && hour <= 20) {
+          await forecastModelManager.saveForcastSnapshots();
+        }
+      } catch (error) {
+        console.error('✗ Error saving forecast snapshots:', error.message);
+      }
+    });
+    console.log('✓ Forecast snapshot scheduler started (every 3 hours)');
+
+    // Schedule daily accuracy evaluation (20:00 Bangkok = 13:00 UTC)
+    cron.schedule('0 13 * * *', async () => {
+      try {
+        await forecastModelManager.evaluateAccuracy();
+      } catch (error) {
+        console.error('✗ Error evaluating forecast accuracy:', error.message);
+      }
+    });
+    console.log('✓ Forecast accuracy evaluation scheduler started (daily at 20:00 Bangkok)');
+
+    // Schedule weekly snapshot cleanup (Sunday 01:00 Bangkok = Saturday 18:00 UTC)
+    cron.schedule('0 18 * * 6', async () => {
+      try {
+        forecastModelManager.cleanupOldSnapshots(14);
+      } catch (error) {
+        console.error('✗ Error cleaning up forecast snapshots:', error.message);
+      }
+    });
+    console.log('✓ Forecast snapshot cleanup scheduler started (weekly)');
+
     // Start server
     app.listen(PORT, () => {
       console.log(`\n✅ JollyKite Backend is running on port ${PORT}`);
@@ -162,6 +244,7 @@ process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down gracefully...');
   dbManager.close();
   archiveManager.close();
+  forecastModelManager.close();
   process.exit(0);
 });
 
@@ -169,6 +252,7 @@ process.on('SIGTERM', () => {
   console.log('\n🛑 Shutting down gracefully...');
   dbManager.close();
   archiveManager.close();
+  forecastModelManager.close();
   process.exit(0);
 });
 

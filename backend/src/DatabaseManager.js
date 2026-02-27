@@ -32,6 +32,7 @@ export class DatabaseManager {
       CREATE TABLE IF NOT EXISTS wind_data (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        station_id TEXT NOT NULL DEFAULT 'pak_nam_pran',
         wind_speed_knots REAL NOT NULL,
         wind_gust_knots REAL,
         max_gust_knots REAL,
@@ -44,10 +45,17 @@ export class DatabaseManager {
       )
     `);
 
-    // Create index for timestamp queries
+    // Migrate existing table: add station_id if missing
+    this._migrateAddStationId();
+
+    // Create indexes
     this.db.run(`
       CREATE INDEX IF NOT EXISTS idx_wind_data_timestamp
       ON wind_data(timestamp DESC)
+    `);
+    this.db.run(`
+      CREATE INDEX IF NOT EXISTS idx_wind_station_ts
+      ON wind_data(station_id, timestamp DESC)
     `);
 
     this.saveToFile();
@@ -56,6 +64,45 @@ export class DatabaseManager {
     const countResult = this.db.exec('SELECT COUNT(*) as count FROM wind_data');
     const recordCount = countResult[0]?.values[0]?.[0] || 0;
     console.log(`✓ Working database initialized (${recordCount} existing records)`);
+  }
+
+  /**
+   * Migrate: add station_id column if not present
+   */
+  _migrateAddStationId() {
+    const tableInfo = this.db.exec('PRAGMA table_info(wind_data)');
+    if (tableInfo.length === 0) return;
+
+    const columns = tableInfo[0].values.map(row => row[1]);
+    if (columns.includes('station_id')) return;
+
+    console.log('⚙ Migrating wind_data: adding station_id column...');
+    this.db.run('ALTER TABLE wind_data RENAME TO wind_data_old');
+    this.db.run(`
+      CREATE TABLE wind_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        station_id TEXT NOT NULL DEFAULT 'pak_nam_pran',
+        wind_speed_knots REAL NOT NULL,
+        wind_gust_knots REAL,
+        max_gust_knots REAL,
+        wind_direction INTEGER NOT NULL,
+        wind_direction_avg INTEGER,
+        temperature REAL,
+        humidity REAL,
+        pressure REAL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    this.db.run(`
+      INSERT INTO wind_data (id, timestamp, station_id, wind_speed_knots, wind_gust_knots,
+        max_gust_knots, wind_direction, wind_direction_avg, temperature, humidity, pressure, created_at)
+      SELECT id, timestamp, 'pak_nam_pran', wind_speed_knots, wind_gust_knots,
+        max_gust_knots, wind_direction, wind_direction_avg, temperature, humidity, pressure, created_at
+      FROM wind_data_old
+    `);
+    this.db.run('DROP TABLE wind_data_old');
+    console.log('✓ Migration complete: station_id added to wind_data');
   }
 
   saveToFile() {
@@ -67,14 +114,15 @@ export class DatabaseManager {
   /**
    * Insert new wind measurement
    */
-  insertWindData(data) {
+  insertWindData(data, stationId = 'pak_nam_pran') {
     this.db.run(
       `INSERT INTO wind_data (
-        timestamp, wind_speed_knots, wind_gust_knots, max_gust_knots,
+        timestamp, station_id, wind_speed_knots, wind_gust_knots, max_gust_knots,
         wind_direction, wind_direction_avg, temperature, humidity, pressure
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.timestamp,
+        stationId,
         data.windSpeedKnots,
         data.windGustKnots,
         data.maxGustKnots,
@@ -91,12 +139,14 @@ export class DatabaseManager {
   /**
    * Get latest wind measurement
    */
-  getLatestData() {
-    const result = this.db.exec(`
-      SELECT * FROM wind_data
-      ORDER BY timestamp DESC
-      LIMIT 1
-    `);
+  getLatestData(stationId = 'pak_nam_pran') {
+    const result = this.db.exec(
+      `SELECT * FROM wind_data
+       WHERE station_id = ?
+       ORDER BY timestamp DESC
+       LIMIT 1`,
+      [stationId]
+    );
 
     if (result.length === 0 || result[0].values.length === 0) return null;
 
@@ -104,14 +154,33 @@ export class DatabaseManager {
   }
 
   /**
+   * Get latest wind measurement from each station
+   */
+  getLatestDataAllStations() {
+    const result = this.db.exec(`
+      SELECT w.* FROM wind_data w
+      INNER JOIN (
+        SELECT station_id, MAX(timestamp) as max_ts
+        FROM wind_data
+        GROUP BY station_id
+      ) latest ON w.station_id = latest.station_id AND w.timestamp = latest.max_ts
+    `);
+
+    if (result.length === 0) return [];
+
+    return result[0].values.map(row => this._rowToObject(result[0].columns, row));
+  }
+
+  /**
    * Get wind data for the last N hours
    */
-  getDataByHours(hours = 24) {
-    const result = this.db.exec(`
-      SELECT * FROM wind_data
-      WHERE timestamp >= datetime('now', '-${hours} hours')
-      ORDER BY timestamp DESC
-    `);
+  getDataByHours(hours = 24, stationId = 'pak_nam_pran') {
+    const result = this.db.exec(
+      `SELECT * FROM wind_data
+       WHERE station_id = ? AND timestamp >= datetime('now', '-${hours} hours')
+       ORDER BY timestamp DESC`,
+      [stationId]
+    );
 
     if (result.length === 0) return [];
 
@@ -121,12 +190,14 @@ export class DatabaseManager {
   /**
    * Get last N measurements (for notification stability check)
    */
-  getLastMeasurements(count = 4) {
-    const result = this.db.exec(`
-      SELECT * FROM wind_data
-      ORDER BY timestamp DESC
-      LIMIT ${count}
-    `);
+  getLastMeasurements(count = 4, stationId = 'pak_nam_pran') {
+    const result = this.db.exec(
+      `SELECT * FROM wind_data
+       WHERE station_id = ?
+       ORDER BY timestamp DESC
+       LIMIT ${count}`,
+      [stationId]
+    );
 
     if (result.length === 0) return [];
 
@@ -139,7 +210,7 @@ export class DatabaseManager {
   /**
    * Get aggregated hourly data for current day (Bangkok timezone)
    */
-  getHourlyAggregateToday(startHour = 6, endHour = 19) {
+  getHourlyAggregateToday(startHour = 6, endHour = 19, stationId = 'pak_nam_pran') {
     // Get today's date in Bangkok timezone
     const bangkokDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
@@ -155,16 +226,17 @@ export class DatabaseManager {
     const bangkokMidnight = new Date(todayBangkok + 'T00:00:00+07:00');
     const bangkokMidnightUTC = bangkokMidnight.toISOString();
 
-    const result = this.db.exec(`
-      SELECT
+    const result = this.db.exec(
+      `SELECT
         timestamp,
         wind_speed_knots,
         wind_gust_knots,
         wind_direction
       FROM wind_data
-      WHERE timestamp >= '${bangkokMidnightUTC}'
-      ORDER BY timestamp ASC
-    `);
+      WHERE station_id = ? AND timestamp >= '${bangkokMidnightUTC}'
+      ORDER BY timestamp ASC`,
+      [stationId]
+    );
 
     if (result.length === 0) return [];
 
@@ -223,7 +295,7 @@ export class DatabaseManager {
    * Get aggregated data in N-minute intervals for current day (Bangkok timezone)
    * Used for smooth gradient visualization
    */
-  getIntervalAggregateToday(startHour = 6, endHour = 20, intervalMinutes = 5) {
+  getIntervalAggregateToday(startHour = 6, endHour = 20, intervalMinutes = 5, stationId = 'pak_nam_pran') {
     // Get today's date in Bangkok timezone
     const bangkokDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
@@ -238,16 +310,17 @@ export class DatabaseManager {
     const bangkokMidnight = new Date(todayBangkok + 'T00:00:00+07:00');
     const bangkokMidnightUTC = bangkokMidnight.toISOString();
 
-    const result = this.db.exec(`
-      SELECT
+    const result = this.db.exec(
+      `SELECT
         timestamp,
         wind_speed_knots,
         wind_gust_knots,
         wind_direction
       FROM wind_data
-      WHERE timestamp >= '${bangkokMidnightUTC}'
-      ORDER BY timestamp ASC
-    `);
+      WHERE station_id = ? AND timestamp >= '${bangkokMidnightUTC}'
+      ORDER BY timestamp ASC`,
+      [stationId]
+    );
 
     if (result.length === 0) return [];
 
@@ -315,9 +388,9 @@ export class DatabaseManager {
   /**
    * Get wind statistics for the last N hours
    */
-  getStatistics(hours = 24) {
-    const result = this.db.exec(`
-      SELECT
+  getStatistics(hours = 24, stationId = 'pak_nam_pran') {
+    const result = this.db.exec(
+      `SELECT
         COUNT(*) as count,
         AVG(wind_speed_knots) as avg_speed,
         MIN(wind_speed_knots) as min_speed,
@@ -325,8 +398,9 @@ export class DatabaseManager {
         MAX(wind_gust_knots) as max_gust,
         AVG(wind_direction) as avg_direction
       FROM wind_data
-      WHERE timestamp >= datetime('now', '-${hours} hours')
-    `);
+      WHERE station_id = ? AND timestamp >= datetime('now', '-${hours} hours')`,
+      [stationId]
+    );
 
     if (result.length === 0 || result[0].values.length === 0) return null;
 
@@ -337,28 +411,32 @@ export class DatabaseManager {
    * Calculate wind trend (increasing/decreasing)
    * Compares last 30 minutes vs previous 30 minutes (with 5-min interval = 6 records each)
    */
-  calculateTrend() {
+  calculateTrend(stationId = 'pak_nam_pran') {
     // Get average speed for last 30 minutes (6 records with 5-min interval)
-    const currentResult = this.db.exec(`
-      SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
-      FROM (
-        SELECT wind_speed_knots
-        FROM wind_data
-        ORDER BY timestamp DESC
-        LIMIT 6
-      )
-    `);
+    const currentResult = this.db.exec(
+      `SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
+       FROM (
+         SELECT wind_speed_knots
+         FROM wind_data
+         WHERE station_id = ?
+         ORDER BY timestamp DESC
+         LIMIT 6
+       )`,
+      [stationId]
+    );
 
     // Get average speed for 30-60 minutes ago (entries 7-12)
-    const previousResult = this.db.exec(`
-      SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
-      FROM (
-        SELECT wind_speed_knots
-        FROM wind_data
-        ORDER BY timestamp DESC
-        LIMIT 6 OFFSET 6
-      )
-    `);
+    const previousResult = this.db.exec(
+      `SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
+       FROM (
+         SELECT wind_speed_knots
+         FROM wind_data
+         WHERE station_id = ?
+         ORDER BY timestamp DESC
+         LIMIT 6 OFFSET 6
+       )`,
+      [stationId]
+    );
 
     if (currentResult.length === 0 || previousResult.length === 0 ||
         currentResult[0].values.length === 0 || previousResult[0].values.length === 0) {
@@ -370,7 +448,7 @@ export class DatabaseManager {
         color: '#808080',
         change: 0,
         percentChange: 0,
-        ...this.calculateDirectionStability()
+        ...this.calculateDirectionStability(stationId)
       };
     }
 
@@ -391,7 +469,7 @@ export class DatabaseManager {
         color: '#808080',
         change: 0,
         percentChange: 0,
-        ...this.calculateDirectionStability()
+        ...this.calculateDirectionStability(stationId)
       };
     }
 
@@ -403,7 +481,7 @@ export class DatabaseManager {
         color: '#808080',
         change: 0,
         percentChange: 0,
-        ...this.calculateDirectionStability()
+        ...this.calculateDirectionStability(stationId)
       };
     }
 
@@ -464,15 +542,16 @@ export class DatabaseManager {
    * Calculate wind direction stability using circular standard deviation
    * Uses last 6 records (~30 min) of wind_direction data
    */
-  calculateDirectionStability() {
-    const dirResult = this.db.exec(`
-      SELECT wind_direction FROM (
+  calculateDirectionStability(stationId = 'pak_nam_pran') {
+    const dirResult = this.db.exec(
+      `SELECT wind_direction FROM (
         SELECT wind_direction FROM wind_data
-        WHERE wind_direction IS NOT NULL
+        WHERE station_id = ? AND wind_direction IS NOT NULL
         ORDER BY timestamp DESC
         LIMIT 6
-      )
-    `);
+      )`,
+      [stationId]
+    );
 
     if (dirResult.length === 0 || dirResult[0].values.length < 3) {
       return {
@@ -547,13 +626,15 @@ export class DatabaseManager {
   /**
    * Get data for archiving (last complete hour)
    */
-  getDataForArchiving() {
-    const result = this.db.exec(`
-      SELECT * FROM wind_data
-      WHERE timestamp >= datetime('now', '-1 hour', 'start of hour')
-        AND timestamp < datetime('now', 'start of hour')
-      ORDER BY timestamp ASC
-    `);
+  getDataForArchiving(stationId = 'pak_nam_pran') {
+    const result = this.db.exec(
+      `SELECT * FROM wind_data
+       WHERE station_id = ?
+         AND timestamp >= datetime('now', '-1 hour', 'start of hour')
+         AND timestamp < datetime('now', 'start of hour')
+       ORDER BY timestamp ASC`,
+      [stationId]
+    );
 
     if (result.length === 0) return [];
 
