@@ -15,10 +15,11 @@ export class ForecastModelManager {
     this.SQL = null;
 
     this.models = [
-      { id: 'best_match',   name: 'GFS Seamless', baseUrl: 'https://api.open-meteo.com/v1/forecast' },
-      { id: 'ecmwf_ifs025', name: 'ECMWF IFS',   baseUrl: 'https://api.open-meteo.com/v1/ecmwf' },
-      { id: 'icon_global',  name: 'ICON Global',  baseUrl: 'https://api.open-meteo.com/v1/dwd-icon' },
-      { id: 'gfs_global',   name: 'GFS',          baseUrl: 'https://api.open-meteo.com/v1/gfs' },
+      { id: 'best_match',   name: 'GFS Seamless',  baseUrl: 'https://api.open-meteo.com/v1/forecast' },
+      { id: 'ecmwf_ifs025', name: 'ECMWF IFS',     baseUrl: 'https://api.open-meteo.com/v1/ecmwf' },
+      { id: 'meteofrance',  name: 'Météo-France',   baseUrl: 'https://api.open-meteo.com/v1/meteofrance' },
+      { id: 'gfs_global',   name: 'GFS',            baseUrl: 'https://api.open-meteo.com/v1/gfs' },
+      { id: 'gem_global',   name: 'GEM',            baseUrl: 'https://api.open-meteo.com/v1/gem' },
     ];
   }
 

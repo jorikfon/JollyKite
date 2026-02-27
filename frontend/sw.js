@@ -1,6 +1,6 @@
 // JollyKite Service Worker
 // Version must match frontend/version.json
-const APP_VERSION = '2.6.0';
+const APP_VERSION = '2.6.1';
 const CACHE_NAME = `jollykite-v${APP_VERSION}`;
 const API_CACHE_NAME = `jollykite-api-v${APP_VERSION}`;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах

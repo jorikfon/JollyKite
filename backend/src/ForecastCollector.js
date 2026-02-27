@@ -103,7 +103,8 @@ export class ForecastCollector {
           const datetime = new Date(hourly.time[hourIndex]);
           const windSpeed = this.kmhToKnots(hourly.wind_speed_10m[hourIndex]);
           const windDir = hourly.wind_direction_10m[hourIndex];
-          const windGust = this.kmhToKnots(hourly.wind_gusts_10m[hourIndex]);
+          const rawGust = hourly.wind_gusts_10m?.[hourIndex];
+          const windGust = rawGust != null ? this.kmhToKnots(rawGust) : windSpeed;
 
           const hourData = {
             date: datetime.toISOString(),
