@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Component | Tech | Directory |
 |-----------|------|-----------|
-| Backend API | Node.js 20, Express, SQL.js, SSE | `backend/` |
+| Backend API | Node.js 20, Express, PostgreSQL (pg), SSE | `backend/` |
 | PWA Frontend | Vanilla JS ES6, Leaflet.js, Tailwind CSS | `frontend/` |
 | iOS App | SwiftUI, iOS 17+, @Observable | `apple/JollyKite/` |
 | iOS Widgets | WidgetKit, AppIntents | `apple/JollyKiteWidgets/` |
@@ -34,15 +34,17 @@ JollyKite/
 │   ├── server.js               # Entry point (port 3000)
 │   ├── src/
 │   │   ├── ApiRouter.js        # All API endpoints
-│   │   ├── DatabaseManager.js  # SQL.js real-time wind DB
-│   │   ├── ArchiveManager.js   # Historical data DB
-│   │   ├── WindDataCollector.js # Ambient Weather fetcher
-│   │   ├── ForecastCollector.js # Open-Meteo fetcher
+│   │   ├── PostgresPool.js     # Shared PG connection pool (singleton)
+│   │   ├── DatabaseManager.js  # Real-time wind DB (PostgreSQL)
+│   │   ├── ArchiveManager.js   # Historical hourly aggregated data (PostgreSQL)
+│   │   ├── WindDataCollector.js # Ambient Weather fetcher (4 stations)
+│   │   ├── ForecastCollector.js # Open-Meteo fetcher (single model)
+│   │   ├── ForecastModelManager.js # Multi-model orchestration, snapshots & accuracy (PostgreSQL)
 │   │   ├── NotificationManager.js # Web Push + APNs coordinator
 │   │   ├── APNsProvider.js     # Apple Push (HTTP/2, JWT)
 │   │   └── CalibrationManager.js # Wind direction offset
 │   ├── package.json
-│   └── data/                   # SQLite DBs + JSON state (gitignored)
+│   └── data/                   # JSON state files only (gitignored)
 ├── frontend/                   # PWA
 │   ├── index.html              # Main entry
 │   ├── sw.js                   # Service Worker
@@ -138,7 +140,7 @@ After adding/removing Swift files, re-run `xcodegen generate`.
 ### Docker
 
 ```bash
-docker compose up              # Local dev (backend + nginx)
+docker compose up              # Local dev (postgres + backend + nginx)
 docker compose -f docker-compose.prod.yml up   # Production
 ```
 
@@ -156,11 +158,11 @@ Push to `main` → GitHub Actions builds images → ArgoCD syncs from `k8s/argoc
 
 ```json
 // frontend/version.json
-{ "version": "2.6.1" }
+{ "version": "2.7.0" }
 ```
 ```javascript
 // frontend/sw.js (line 3)
-const APP_VERSION = '2.6.1';
+const APP_VERSION = '2.7.0';
 ```
 
 Version auto-propagates to: backend `/api/version`, frontend UI, Service Worker cache name (`jollykite-v{VERSION}`).
@@ -171,21 +173,27 @@ Version auto-propagates to: backend `/api/version`, frontend UI, Service Worker 
 
 ### Backend (Node.js)
 
-**Entry:** `backend/server.js` initializes 6 managers and sets up cron jobs.
+**Database:** External PostgreSQL via `pg` (node-postgres). Connection pool in `PostgresPool.js`, config from env vars (`PG_HOST`, `PG_PORT`, `PG_DATABASE`, `PG_USER`, `PG_PASSWORD` or `DATABASE_URL`).
+
+**Entry:** `backend/server.js` initializes PG pool + 6 managers and sets up cron jobs.
 
 **Cron schedule (Bangkok time):**
-- Every 5 min (6:00–19:00): Wind data collection from Ambient Weather
+- Every 5 min (6:00–19:00): Wind data collection from Ambient Weather (4 stations)
 - Every hour at :00: Archive hourly aggregates
+- Every 3 hours (5:00–20:00): Forecast snapshots from 5 weather models
+- Daily at 20:00: Forecast accuracy evaluation against actual data
 - Daily at 00:05: Cleanup data older than 7 days
+- Weekly (Sunday 01:00): Cleanup old forecast snapshots (>14 days)
 
 **Managers:**
 
 | Manager | Responsibility |
 |---------|---------------|
-| `DatabaseManager` | SQL.js in-memory DB, 1-minute wind data granularity |
+| `DatabaseManager` | PostgreSQL, 1-minute wind data granularity |
 | `ArchiveManager` | Historical hourly aggregated data |
 | `WindDataCollector` | Ambient Weather API → knots conversion, multi-station averaging |
 | `ForecastCollector` | Open-Meteo API → 3-day hourly forecast with correction factors |
+| `ForecastModelManager` | Multi-model orchestration: 5 models (GFS Seamless, ECMWF, Météo-France, GFS, GEM), snapshots every 3h, daily accuracy evaluation, auto best-model selection |
 | `NotificationManager` | Web Push (VAPID) + APNs, daily rate limit, 15-min wind stability check |
 | `CalibrationManager` | Wind direction offset (persistent JSON) |
 
@@ -258,7 +266,11 @@ All endpoints prefixed with `/api`.
 | GET | `/wind/today/gradient?start=6&end=20&interval=5` | Today's aggregated data |
 | GET | `/wind/statistics/:hours?` | Min/max/avg/trend stats |
 | GET | `/wind/trend` | Trend direction |
-| GET | `/wind/forecast` | 3-day Open-Meteo forecast |
+| GET | `/wind/forecast` | 3-day forecast (best model, supports `?model=` query) |
+| GET | `/wind/forecast/models` | List all 5 models with accuracy metrics |
+| GET | `/wind/forecast/compare` | All models side-by-side comparison |
+| POST | `/wind/forecast/snapshot` | Force save snapshots from all models |
+| POST | `/wind/forecast/evaluate` | Force accuracy evaluation |
 | GET | `/wind/today/full` | History + forecast combined |
 | POST | `/wind/collect` | Force immediate collection |
 
@@ -314,17 +326,28 @@ Safety calculations: `frontend/js/utils/WindUtils.js`, `apple/JollyKiteShared/So
 
 ## External APIs
 
-### Ambient Weather Network
-- **Endpoint:** `https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504`
-- Public slug, no auth required
+### Ambient Weather Network (4 stations)
+- **Endpoint:** `https://lightning.ambientweather.net/devices?public.slug=<slug>`
+- Public slugs, no auth required
+- 4 stations around Pak Nam Pran, data averaged per collection cycle
 - Returns device array with `lastData` object
 - **Speeds in MPH** → must convert to knots
+- Per-station data stored with `station_id` column in DB
 
-### Open-Meteo Forecast
-- **Endpoint:** `https://api.open-meteo.com/v1/forecast`
+### Open-Meteo Forecast (5 models)
 - Free tier, no auth
-- Parameters: `latitude`, `longitude`, `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m`
+- Parameters: `latitude`, `longitude`, `hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation_probability`
 - **Speeds in km/h** → must convert to knots
+
+| Model | Endpoint | Notes |
+|-------|----------|-------|
+| GFS Seamless (best_match) | `/v1/forecast` | Auto-selects best model for location |
+| ECMWF IFS | `/v1/ecmwf` | European model, good global coverage |
+| Météo-France | `/v1/meteofrance` | ARPEGE global, no precipitation_probability |
+| GFS | `/v1/gfs` | NOAA model |
+| GEM | `/v1/gem` | Canadian model, all variables available |
+
+Snapshots stored in PostgreSQL (`forecast_snapshots` table). Accuracy evaluated daily against archive data over 14-day rolling window. Best model auto-selected when ≥10 evaluation points.
 
 ---
 
@@ -340,10 +363,20 @@ Internet → Nginx (NodePort) → Backend (ClusterIP:3000)
 
 **Namespace:** `jollykite`
 **Images:** `ghcr.io/jorikfon/jollykite/backend:latest`, `ghcr.io/jorikfon/jollykite/nginx:latest`
-**Persistent storage:** 1Gi PVC at `/app/data` (SQLite DBs, subscriptions, device tokens)
+**Persistent storage:** 1Gi PVC at `/app/data` (JSON state files: subscriptions, calibration, device tokens)
+**Database:** External PostgreSQL, credentials in `pg-credentials` k8s secret
 
-**APNs secrets in k3s:**
+**Secrets in k3s:**
 ```bash
+# PostgreSQL credentials
+kubectl -n jollykite create secret generic pg-credentials \
+  --from-literal=PG_HOST=<host> \
+  --from-literal=PG_PORT=5432 \
+  --from-literal=PG_DATABASE=jollykite \
+  --from-literal=PG_USER=jollykite \
+  --from-literal=PG_PASSWORD=<password>
+
+# APNs credentials
 kubectl -n jollykite create secret generic apns-credentials \
   --from-file=apns-key=AuthKey_XXXXXXXX.p8 \
   --from-literal=APNS_KEY_ID=XXXXXXXX \
