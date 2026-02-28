@@ -182,7 +182,7 @@ export class WindDataCollector {
       maxWindSpeed: Math.max(...speeds),
       avgWindGust: gusts.length > 0 ? gusts.reduce((a, b) => a + b, 0) / gusts.length : null,
       maxWindGust: gusts.length > 0 ? Math.max(...gusts) : null,
-      avgWindDirection: directions.reduce((a, b) => a + b, 0) / directions.length,
+      avgWindDirection: Math.round(directions.reduce((a, b) => a + b, 0) / directions.length),
       dominantWindDirection: this.calculateDominantDirection(directions),
       avgTemperature: temperatures.length > 0 ? temperatures.reduce((a, b) => a + b, 0) / temperatures.length : null,
       avgHumidity: humidities.length > 0 ? humidities.reduce((a, b) => a + b, 0) / humidities.length : null,
