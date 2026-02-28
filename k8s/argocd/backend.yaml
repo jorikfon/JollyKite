@@ -34,6 +34,31 @@ spec:
               value: "3600000"
             - name: TZ
               value: "Asia/Bangkok"
+            - name: PG_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: PG_HOST
+            - name: PG_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: PG_PORT
+            - name: PG_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: PG_DATABASE
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: PG_USER
+            - name: PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pg-credentials
+                  key: PG_PASSWORD
             - name: APNS_KEY_FILE
               value: "/secrets/apns/apns-key"
             - name: APNS_KEY_ID

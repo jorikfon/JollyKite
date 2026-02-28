@@ -71,15 +71,15 @@ export class ApiRouter {
     });
 
     // Server-Sent Events endpoint for real-time updates
-    this.router.get('/wind/stream', (req, res) => {
+    this.router.get('/wind/stream', async (req, res) => {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('Access-Control-Allow-Origin', '*');
 
       // Send initial data
-      const currentData = this.dbManager.getLatestData();
-      const trend = this.dbManager.calculateTrend();
+      const currentData = await this.dbManager.getLatestData();
+      const trend = await this.dbManager.calculateTrend();
 
       if (currentData) {
         const message = JSON.stringify({
@@ -113,9 +113,9 @@ export class ApiRouter {
     });
 
     // Get current wind data
-    this.router.get('/wind/current', (req, res) => {
+    this.router.get('/wind/current', async (req, res) => {
       try {
-        const data = this.dbManager.getLatestData();
+        const data = await this.dbManager.getLatestData();
         if (!data) {
           return res.status(404).json({ error: 'No wind data available' });
         }
@@ -127,10 +127,10 @@ export class ApiRouter {
 
     // Get wind history for last 7 days (grouped by day, 6:00-19:00 only)
     // IMPORTANT: This must be before the generic /wind/history/:hours? route
-    this.router.get('/wind/history/week', (req, res) => {
+    this.router.get('/wind/history/week', async (req, res) => {
       try {
         const days = parseInt(req.query.days) || 7;
-        const data = this.dbManager.getDataByHours(days * 24);
+        const data = await this.dbManager.getDataByHours(days * 24);
 
         // Group data by day
         const groupedByDay = {};
@@ -179,10 +179,10 @@ export class ApiRouter {
     });
 
     // Get wind history for last N hours
-    this.router.get('/wind/history/:hours?', (req, res) => {
+    this.router.get('/wind/history/:hours?', async (req, res) => {
       try {
         const hours = parseInt(req.params.hours) || 24;
-        const data = this.dbManager.getDataByHours(hours);
+        const data = await this.dbManager.getDataByHours(hours);
         res.json(data.map(d => this.formatWindData(d)));
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -191,7 +191,7 @@ export class ApiRouter {
 
     // Get today's aggregate for gradient display
     // Supports both hourly (default) and custom interval (e.g., 5-minute) aggregation
-    this.router.get('/wind/today/gradient', (req, res) => {
+    this.router.get('/wind/today/gradient', async (req, res) => {
       try {
         const startHour = parseInt(req.query.start) || 6;
         const endHour = parseInt(req.query.end) || 20;
@@ -199,9 +199,9 @@ export class ApiRouter {
 
         let data;
         if (interval && interval > 0) {
-          data = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
+          data = await this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
         } else {
-          data = this.dbManager.getHourlyAggregateToday(startHour, endHour);
+          data = await this.dbManager.getHourlyAggregateToday(startHour, endHour);
         }
 
         // Apply calibration offset to direction data
@@ -218,10 +218,10 @@ export class ApiRouter {
     });
 
     // Get wind statistics
-    this.router.get('/wind/statistics/:hours?', (req, res) => {
+    this.router.get('/wind/statistics/:hours?', async (req, res) => {
       try {
         const hours = parseInt(req.params.hours) || 24;
-        const stats = this.dbManager.getStatistics(hours);
+        const stats = await this.dbManager.getStatistics(hours);
         if (stats && stats.avg_direction !== undefined) {
           stats.avg_direction = this.calibrationManager.applyOffset(stats.avg_direction);
         }
@@ -232,9 +232,9 @@ export class ApiRouter {
     });
 
     // Get wind trend (increasing/decreasing/stable)
-    this.router.get('/wind/trend', (req, res) => {
+    this.router.get('/wind/trend', async (req, res) => {
       try {
-        const trend = this.dbManager.calculateTrend();
+        const trend = await this.dbManager.calculateTrend();
         res.json(trend);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -242,14 +242,14 @@ export class ApiRouter {
     });
 
     // Get list of forecast models with accuracy metrics
-    this.router.get('/wind/forecast/models', (req, res) => {
+    this.router.get('/wind/forecast/models', async (req, res) => {
       try {
         if (!this.forecastModelManager) {
           return res.status(503).json({ error: 'Forecast model service not available' });
         }
 
-        const metrics = this.forecastModelManager.getModelAccuracyMetrics();
-        const bestModel = this.forecastModelManager.getBestModel();
+        const metrics = await this.forecastModelManager.getModelAccuracyMetrics();
+        const bestModel = await this.forecastModelManager.getBestModel();
 
         const models = this.forecastModelManager.models.map(m => {
           const accuracy = metrics.find(a => a.model_id === m.id);
@@ -258,14 +258,14 @@ export class ApiRouter {
             name: m.name,
             isBest: m.id === bestModel,
             accuracy: accuracy ? {
-              rmseSpeed: accuracy.rmse_speed ? parseFloat(accuracy.rmse_speed.toFixed(2)) : null,
-              maeSpeed: accuracy.mae_speed ? parseFloat(accuracy.mae_speed.toFixed(2)) : null,
-              rmseDirection: accuracy.rmse_direction ? parseFloat(accuracy.rmse_direction.toFixed(1)) : null,
-              maeDirection: accuracy.mae_direction ? parseFloat(accuracy.mae_direction.toFixed(1)) : null,
-              correlationSpeed: accuracy.correlation_speed ? parseFloat(accuracy.correlation_speed.toFixed(3)) : null,
-              correctionFactor: accuracy.correction_factor ? parseFloat(accuracy.correction_factor.toFixed(3)) : null,
+              rmseSpeed: accuracy.rmse_speed ? parseFloat(parseFloat(accuracy.rmse_speed).toFixed(2)) : null,
+              maeSpeed: accuracy.mae_speed ? parseFloat(parseFloat(accuracy.mae_speed).toFixed(2)) : null,
+              rmseDirection: accuracy.rmse_direction ? parseFloat(parseFloat(accuracy.rmse_direction).toFixed(1)) : null,
+              maeDirection: accuracy.mae_direction ? parseFloat(parseFloat(accuracy.mae_direction).toFixed(1)) : null,
+              correlationSpeed: accuracy.correlation_speed ? parseFloat(parseFloat(accuracy.correlation_speed).toFixed(3)) : null,
+              correctionFactor: accuracy.correction_factor ? parseFloat(parseFloat(accuracy.correction_factor).toFixed(3)) : null,
               evaluationCount: accuracy.eval_count || 0,
-              score: accuracy.score ? parseFloat(accuracy.score.toFixed(4)) : null
+              score: accuracy.score ? parseFloat(parseFloat(accuracy.score).toFixed(4)) : null
             } : null
           };
         });
@@ -285,7 +285,7 @@ export class ApiRouter {
         }
 
         const forecasts = await this.forecastModelManager.fetchAllModelForecasts();
-        forecasts.bestModel = this.forecastModelManager.getBestModel();
+        forecasts.bestModel = await this.forecastModelManager.getBestModel();
         res.json(forecasts);
       } catch (error) {
         console.error('Forecast compare API error:', error);
@@ -313,7 +313,7 @@ export class ApiRouter {
           return res.status(503).json({ error: 'Forecast model service not available' });
         }
         await this.forecastModelManager.evaluateAccuracy();
-        const metrics = this.forecastModelManager.getModelAccuracyMetrics();
+        const metrics = await this.forecastModelManager.getModelAccuracyMetrics();
         res.json({ success: true, metrics });
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -331,7 +331,7 @@ export class ApiRouter {
         let baseUrl = null;
 
         if (this.forecastModelManager) {
-          modelId = modelId || this.forecastModelManager.getBestModel();
+          modelId = modelId || await this.forecastModelManager.getBestModel();
           const modelDef = this.forecastModelManager.models.find(m => m.id === modelId);
           if (modelDef) {
             baseUrl = modelDef.baseUrl;
@@ -342,7 +342,7 @@ export class ApiRouter {
 
         // Apply model-specific correction and tag entries
         if (this.forecastModelManager && modelId) {
-          const correctionFactor = this.forecastModelManager.getCorrectionFactor(modelId);
+          const correctionFactor = await this.forecastModelManager.getCorrectionFactor(modelId);
           const corrected = this.forecastCollector.applyCorrection(forecast, correctionFactor);
           corrected.forEach(entry => { entry.model = modelId; });
           return res.json(corrected);
@@ -363,7 +363,7 @@ export class ApiRouter {
         const interval = parseInt(req.query.interval) || 5;
 
         // Get today's actual wind data (history)
-        const historyData = this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
+        const historyData = await this.dbManager.getIntervalAggregateToday(startHour, endHour, interval);
 
         // Apply calibration offset to direction data
         if (historyData) {
@@ -400,7 +400,7 @@ export class ApiRouter {
         }
 
         // Use best model if forecast model manager is available
-        const bestModelId = this.forecastModelManager ? this.forecastModelManager.getBestModel() : null;
+        const bestModelId = this.forecastModelManager ? await this.forecastModelManager.getBestModel() : null;
         const bestModelDef = bestModelId && this.forecastModelManager
           ? this.forecastModelManager.models.find(m => m.id === bestModelId)
           : null;
@@ -452,10 +452,10 @@ export class ApiRouter {
     });
 
     // Get current calibration offset and live direction preview
-    this.router.get('/calibration', (req, res) => {
+    this.router.get('/calibration', async (req, res) => {
       try {
         const offset = this.calibrationManager.getOffset();
-        const latest = this.dbManager.getLatestData();
+        const latest = await this.dbManager.getLatestData();
         const rawDir = latest ? parseInt(latest.wind_direction || 0) : null;
         const rawDirAvg = latest && latest.wind_direction_avg ? parseInt(latest.wind_direction_avg) : null;
 
@@ -465,7 +465,7 @@ export class ApiRouter {
           correctedDirection: rawDir !== null ? this.calibrationManager.applyOffset(rawDir) : null,
           rawDirectionAvg: rawDirAvg,
           correctedDirectionAvg: rawDirAvg !== null ? this.calibrationManager.applyOffset(rawDirAvg) : null,
-          windSpeed: latest ? parseFloat(latest.wind_speed_knots?.toFixed(1) || 0) : null,
+          windSpeed: latest ? parseFloat(parseFloat(latest.wind_speed_knots).toFixed(1) || 0) : null,
           timestamp: latest ? latest.timestamp : null
         });
       } catch (error) {
@@ -494,19 +494,11 @@ export class ApiRouter {
     });
 
     // Debug: Get database statistics
-    this.router.get('/debug/db-stats', (req, res) => {
+    this.router.get('/debug/db-stats', async (req, res) => {
       try {
-        const stats = this.dbManager.getStatistics(24);
-
-        // Get total count
-        const countResult = this.dbManager.db.exec('SELECT COUNT(*) as count FROM wind_data');
-        const totalCount = countResult.length > 0 ? countResult[0].values[0][0] : 0;
-
-        // Get recent timestamps
-        const timestampResult = this.dbManager.db.exec('SELECT timestamp FROM wind_data ORDER BY timestamp DESC LIMIT 12');
-        const recentTimestamps = timestampResult.length > 0
-          ? timestampResult[0].values.map(row => row[0])
-          : [];
+        const stats = await this.dbManager.getStatistics(24);
+        const totalCount = await this.dbManager.getTotalCount();
+        const recentTimestamps = await this.dbManager.getRecentTimestamps(12);
 
         res.json({
           totalRecords: totalCount,
@@ -519,10 +511,10 @@ export class ApiRouter {
     });
 
     // Get archived data for last N days
-    this.router.get('/archive/days/:days?', (req, res) => {
+    this.router.get('/archive/days/:days?', async (req, res) => {
       try {
         const days = parseInt(req.params.days) || 30;
-        const data = this.archiveManager.getArchivedDataByDays(days);
+        const data = await this.archiveManager.getArchivedDataByDays(days);
         res.json(data);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -530,12 +522,12 @@ export class ApiRouter {
     });
 
     // Get archived data for specific day (for history gradient)
-    this.router.get('/archive/day/:date', (req, res) => {
+    this.router.get('/archive/day/:date', async (req, res) => {
       try {
         const date = req.params.date; // Format: YYYY-MM-DD
         const startHour = parseInt(req.query.start) || 6;
         const endHour = parseInt(req.query.end) || 19;
-        const data = this.archiveManager.getArchivedDataForDay(date, startHour, endHour);
+        const data = await this.archiveManager.getArchivedDataForDay(date, startHour, endHour);
         res.json(data);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -543,10 +535,10 @@ export class ApiRouter {
     });
 
     // Get archive statistics
-    this.router.get('/archive/statistics/:days?', (req, res) => {
+    this.router.get('/archive/statistics/:days?', async (req, res) => {
       try {
         const days = parseInt(req.params.days) || 30;
-        const stats = this.archiveManager.getArchiveStatistics(days);
+        const stats = await this.archiveManager.getArchiveStatistics(days);
         res.json(stats);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -554,10 +546,10 @@ export class ApiRouter {
     });
 
     // Get wind patterns by hour of day
-    this.router.get('/archive/patterns/:days?', (req, res) => {
+    this.router.get('/archive/patterns/:days?', async (req, res) => {
       try {
         const days = parseInt(req.params.days) || 30;
-        const patterns = this.archiveManager.getWindPatternByHour(days);
+        const patterns = await this.archiveManager.getWindPatternByHour(days);
         res.json(patterns);
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -725,9 +717,9 @@ export class ApiRouter {
     });
 
     // Get current wind data from all stations
-    this.router.get('/stations/current', (req, res) => {
+    this.router.get('/stations/current', async (req, res) => {
       try {
-        const allLatest = this.dbManager.getLatestDataAllStations();
+        const allLatest = await this.dbManager.getLatestDataAllStations();
         const result = {};
 
         for (const station of this.stations) {
@@ -751,7 +743,7 @@ export class ApiRouter {
     });
 
     // Get current wind data for a specific station
-    this.router.get('/stations/:id/current', (req, res) => {
+    this.router.get('/stations/:id/current', async (req, res) => {
       try {
         const stationId = req.params.id;
         const station = this.stations.find(s => s.id === stationId);
@@ -759,7 +751,7 @@ export class ApiRouter {
           return res.status(404).json({ error: `Station '${stationId}' not found` });
         }
 
-        const data = this.dbManager.getLatestData(stationId);
+        const data = await this.dbManager.getLatestData(stationId);
         if (!data) {
           return res.status(404).json({ error: 'No wind data available for this station' });
         }
@@ -770,7 +762,7 @@ export class ApiRouter {
     });
 
     // Get wind history for a specific station
-    this.router.get('/stations/:id/history/:hours?', (req, res) => {
+    this.router.get('/stations/:id/history/:hours?', async (req, res) => {
       try {
         const stationId = req.params.id;
         const station = this.stations.find(s => s.id === stationId);
@@ -779,7 +771,7 @@ export class ApiRouter {
         }
 
         const hours = parseInt(req.params.hours) || 24;
-        const data = this.dbManager.getDataByHours(hours, stationId);
+        const data = await this.dbManager.getDataByHours(hours, stationId);
         res.json(data.map(d => this.formatWindData(d)));
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -787,7 +779,7 @@ export class ApiRouter {
     });
 
     // Get wind statistics for a specific station
-    this.router.get('/stations/:id/statistics/:hours?', (req, res) => {
+    this.router.get('/stations/:id/statistics/:hours?', async (req, res) => {
       try {
         const stationId = req.params.id;
         const station = this.stations.find(s => s.id === stationId);
@@ -796,7 +788,7 @@ export class ApiRouter {
         }
 
         const hours = parseInt(req.params.hours) || 24;
-        const stats = this.dbManager.getStatistics(hours, stationId);
+        const stats = await this.dbManager.getStatistics(hours, stationId);
         if (stats && stats.avg_direction !== undefined) {
           stats.avg_direction = this.calibrationManager.applyOffset(stats.avg_direction);
         }
@@ -807,9 +799,9 @@ export class ApiRouter {
     });
 
     // Debug: Check wind stability conditions
-    this.router.get('/notifications/check-conditions', (req, res) => {
+    this.router.get('/notifications/check-conditions', async (req, res) => {
       try {
-        const recentMeasurements = this.dbManager.getLastMeasurements(3);
+        const recentMeasurements = await this.dbManager.getLastMeasurements(3);
 
         if (!recentMeasurements || recentMeasurements.length < 3) {
           return res.json({
@@ -851,14 +843,14 @@ export class ApiRouter {
 
     return {
       timestamp: data.timestamp,
-      windSpeedKnots: parseFloat(data.wind_speed_knots?.toFixed(1) || 0),
-      windGustKnots: data.wind_gust_knots ? parseFloat(data.wind_gust_knots.toFixed(1)) : null,
-      maxGustKnots: data.max_gust_knots ? parseFloat(data.max_gust_knots.toFixed(1)) : null,
+      windSpeedKnots: parseFloat(parseFloat(data.wind_speed_knots).toFixed(1) || 0),
+      windGustKnots: data.wind_gust_knots ? parseFloat(parseFloat(data.wind_gust_knots).toFixed(1)) : null,
+      maxGustKnots: data.max_gust_knots ? parseFloat(parseFloat(data.max_gust_knots).toFixed(1)) : null,
       windDir: this.calibrationManager.applyOffset(rawDir),
       windDirAvg: this.calibrationManager.applyOffset(rawDirAvg),
-      temperature: data.temperature ? parseFloat(data.temperature.toFixed(1)) : null,
-      humidity: data.humidity ? parseFloat(data.humidity.toFixed(1)) : null,
-      pressure: data.pressure ? parseFloat(data.pressure.toFixed(2)) : null
+      temperature: data.temperature ? parseFloat(parseFloat(data.temperature).toFixed(1)) : null,
+      humidity: data.humidity ? parseFloat(parseFloat(data.humidity).toFixed(1)) : null,
+      pressure: data.pressure ? parseFloat(parseFloat(data.pressure).toFixed(2)) : null
     };
   }
 

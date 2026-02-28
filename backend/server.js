@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
+import pgPool from './src/PostgresPool.js';
 import { WindDataCollector } from './src/WindDataCollector.js';
 import { DatabaseManager } from './src/DatabaseManager.js';
 import { ArchiveManager } from './src/ArchiveManager.js';
@@ -64,14 +65,14 @@ const config = {
   timezone: 'Asia/Bangkok'
 };
 
-// Initialize managers
-const dbManager = new DatabaseManager('./data/wind_data.db');
-const archiveManager = new ArchiveManager('./data/wind_archive.db');
+// Initialize managers (pgPool passed to DB-backed managers)
+const dbManager = new DatabaseManager(pgPool);
+const archiveManager = new ArchiveManager(pgPool);
 const notificationManager = new NotificationManager('./data/subscriptions.json');
 const windCollector = new WindDataCollector(config, dbManager, archiveManager);
 const forecastCollector = new ForecastCollector(config);
 const calibrationManager = new CalibrationManager('./data/calibration.json');
-const forecastModelManager = new ForecastModelManager('./data/forecast_snapshots.db', forecastCollector, archiveManager, dbManager);
+const forecastModelManager = new ForecastModelManager(pgPool, forecastCollector, archiveManager, dbManager);
 
 // Middleware
 app.use(cors());
@@ -98,7 +99,10 @@ async function initialize() {
   try {
     console.log('🚀 Initializing JollyKite Backend...');
 
-    // Initialize databases
+    // Initialize PostgreSQL connection pool
+    await pgPool.initialize();
+
+    // Initialize database tables
     await dbManager.initialize();
     await archiveManager.initialize();
     await forecastModelManager.initialize();
@@ -138,8 +142,8 @@ async function initialize() {
         console.log(`✓ Wind data collected at ${new Date().toISOString()} (Bangkok: ${hour}:xx)`);
 
         // Get latest data and trend for broadcast
-        const latestData = dbManager.getLatestData();
-        const trend = dbManager.calculateTrend();
+        const latestData = await dbManager.getLatestData();
+        const trend = await dbManager.calculateTrend();
 
         // Broadcast to connected SSE clients
         if (latestData) {
@@ -149,7 +153,7 @@ async function initialize() {
 
         // Check if we should send push notifications
         // Get last 3 measurements (15 minutes) for stability check
-        const recentMeasurements = dbManager.getLastMeasurements(3);
+        const recentMeasurements = await dbManager.getLastMeasurements(3);
 
         if (recentMeasurements && recentMeasurements.length >= 3) {
           // Send notifications if conditions are met (stable wind for 20 min)
@@ -179,7 +183,7 @@ async function initialize() {
     // Schedule daily cleanup (every day at 00:05)
     cron.schedule('5 0 * * *', async () => {
       try {
-        dbManager.cleanupOldData(7); // Keep 7 days of raw data
+        await dbManager.cleanupOldData(7); // Keep 7 days of raw data
         notificationManager.resetDailyLog(); // Reset notification log
         console.log(`✓ Old data cleaned up at ${new Date().toISOString()}`);
       } catch (error) {
@@ -219,7 +223,7 @@ async function initialize() {
     // Schedule weekly snapshot cleanup (Sunday 01:00 Bangkok = Saturday 18:00 UTC)
     cron.schedule('0 18 * * 6', async () => {
       try {
-        forecastModelManager.cleanupOldSnapshots(14);
+        await forecastModelManager.cleanupOldSnapshots(14);
       } catch (error) {
         console.error('✗ Error cleaning up forecast snapshots:', error.message);
       }
@@ -240,21 +244,14 @@ async function initialize() {
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+async function shutdown() {
   console.log('\n🛑 Shutting down gracefully...');
-  dbManager.close();
-  archiveManager.close();
-  forecastModelManager.close();
+  await pgPool.close();
   process.exit(0);
-});
+}
 
-process.on('SIGTERM', () => {
-  console.log('\n🛑 Shutting down gracefully...');
-  dbManager.close();
-  archiveManager.close();
-  forecastModelManager.close();
-  process.exit(0);
-});
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 // Start the application
 initialize();

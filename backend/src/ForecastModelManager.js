@@ -1,18 +1,14 @@
-import initSqlJs from 'sql.js';
-import fs from 'fs';
-
 /**
  * ForecastModelManager - orchestrates multi-model forecast,
  * stores snapshots, evaluates accuracy, selects best model
+ * Uses PostgreSQL via shared pool
  */
 export class ForecastModelManager {
-  constructor(dbPath, forecastCollector, archiveManager, dbManager) {
-    this.dbPath = dbPath;
+  constructor(pgPool, forecastCollector, archiveManager, dbManager) {
+    this.pool = pgPool;
     this.forecastCollector = forecastCollector;
     this.archiveManager = archiveManager;
     this.dbManager = dbManager;
-    this.db = null;
-    this.SQL = null;
 
     this.models = [
       { id: 'best_match',   name: 'GFS Seamless',  baseUrl: 'https://api.open-meteo.com/v1/forecast' },
@@ -24,84 +20,70 @@ export class ForecastModelManager {
   }
 
   async initialize() {
-    this.SQL = await initSqlJs();
-
-    try {
-      if (fs.existsSync(this.dbPath)) {
-        const buffer = fs.readFileSync(this.dbPath);
-        this.db = new this.SQL.Database(buffer);
-      } else {
-        this.db = new this.SQL.Database();
-      }
-    } catch (error) {
-      this.db = new this.SQL.Database();
-    }
-
-    this.db.run(`
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS forecast_snapshots (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        snapshot_time DATETIME NOT NULL,
-        model_id TEXT NOT NULL,
-        target_date TEXT NOT NULL,
-        target_hour INTEGER NOT NULL,
-        speed REAL NOT NULL,
-        gust REAL NOT NULL,
-        direction INTEGER NOT NULL
+        id            SERIAL PRIMARY KEY,
+        snapshot_time TIMESTAMPTZ NOT NULL,
+        model_id      TEXT NOT NULL,
+        target_date   DATE NOT NULL,
+        target_hour   INTEGER NOT NULL,
+        speed         DOUBLE PRECISION NOT NULL,
+        gust          DOUBLE PRECISION NOT NULL,
+        direction     INTEGER NOT NULL
       )
     `);
 
-    this.db.run(`
+    await this.pool.query(`
       CREATE INDEX IF NOT EXISTS idx_snap_lookup
       ON forecast_snapshots(model_id, target_date, target_hour)
     `);
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_snap_time
+      ON forecast_snapshots(snapshot_time)
+    `);
 
-    this.db.run(`
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS model_accuracy (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        model_id TEXT NOT NULL,
-        eval_date TEXT NOT NULL,
-        target_hour INTEGER NOT NULL,
-        actual_speed REAL,
-        actual_direction INTEGER,
-        forecast_speed REAL,
+        id                 SERIAL PRIMARY KEY,
+        model_id           TEXT NOT NULL,
+        eval_date          DATE NOT NULL,
+        target_hour        INTEGER NOT NULL,
+        actual_speed       DOUBLE PRECISION,
+        actual_direction   INTEGER,
+        forecast_speed     DOUBLE PRECISION,
         forecast_direction INTEGER,
-        speed_error REAL,
-        direction_error REAL,
+        speed_error        DOUBLE PRECISION,
+        direction_error    DOUBLE PRECISION,
         UNIQUE(model_id, eval_date, target_hour)
       )
     `);
 
-    this.db.run(`
+    await this.pool.query(`
       CREATE TABLE IF NOT EXISTS model_scores (
-        model_id TEXT PRIMARY KEY,
-        rmse_speed REAL,
-        mae_speed REAL,
-        rmse_direction REAL,
-        mae_direction REAL,
-        correlation_speed REAL,
-        correction_factor REAL DEFAULT 1.0,
-        eval_count INTEGER DEFAULT 0,
-        score REAL DEFAULT 0.0,
-        last_updated DATETIME
+        model_id          TEXT PRIMARY KEY,
+        rmse_speed        DOUBLE PRECISION,
+        mae_speed         DOUBLE PRECISION,
+        rmse_direction    DOUBLE PRECISION,
+        mae_direction     DOUBLE PRECISION,
+        correlation_speed DOUBLE PRECISION,
+        correction_factor DOUBLE PRECISION DEFAULT 1.0,
+        eval_count        INTEGER DEFAULT 0,
+        score             DOUBLE PRECISION DEFAULT 0.0,
+        last_updated      TIMESTAMPTZ
       )
     `);
 
     // Initialize model_scores rows if missing
     for (const model of this.models) {
-      this.db.run(
-        `INSERT OR IGNORE INTO model_scores (model_id, last_updated) VALUES (?, datetime('now'))`,
+      await this.pool.query(
+        `INSERT INTO model_scores (model_id, last_updated)
+         VALUES ($1, NOW())
+         ON CONFLICT (model_id) DO NOTHING`,
         [model.id]
       );
     }
 
-    this.saveToFile();
     console.log('✓ ForecastModelManager initialized');
-  }
-
-  saveToFile() {
-    if (!this.db) return;
-    const data = this.db.export();
-    fs.writeFileSync(this.dbPath, Buffer.from(data));
   }
 
   /**
@@ -127,9 +109,9 @@ export class ForecastModelManager {
           const targetDate = dt.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
           const targetHour = dt.getHours();
 
-          this.db.run(
+          await this.pool.query(
             `INSERT INTO forecast_snapshots (snapshot_time, model_id, target_date, target_hour, speed, gust, direction)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [snapshotTime, model.id, targetDate, targetHour, entry.speed, entry.gust, entry.direction]
           );
         }
@@ -141,7 +123,6 @@ export class ForecastModelManager {
       }
     }
 
-    this.saveToFile();
     console.log(`📸 Snapshots saved: ${savedCount}/${this.models.length} models`);
     return savedCount;
   }
@@ -155,86 +136,103 @@ export class ForecastModelManager {
     const now = new Date();
     const bangkokNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
 
-    for (const model of this.models) {
-      let totalEvaluated = 0;
+    const client = await this.pool.getClient();
+    try {
+      await client.query('BEGIN');
 
-      // Evaluate last 14 days
-      for (let daysAgo = 1; daysAgo <= 14; daysAgo++) {
-        const evalDate = new Date(bangkokNow);
-        evalDate.setDate(evalDate.getDate() - daysAgo);
-        const dateStr = evalDate.toLocaleDateString('en-CA');
+      for (const model of this.models) {
+        let totalEvaluated = 0;
 
-        // Get actual archived data for this day
-        const actualData = this.archiveManager.getArchivedDataForDay(dateStr, 6, 19);
-        if (!actualData || actualData.length === 0) continue;
+        // Evaluate last 14 days
+        for (let daysAgo = 1; daysAgo <= 14; daysAgo++) {
+          const evalDate = new Date(bangkokNow);
+          evalDate.setDate(evalDate.getDate() - daysAgo);
+          const dateStr = evalDate.toLocaleDateString('en-CA');
 
-        for (const actual of actualData) {
-          const hourTimestamp = new Date(actual.hour_timestamp);
-          const targetHour = parseInt(
-            hourTimestamp.toLocaleString('en-US', { timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false })
-          );
+          // Get actual archived data for this day
+          const actualData = await this.archiveManager.getArchivedDataForDay(dateStr, 6, 19);
+          if (!actualData || actualData.length === 0) continue;
 
-          // Find the closest snapshot taken BEFORE this hour
-          const snapshotResult = this.db.exec(
-            `SELECT speed, direction FROM forecast_snapshots
-             WHERE model_id = ? AND target_date = ? AND target_hour = ?
-               AND snapshot_time < ?
-             ORDER BY snapshot_time DESC LIMIT 1`,
-            [model.id, dateStr, targetHour, hourTimestamp.toISOString()]
-          );
+          for (const actual of actualData) {
+            const hourTimestamp = new Date(actual.hour_timestamp);
+            const targetHour = parseInt(
+              hourTimestamp.toLocaleString('en-US', { timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false })
+            );
 
-          if (snapshotResult.length === 0 || snapshotResult[0].values.length === 0) continue;
+            // Find the closest snapshot taken BEFORE this hour
+            const snapshotResult = await client.query(
+              `SELECT speed, direction FROM forecast_snapshots
+               WHERE model_id = $1 AND target_date = $2 AND target_hour = $3
+                 AND snapshot_time < $4
+               ORDER BY snapshot_time DESC LIMIT 1`,
+              [model.id, dateStr, targetHour, hourTimestamp.toISOString()]
+            );
 
-          const [forecastSpeed, forecastDirection] = snapshotResult[0].values[0];
-          const actualSpeed = actual.avg_wind_speed;
-          const actualDirection = actual.avg_wind_direction;
+            if (snapshotResult.rows.length === 0) continue;
 
-          const speedError = Math.abs(forecastSpeed - actualSpeed);
-          const dirDiff = Math.abs(forecastDirection - actualDirection);
-          const directionError = Math.min(dirDiff, 360 - dirDiff);
+            const { speed: forecastSpeed, direction: forecastDirection } = snapshotResult.rows[0];
+            const actualSpeed = actual.avg_wind_speed;
+            const actualDirection = actual.avg_wind_direction;
 
-          this.db.run(
-            `INSERT OR REPLACE INTO model_accuracy
-             (model_id, eval_date, target_hour, actual_speed, actual_direction,
-              forecast_speed, forecast_direction, speed_error, direction_error)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [model.id, dateStr, targetHour, actualSpeed, actualDirection,
-             forecastSpeed, forecastDirection, speedError, directionError]
-          );
-          totalEvaluated++;
+            const speedError = Math.abs(forecastSpeed - actualSpeed);
+            const dirDiff = Math.abs(forecastDirection - actualDirection);
+            const directionError = Math.min(dirDiff, 360 - dirDiff);
+
+            await client.query(
+              `INSERT INTO model_accuracy
+               (model_id, eval_date, target_hour, actual_speed, actual_direction,
+                forecast_speed, forecast_direction, speed_error, direction_error)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+               ON CONFLICT (model_id, eval_date, target_hour) DO UPDATE SET
+                 actual_speed = EXCLUDED.actual_speed,
+                 actual_direction = EXCLUDED.actual_direction,
+                 forecast_speed = EXCLUDED.forecast_speed,
+                 forecast_direction = EXCLUDED.forecast_direction,
+                 speed_error = EXCLUDED.speed_error,
+                 direction_error = EXCLUDED.direction_error`,
+              [model.id, dateStr, targetHour, actualSpeed, actualDirection,
+               forecastSpeed, forecastDirection, speedError, directionError]
+            );
+            totalEvaluated++;
+          }
         }
+
+        console.log(`  📊 ${model.name}: ${totalEvaluated} hours evaluated`);
       }
 
-      console.log(`  📊 ${model.name}: ${totalEvaluated} hours evaluated`);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
 
     // Recalculate aggregate scores
-    this._recalculateScores();
-    this.saveToFile();
+    await this._recalculateScores();
     console.log('📊 Accuracy evaluation complete');
   }
 
   /**
    * Recalculate aggregate model scores from model_accuracy data
    */
-  _recalculateScores() {
+  async _recalculateScores() {
     const modelStats = {};
 
     for (const model of this.models) {
-      const result = this.db.exec(
+      const { rows } = await this.pool.query(
         `SELECT actual_speed, forecast_speed, actual_direction, forecast_direction,
                 speed_error, direction_error
-         FROM model_accuracy WHERE model_id = ?`,
+         FROM model_accuracy WHERE model_id = $1`,
         [model.id]
       );
 
-      if (result.length === 0 || result[0].values.length === 0) continue;
+      if (rows.length === 0) continue;
 
-      const rows = result[0].values;
-      const speedErrors = rows.map(r => r[4]);
-      const dirErrors = rows.map(r => r[5]);
-      const actualSpeeds = rows.map(r => r[0]);
-      const forecastSpeeds = rows.map(r => r[1]);
+      const speedErrors = rows.map(r => parseFloat(r.speed_error));
+      const dirErrors = rows.map(r => parseFloat(r.direction_error));
+      const actualSpeeds = rows.map(r => parseFloat(r.actual_speed));
+      const forecastSpeeds = rows.map(r => parseFloat(r.forecast_speed));
 
       const n = rows.length;
       const rmseSpeed = Math.sqrt(speedErrors.reduce((s, e) => s + e * e, 0) / n);
@@ -242,10 +240,8 @@ export class ForecastModelManager {
       const rmseDirection = Math.sqrt(dirErrors.reduce((s, e) => s + e * e, 0) / n);
       const maeDirection = dirErrors.reduce((s, e) => s + e, 0) / n;
 
-      // Pearson correlation
       const correlation = this._pearsonCorrelation(actualSpeeds, forecastSpeeds);
 
-      // Correction factor: mean(actual/forecast) where ratio in [0.5, 2.0]
       const ratios = [];
       for (let i = 0; i < n; i++) {
         if (forecastSpeeds[i] > 0) {
@@ -274,12 +270,12 @@ export class ForecastModelManager {
       const corrPenalty = 1 - (stats.correlation || 0);
       const score = 0.5 * normRmse + 0.3 * normMae + 0.2 * corrPenalty;
 
-      this.db.run(
+      await this.pool.query(
         `UPDATE model_scores SET
-           rmse_speed = ?, mae_speed = ?, rmse_direction = ?, mae_direction = ?,
-           correlation_speed = ?, correction_factor = ?, eval_count = ?,
-           score = ?, last_updated = datetime('now')
-         WHERE model_id = ?`,
+           rmse_speed = $1, mae_speed = $2, rmse_direction = $3, mae_direction = $4,
+           correlation_speed = $5, correction_factor = $6, eval_count = $7,
+           score = $8, last_updated = NOW()
+         WHERE model_id = $9`,
         [stats.rmseSpeed, stats.maeSpeed, stats.rmseDirection, stats.maeDirection,
          stats.correlation, stats.correctionFactor, stats.evalCount,
          score, modelId]
@@ -313,15 +309,15 @@ export class ForecastModelManager {
   /**
    * Get the best performing model ID
    */
-  getBestModel() {
-    const result = this.db.exec(
+  async getBestModel() {
+    const { rows } = await this.pool.query(
       `SELECT model_id FROM model_scores
        WHERE eval_count >= 10
        ORDER BY score ASC LIMIT 1`
     );
 
-    if (result.length > 0 && result[0].values.length > 0) {
-      return result[0].values[0][0];
+    if (rows.length > 0) {
+      return rows[0].model_id;
     }
 
     return 'best_match'; // default fallback
@@ -330,15 +326,14 @@ export class ForecastModelManager {
   /**
    * Get correction factor for a specific model
    */
-  getCorrectionFactor(modelId) {
-    const result = this.db.exec(
-      `SELECT correction_factor FROM model_scores WHERE model_id = ?`,
+  async getCorrectionFactor(modelId) {
+    const { rows } = await this.pool.query(
+      `SELECT correction_factor FROM model_scores WHERE model_id = $1`,
       [modelId]
     );
 
-    if (result.length > 0 && result[0].values.length > 0) {
-      const factor = result[0].values[0][0];
-      return factor || 1.0;
+    if (rows.length > 0) {
+      return rows[0].correction_factor || 1.0;
     }
 
     return 1.0;
@@ -369,60 +364,42 @@ export class ForecastModelManager {
   /**
    * Get accuracy metrics for all models
    */
-  getModelAccuracyMetrics() {
-    const result = this.db.exec(
+  async getModelAccuracyMetrics() {
+    const { rows } = await this.pool.query(
       `SELECT model_id, rmse_speed, mae_speed, rmse_direction, mae_direction,
               correlation_speed, correction_factor, eval_count, score, last_updated
        FROM model_scores ORDER BY score ASC`
     );
-
-    if (result.length === 0) return [];
-
-    return result[0].values.map(row => {
-      const cols = result[0].columns;
-      const obj = {};
-      cols.forEach((col, i) => { obj[col] = row[i]; });
-      return obj;
-    });
+    return rows;
   }
 
   /**
    * Clean up old snapshots and accuracy data
    */
-  cleanupOldSnapshots(daysToKeep = 14) {
+  async cleanupOldSnapshots(daysToKeep = 14) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - daysToKeep);
     const cutoffStr = cutoff.toISOString();
-
-    const snapResult = this.db.exec(
-      `SELECT COUNT(*) FROM forecast_snapshots WHERE snapshot_time < ?`, [cutoffStr]
-    );
-    const snapCount = snapResult[0]?.values[0]?.[0] || 0;
-
-    this.db.run(`DELETE FROM forecast_snapshots WHERE snapshot_time < ?`, [cutoffStr]);
-
     const cutoffDate = cutoff.toLocaleDateString('en-CA');
-    const accResult = this.db.exec(
-      `SELECT COUNT(*) FROM model_accuracy WHERE eval_date < ?`, [cutoffDate]
+
+    const snapResult = await this.pool.query(
+      `SELECT COUNT(*) as count FROM forecast_snapshots WHERE snapshot_time < $1`, [cutoffStr]
     );
-    const accCount = accResult[0]?.values[0]?.[0] || 0;
+    const snapCount = parseInt(snapResult.rows[0]?.count || 0);
 
-    this.db.run(`DELETE FROM model_accuracy WHERE eval_date < ?`, [cutoffDate]);
+    await this.pool.query(`DELETE FROM forecast_snapshots WHERE snapshot_time < $1`, [cutoffStr]);
 
-    this.saveToFile();
+    const accResult = await this.pool.query(
+      `SELECT COUNT(*) as count FROM model_accuracy WHERE eval_date < $1`, [cutoffDate]
+    );
+    const accCount = parseInt(accResult.rows[0]?.count || 0);
+
+    await this.pool.query(`DELETE FROM model_accuracy WHERE eval_date < $1`, [cutoffDate]);
 
     if (snapCount > 0 || accCount > 0) {
       console.log(`✓ Cleaned up ${snapCount} snapshots and ${accCount} accuracy records`);
     }
 
     return { snapshots: snapCount, accuracy: accCount };
-  }
-
-  close() {
-    if (this.db) {
-      this.saveToFile();
-      this.db.close();
-      console.log('✓ ForecastModelManager database closed');
-    }
   }
 }

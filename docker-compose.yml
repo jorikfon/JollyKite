@@ -1,4 +1,20 @@
 services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:16-alpine
+    container_name: jollykite-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=jollykite
+      - POSTGRES_USER=jollykite
+      - POSTGRES_PASSWORD=jollykite
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - jollykite-network
+
   # Node.js Backend for wind data collection
   backend:
     build:
@@ -13,11 +29,18 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=jollykite
+      - PG_USER=jollykite
+      - PG_PASSWORD=jollykite
       - AMBIENT_WEATHER_API=https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504
       - OPEN_METEO_API=https://api.open-meteo.com/v1/forecast
       - DATA_COLLECTION_INTERVAL=300000
       - ARCHIVE_INTERVAL=3600000
       - TZ=Asia/Bangkok
+    depends_on:
+      - postgres
     networks:
       - jollykite-network
 
@@ -35,6 +58,9 @@ services:
       - backend
     networks:
       - jollykite-network
+
+volumes:
+  pgdata:
 
 networks:
   jollykite-network:

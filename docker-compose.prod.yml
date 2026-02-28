@@ -12,6 +12,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - PG_HOST=${PG_HOST}
+      - PG_PORT=${PG_PORT:-5432}
+      - PG_DATABASE=${PG_DATABASE}
+      - PG_USER=${PG_USER}
+      - PG_PASSWORD=${PG_PASSWORD}
       - AMBIENT_WEATHER_API=https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504
       - OPEN_METEO_API=https://api.open-meteo.com/v1/forecast
       - DATA_COLLECTION_INTERVAL=300000

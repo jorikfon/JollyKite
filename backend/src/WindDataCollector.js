@@ -121,7 +121,7 @@ export class WindDataCollector {
       const station = this.stations[i];
       if (results[i].status === 'fulfilled' && results[i].value) {
         const data = results[i].value;
-        this.dbManager.insertWindData(data, station.id);
+        await this.dbManager.insertWindData(data, station.id);
         successCount++;
         if (station.isPrimary) primaryData = data;
       } else {
@@ -205,14 +205,14 @@ export class WindDataCollector {
       let archivedCount = 0;
 
       for (const station of this.stations) {
-        const hourlyData = this.dbManager.getDataForArchiving(station.id);
+        const hourlyData = await this.dbManager.getDataForArchiving(station.id);
 
         if (hourlyData.length === 0) {
           continue;
         }
 
         const aggregatedData = this._aggregateHourlyData(hourlyData);
-        this.archiveManager.archiveHourlyData(hourTimestamp, aggregatedData, station.id);
+        await this.archiveManager.archiveHourlyData(hourTimestamp, aggregatedData, station.id);
         archivedCount++;
 
         console.log(`  ✓ ${station.id}: ${aggregatedData.avgWindSpeed.toFixed(1)} kn avg, ${aggregatedData.measurementCount} measurements`);
