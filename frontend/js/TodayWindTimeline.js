@@ -81,9 +81,9 @@ class TodayWindTimeline {
     createGradient(points, id, positions, chartWidth) {
         let stops = '';
         points.forEach((p, i) => {
-            const x = positions[i] * chartWidth;
+            const pct = positions[i] * 100;
             const color = this.getWindColor(p);
-            stops += `<stop offset="${x}" stop-color="${color}" stop-opacity="0.8"/>`;
+            stops += `<stop offset="${pct}%" stop-color="${color}" stop-opacity="0.8"/>`;
         });
         return `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${chartWidth}" y2="0">${stops}</linearGradient>`;
     }
