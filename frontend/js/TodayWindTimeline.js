@@ -72,20 +72,20 @@ class TodayWindTimeline {
 
     /**
      * Create gradient definition based on wind speeds
+     * Uses userSpaceOnUse to avoid bounding-box misalignment from spline overshoot
      * @param {number[]} points - wind speed values
      * @param {string} id - gradient SVG id
-     * @param {number[]} [positions] - actual positions (0-1) for each point; if omitted, distributes evenly
+     * @param {number[]} positions - actual positions (0-1) for each point
+     * @param {number} chartWidth - chart width in SVG units
      */
-    createGradient(points, id, positions) {
+    createGradient(points, id, positions, chartWidth) {
         let stops = '';
         points.forEach((p, i) => {
-            const offset = positions
-                ? positions[i] * 100
-                : (i / (points.length - 1)) * 100;
+            const x = positions[i] * chartWidth;
             const color = this.getWindColor(p);
-            stops += `<stop offset="${offset}%" stop-color="${color}" stop-opacity="0.8"/>`;
+            stops += `<stop offset="${x}" stop-color="${color}" stop-opacity="0.8"/>`;
         });
-        return `<linearGradient id="${id}" x1="0%" y1="0%" x2="100%" y2="0%">${stops}</linearGradient>`;
+        return `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${chartWidth}" y2="0">${stops}</linearGradient>`;
     }
 
     /**
@@ -286,7 +286,7 @@ class TodayWindTimeline {
 
         // Create smooth path with time-based positions
         const windPath = this.createSmoothPath(speeds, timePositions, chartWidth, height, maxSpeed);
-        const windGradient = this.createGradient(speeds, 'todayWindGradient', timePositions);
+        const windGradient = this.createGradient(speeds, 'todayWindGradient', timePositions, chartWidth);
         const windAreaPath = windPath + ` L ${chartWidth} ${height} L 0 ${height} Z`;
 
         // Calculate position of the divider (between history and forecast)
