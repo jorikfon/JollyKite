@@ -72,11 +72,16 @@ class TodayWindTimeline {
 
     /**
      * Create gradient definition based on wind speeds
+     * @param {number[]} points - wind speed values
+     * @param {string} id - gradient SVG id
+     * @param {number[]} [positions] - actual positions (0-1) for each point; if omitted, distributes evenly
      */
-    createGradient(points, id) {
+    createGradient(points, id, positions) {
         let stops = '';
         points.forEach((p, i) => {
-            const offset = (i / (points.length - 1)) * 100;
+            const offset = positions
+                ? positions[i] * 100
+                : (i / (points.length - 1)) * 100;
             const color = this.getWindColor(p);
             stops += `<stop offset="${offset}%" stop-color="${color}" stop-opacity="0.8"/>`;
         });
@@ -281,7 +286,7 @@ class TodayWindTimeline {
 
         // Create smooth path with time-based positions
         const windPath = this.createSmoothPath(speeds, timePositions, chartWidth, height, maxSpeed);
-        const windGradient = this.createGradient(speeds, 'todayWindGradient');
+        const windGradient = this.createGradient(speeds, 'todayWindGradient', timePositions);
         const windAreaPath = windPath + ` L ${chartWidth} ${height} L 0 ${height} Z`;
 
         // Calculate position of the divider (between history and forecast)
