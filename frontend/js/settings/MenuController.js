@@ -375,7 +375,7 @@ class MenuController {
    * @param {string} boardType - Тип доски (twintip, hydrofoil)
    */
   handleBoardTypeChange(boardType) {
-    if (!['twintip', 'hydrofoil'].includes(boardType)) {
+    if (!['twintip', 'hydrofoil', 'wingfoil'].includes(boardType)) {
       console.warn('Unsupported board type:', boardType);
       return;
     }

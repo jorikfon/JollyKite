@@ -6,8 +6,13 @@ import Foundation
 /// Matches KiteSizeCalculator.js logic.
 public enum KiteSizeService {
 
-    /// Available kite sizes in square meters.
+    /// Default kite sizes in square meters (twintip/hydrofoil).
     public static let availableSizes: [Double] = [8, 9, 10, 11, 12, 13.5, 14, 17]
+
+    /// Get available sizes for a specific board type.
+    public static func sizes(for boardType: BoardType) -> [Double] {
+        boardType.availableSizes
+    }
 
     /// Default rider weight in kg.
     public static let defaultWeight: Double = 75
@@ -37,8 +42,9 @@ public enum KiteSizeService {
     }
 
     /// Find the closest available kite size to a calculated optimal.
-    public static func closestAvailableSize(to optimal: Double) -> Double {
-        availableSizes.min(by: { abs($0 - optimal) < abs($1 - optimal) }) ?? 12
+    public static func closestAvailableSize(to optimal: Double, boardType: BoardType = .twintip) -> Double {
+        let sizes = sizes(for: boardType)
+        return sizes.min(by: { abs($0 - optimal) < abs($1 - optimal) }) ?? sizes[sizes.count / 2]
     }
 
     // MARK: - Suitability
@@ -80,7 +86,7 @@ public enum KiteSizeService {
             windSpeedKnots: windSpeedKnots,
             boardType: boardType
         )
-        let closest = closestAvailableSize(to: optimal)
+        let closest = closestAvailableSize(to: optimal, boardType: boardType)
         let suit = suitability(
             kiteSize: closest,
             optimalSize: optimal,
@@ -102,7 +108,7 @@ public enum KiteSizeService {
         )
     }
 
-    /// Get recommendations for all available kite sizes.
+    /// Get recommendations for all available sizes for the given board type.
     public static func allRecommendations(
         windSpeedKnots: Double,
         riderWeight: Double = defaultWeight,
@@ -113,9 +119,9 @@ public enum KiteSizeService {
             windSpeedKnots: windSpeedKnots,
             boardType: boardType
         )
-        let closest = closestAvailableSize(to: optimal)
+        let closest = closestAvailableSize(to: optimal, boardType: boardType)
 
-        return availableSizes.map { size in
+        return sizes(for: boardType).map { size in
             let suit = suitability(
                 kiteSize: size,
                 optimalSize: optimal,

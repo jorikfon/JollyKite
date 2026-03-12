@@ -4,13 +4,14 @@ import JollyKiteShared
 struct KiteSizeSliderView: View {
     let recommendation: KiteSizeRecommendation
     let windSpeed: Double
+    let boardType: BoardType
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "flag.fill")
                     .foregroundStyle(suitabilityColor)
-                Text("Рекомендация кайта")
+                Text(boardType == .wingfoil ? "Рекомендация крыла" : "Рекомендация кайта")
                     .font(.headline)
                 Spacer()
             }
@@ -30,17 +31,19 @@ struct KiteSizeSliderView: View {
                 }
             }
 
-            // Available sizes
-            HStack(spacing: 6) {
-                ForEach(AppConstants.KiteSizes.available, id: \.self) { size in
-                    let isOptimal = size == recommendation.size
-                    Text(size.noDecimal)
-                        .font(.caption2.bold())
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(isOptimal ? suitabilityColor : Color.secondary.opacity(0.15))
-                        .foregroundStyle(isOptimal ? .white : .primary)
-                        .clipShape(Capsule())
+            // Available sizes for the current board type
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(boardType.availableSizes, id: \.self) { size in
+                        let isOptimal = size == recommendation.size
+                        Text(size.noDecimal)
+                            .font(.caption2.bold())
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(isOptimal ? suitabilityColor : Color.secondary.opacity(0.15))
+                            .foregroundStyle(isOptimal ? .white : .primary)
+                            .clipShape(Capsule())
+                    }
                 }
             }
         }

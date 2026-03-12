@@ -22,7 +22,8 @@ export default {
     riderPreferences: 'การตั้งค่านักเล่น',
     boardType: 'ประเภทบอร์ด',
     twintip: 'ทวินทิป',
-    hydrofoil: 'ไฮโดรฟอยล์',
+    hydrofoil: 'ไคท์ฟอยล์',
+    wingfoil: 'วิงฟอยล์',
     riderWeight: 'น้ำหนักนักเล่น (กก.)',
     weightHint: 'ใช้สำหรับคำนวณขนาดว่าวที่เหมาะสม',
     close: 'ปิด',
@@ -142,7 +143,7 @@ export default {
 
   // คำแนะนำเกี่ยวกับเครื่อง
   kite: {
-    recommendation: 'แนะนำขนาดเครื่อง',
+    recommendation: 'แนะนำขนาด',
     recommendationHint: '💡 ตัวเลขแสดงน้ำหนักนักเล่นที่แนะนำสำหรับสภาพปัจจุบัน',
     size: 'ขนาด',
     rider: 'นักเล่น',

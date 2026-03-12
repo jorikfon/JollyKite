@@ -95,19 +95,30 @@ public enum KiteSuitability: String, Sendable, Hashable {
 public enum BoardType: String, Codable, Sendable, Hashable, CaseIterable {
     case twintip
     case hydrofoil
+    case wingfoil
 
     public var label: String {
         switch self {
         case .twintip: return "Twintip"
-        case .hydrofoil: return "Hydrofoil"
+        case .hydrofoil: return "Kite Foil"
+        case .wingfoil: return "Wing Foil"
         }
     }
 
-    /// Calculation factor: kiteSize = (weight * factor) / speed^2
+    public var labelRu: String {
+        switch self {
+        case .twintip: return "Твинтип"
+        case .hydrofoil: return "Кайт Фойл"
+        case .wingfoil: return "Винг Фойл"
+        }
+    }
+
+    /// Calculation factor: size = (weight * factor) / speed^2
     public var factor: Double {
         switch self {
         case .twintip: return 35
         case .hydrofoil: return 25
+        case .wingfoil: return 22
         }
     }
 
@@ -116,6 +127,7 @@ public enum BoardType: String, Codable, Sendable, Hashable, CaseIterable {
         switch self {
         case .twintip: return 8
         case .hydrofoil: return 6
+        case .wingfoil: return 10
         }
     }
 
@@ -124,6 +136,15 @@ public enum BoardType: String, Codable, Sendable, Hashable, CaseIterable {
         switch self {
         case .twintip: return 35
         case .hydrofoil: return 30
+        case .wingfoil: return 35
+        }
+    }
+
+    /// Available sizes in square meters for this board type.
+    public var availableSizes: [Double] {
+        switch self {
+        case .twintip, .hydrofoil: return [8, 9, 10, 11, 12, 13.5, 14, 17]
+        case .wingfoil: return [3, 3.5, 4, 4.5, 5, 5.5, 6, 7]
         }
     }
 
@@ -131,6 +152,7 @@ public enum BoardType: String, Codable, Sendable, Hashable, CaseIterable {
         switch self {
         case .twintip: return "figure.surfing"
         case .hydrofoil: return "sailboat"
+        case .wingfoil: return "wind"
         }
     }
 }

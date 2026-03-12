@@ -22,7 +22,8 @@ export default {
     riderPreferences: 'Rider Settings',
     boardType: 'Board Type',
     twintip: 'Twintip',
-    hydrofoil: 'Hydrofoil',
+    hydrofoil: 'Kite Foil',
+    wingfoil: 'Wing Foil',
     riderWeight: 'Rider Weight (kg)',
     weightHint: 'Used to calculate optimal kite size',
     close: 'Close',
@@ -142,7 +143,7 @@ export default {
 
   // Kite recommendations
   kite: {
-    recommendation: 'Kite Size Recommendation',
+    recommendation: 'Size Recommendation',
     recommendationHint: '💡 Numbers show recommended rider weight for current conditions',
     size: 'Size',
     rider: 'Rider',

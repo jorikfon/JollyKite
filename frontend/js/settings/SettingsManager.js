@@ -29,7 +29,7 @@ class SettingsManager {
     notificationsEnabled: (value) => typeof value === 'boolean',
     theme: (value) => ['auto', 'light', 'dark'].includes(value),
     version: (value) => typeof value === 'string',
-    boardType: (value) => ['twintip', 'hydrofoil'].includes(value),
+    boardType: (value) => ['twintip', 'hydrofoil', 'wingfoil'].includes(value),
     riderWeight: (value) => typeof value === 'number' && value >= 40 && value <= 120,
   };
 

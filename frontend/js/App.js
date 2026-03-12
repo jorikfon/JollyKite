@@ -591,19 +591,20 @@ class App {
         const calculator = this.kiteSizeSlider.calculator;
         const optimalSize = calculator.calculateOptimalKiteSize(riderWeight, windSpeedKnots, boardType);
 
-        // Проверяем что оптимальный размер в разумном диапазоне доступных кайтов
-        const kiteSizes = config.kiteSize.sizes;
-        const maxSize = Math.max(...kiteSizes);
-        const minSize = Math.min(...kiteSizes);
+        // Проверяем что оптимальный размер в разумном диапазоне доступных размеров
+        const sizes = calcParams.sizes;
+        const maxSize = Math.max(...sizes);
+        const minSize = Math.min(...sizes);
         if (optimalSize > maxSize * 1.3 || optimalSize < minSize * 0.7) {
             el.textContent = '';
             return;
         }
 
-        const closestSize = calculator.findClosestKiteSize(optimalSize);
+        const closestSize = calculator.findClosestKiteSize(optimalSize, boardType);
+        const icon = boardType === 'wingfoil' ? '🪽' : '🪁';
 
         if (closestSize) {
-            el.innerHTML = `<span style="opacity: 0.5;">|</span> <span style="font-weight: 600;">🪁 ${closestSize}м</span>`;
+            el.innerHTML = `<span style="opacity: 0.5;">|</span> <span style="font-weight: 600;">${icon} ${closestSize}м</span>`;
         } else {
             el.textContent = '';
         }

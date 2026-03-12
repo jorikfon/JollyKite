@@ -22,7 +22,8 @@ export default {
     riderPreferences: 'Настройки райдера',
     boardType: 'Тип доски',
     twintip: 'Твинтип',
-    hydrofoil: 'Гидрофойл',
+    hydrofoil: 'Кайт Фойл',
+    wingfoil: 'Винг Фойл',
     riderWeight: 'Вес райдера (кг)',
     weightHint: 'Используется для расчета оптимального размера кайта',
     close: 'Закрыть',
@@ -142,7 +143,7 @@ export default {
 
   // Рекомендации по кайту
   kite: {
-    recommendation: 'Рекомендация размера кайта',
+    recommendation: 'Рекомендация размера',
     recommendationHint: '💡 Цифры показывают рекомендуемый вес райдера для текущих условий',
     size: 'Размер',
     rider: 'Райдер',

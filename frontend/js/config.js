@@ -199,28 +199,33 @@ const config = {
 
     // Kite Size Recommendation Configuration
     kiteSize: {
-        // Available kite sizes in square meters
-        sizes: [8, 9, 10, 11, 12, 13.5, 14, 17],
-
         // Board types
         boardTypes: {
             twintip: 'twintip',
-            hydrofoil: 'hydrofoil'
+            hydrofoil: 'hydrofoil',
+            wingfoil: 'wingfoil'
         },
 
-        // Kite size calculation parameters
-        // Formula: kiteSize = (riderWeight * windFactor) / windSpeed^2
+        // Kite/wing size calculation parameters per board type
+        // Formula: size = (riderWeight * factor) / windSpeed^2
         calculation: {
-            // Wind factors for different board types (higher = needs more kite)
             twintip: {
                 minWind: 8,      // Minimum wind for recommendation (knots)
                 maxWind: 35,     // Maximum wind for recommendation (knots)
-                factor: 35       // Base calculation factor for twintip
+                factor: 35,      // Base calculation factor for twintip
+                sizes: [8, 9, 10, 11, 12, 13.5, 14, 17]
             },
             hydrofoil: {
                 minWind: 6,      // Minimum wind for recommendation (knots)
                 maxWind: 30,     // Maximum wind for recommendation (knots)
-                factor: 25       // Base calculation factor for hydrofoil (needs less power)
+                factor: 25,      // Base calculation factor for hydrofoil (needs less power)
+                sizes: [8, 9, 10, 11, 12, 13.5, 14, 17]
+            },
+            wingfoil: {
+                minWind: 10,     // Wing foil needs decent wind to get going
+                maxWind: 35,     // Maximum wind for recommendation (knots)
+                factor: 22,      // Wing foil factor (handheld wing, less efficient than kite)
+                sizes: [3, 3.5, 4, 4.5, 5, 5.5, 6, 7]
             }
         },
 

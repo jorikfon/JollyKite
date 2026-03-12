@@ -1761,7 +1761,7 @@ footer {
 /* Board type selector */
 .board-type-selector {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
 }
 
@@ -1791,6 +1791,13 @@ footer {
 .board-type-icon {
     font-size: 2rem;
     line-height: 1;
+}
+
+.board-type-icon-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
 }
 
 .board-type-name {

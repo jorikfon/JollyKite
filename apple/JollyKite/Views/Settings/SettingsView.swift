@@ -59,7 +59,7 @@ struct SettingsView: View {
                     set: { vm.boardType = $0 }
                 )) {
                     ForEach(BoardType.allCases, id: \.self) { board in
-                        Label(board.label, systemImage: board.sfSymbol).tag(board)
+                        Label(board.labelRu, systemImage: board.sfSymbol).tag(board)
                     }
                 }
             }
