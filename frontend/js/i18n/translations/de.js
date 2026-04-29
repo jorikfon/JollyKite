@@ -139,6 +139,21 @@ export default {
     actual: 'Tatsächlich',
     forecast: 'Vorhersage',
     loadingError: 'Ladefehler',
+    monthly: {
+      title: '📅 Fahrbare Tage pro Monat',
+      caption: 'Tage mit passendem Wind',
+      total: 'Gesamt im Zeitraum: {total}',
+      noData: 'Noch keine Daten aus früheren Monaten',
+      offshoreNote: 'Ablandiger Wind ausgeschlossen',
+      peakDay: 'Bester Tag',
+      daysShort: 'T',
+      hoursShort: 'h',
+      dayShort: 'Tag',
+      headerMonth: 'Monat',
+      headerDays: 'Fahrbare Tage',
+      kg: 'kg',
+      range: 'dein Wind',
+    },
   },
 
   // Kite-Empfehlungen

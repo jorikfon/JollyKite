@@ -164,6 +164,171 @@ export class ArchiveManager {
   }
 
   /**
+   * Get hourly rows for the last N months in Bangkok time
+   * Returns minimal columns for rideable-day computation.
+   */
+  async getHourlyRowsForMonths(months = 12, stationId = 'pak_nam_pran') {
+    const { rows } = await this.pool.query(
+      `SELECT
+         hour_timestamp,
+         avg_wind_speed,
+         max_wind_speed,
+         avg_wind_direction,
+         dominant_wind_direction
+       FROM hourly_archive
+       WHERE station_id = $1
+         AND hour_timestamp >= NOW() - $2::interval
+       ORDER BY hour_timestamp ASC`,
+      [stationId, `${months} months`]
+    );
+    return rows;
+  }
+
+  /**
+   * Compute monthly statistics on "rideable days" for a given sport.
+   *
+   * A day is considered rideable if during working hours (6:00–19:00 Bangkok)
+   * it had at least `minHours` hours where:
+   *   - avg_wind_speed is within [minWind, maxWind] (knots)
+   *   - direction (after applying calibration offset) is NOT offshore
+   *     (NOT in [offshoreMin, offshoreMax], default 225°–315° SW–NW)
+   *
+   * @param {Object} opts
+   * @param {number} opts.months         - number of past months to scan (default 12)
+   * @param {number} opts.minWind        - min wind speed in knots
+   * @param {number} opts.maxWind        - max wind speed in knots
+   * @param {number} [opts.minHours=2]   - min hours of suitable wind in a day
+   * @param {number} [opts.calibrationOffset=0] - calibration offset to apply to directions
+   * @param {number} [opts.offshoreMin=225]
+   * @param {number} [opts.offshoreMax=315]
+   * @param {string} [opts.stationId='pak_nam_pran']
+   * @returns {Promise<Array>} months in chronological order, each with
+   *   { month: 'YYYY-MM', rideableDays, totalDays, totalRideableHours, bestDay }
+   */
+  async getMonthlyRideableStats({
+    months = 12,
+    minWind,
+    maxWind,
+    minHours = 2,
+    calibrationOffset = 0,
+    offshoreMin = 225,
+    offshoreMax = 315,
+    workStartHour = 6,
+    workEndHour = 19,
+    stationId = 'pak_nam_pran'
+  }) {
+    const rows = await this.getHourlyRowsForMonths(months, stationId);
+
+    const applyOffset = (dir) => {
+      if (dir === null || dir === undefined) return null;
+      let d = (parseInt(dir, 10) + calibrationOffset) % 360;
+      if (d < 0) d += 360;
+      return d;
+    };
+
+    const isOffshore = (dir) => {
+      if (dir === null) return false;
+      return dir >= offshoreMin && dir <= offshoreMax;
+    };
+
+    // Bucket by Bangkok-local date
+    const bangkokFmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const bangkokHourFmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Bangkok',
+      hour: 'numeric',
+      hour12: false
+    });
+
+    const days = new Map(); // dateKey -> { rideableHours, hasAnyData }
+
+    for (const row of rows) {
+      const ts = new Date(row.hour_timestamp);
+      const hour = parseInt(bangkokHourFmt.format(ts), 10);
+      // Working hours 6:00–19:00 inclusive of 18:xx, so hour 6..18
+      if (hour < workStartHour || hour >= workEndHour) continue;
+
+      const dateKey = bangkokFmt.format(ts); // YYYY-MM-DD
+      let entry = days.get(dateKey);
+      if (!entry) {
+        entry = { rideableHours: 0, anyHours: 0 };
+        days.set(dateKey, entry);
+      }
+      entry.anyHours += 1;
+
+      const speed = parseFloat(row.avg_wind_speed);
+      if (!isFinite(speed)) continue;
+      if (speed < minWind || speed > maxWind) continue;
+
+      // Prefer dominant direction if available (more representative for kiting)
+      const rawDir = row.dominant_wind_direction !== null && row.dominant_wind_direction !== undefined
+        ? row.dominant_wind_direction
+        : row.avg_wind_direction;
+      const dir = applyOffset(rawDir);
+      if (isOffshore(dir)) continue;
+
+      entry.rideableHours += 1;
+    }
+
+    // Bucket days by month (YYYY-MM)
+    const monthsMap = new Map();
+    for (const [dateKey, info] of days.entries()) {
+      const monthKey = dateKey.slice(0, 7);
+      let m = monthsMap.get(monthKey);
+      if (!m) {
+        m = {
+          month: monthKey,
+          totalDays: 0,
+          rideableDays: 0,
+          totalRideableHours: 0,
+          bestDay: null
+        };
+        monthsMap.set(monthKey, m);
+      }
+      m.totalDays += 1;
+      m.totalRideableHours += info.rideableHours;
+      if (info.rideableHours >= minHours) {
+        m.rideableDays += 1;
+      }
+      if (!m.bestDay || info.rideableHours > m.bestDay.hours) {
+        m.bestDay = { date: dateKey, hours: info.rideableHours };
+      }
+    }
+
+    // Build chronological list of last N months, including empty months
+    const result = [];
+    const now = new Date();
+    const bkkParts = bangkokFmt.format(now).split('-'); // YYYY, MM, DD
+    let year = parseInt(bkkParts[0], 10);
+    let month = parseInt(bkkParts[1], 10); // 1..12
+
+    for (let i = 0; i < months; i++) {
+      const key = `${year}-${String(month).padStart(2, '0')}`;
+      const m = monthsMap.get(key);
+      result.push(m || {
+        month: key,
+        totalDays: 0,
+        rideableDays: 0,
+        totalRideableHours: 0,
+        bestDay: null
+      });
+      month -= 1;
+      if (month === 0) {
+        month = 12;
+        year -= 1;
+      }
+    }
+
+    // Reverse so oldest first
+    result.reverse();
+    return result;
+  }
+
+  /**
    * Clean up very old archive data (optional, keep unlimited by default)
    */
   async cleanupOldArchive(daysToKeep = 365) {

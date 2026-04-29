@@ -545,6 +545,88 @@ export class ApiRouter {
       }
     });
 
+    // Get monthly "rideable days" statistics for the selected sport,
+    // personalized for the rider's weight + available kite quiver.
+    //
+    // A day counts as rideable if during 6:00–19:00 Bangkok time there were
+    // ≥ minHours hours where:
+    //   • wind direction is NOT offshore (calibrated SW–NW excluded), AND
+    //   • there is at least one kite size in the sport's quiver that is
+    //     within ±35% of the optimal size for the rider's weight at that
+    //     wind speed (mirrors the "acceptable" tolerance used by the
+    //     frontend KiteSizeCalculator.getSuitability).
+    //
+    // Query params:
+    //   months   - how many past months to return (default 12, max 24)
+    //   sport    - twintip | hydrofoil | wingfoil (default twintip)
+    //   weight   - rider weight in kg (default 75, clamped to 40..120)
+    //   minHours - min hours of suitable wind required (default 2)
+    this.router.get('/archive/monthly-rideable', async (req, res) => {
+      try {
+        const sport = (req.query.sport || 'twintip').toString();
+
+        // Mirrors frontend config.kiteSize.calculation
+        const sportConfig = {
+          twintip:   { factor: 35, sizes: [8, 9, 10, 11, 12, 13.5, 14, 17],     minWind: 8,  maxWind: 35 },
+          hydrofoil: { factor: 25, sizes: [8, 9, 10, 11, 12, 13.5, 14, 17],     minWind: 6,  maxWind: 30 },
+          wingfoil:  { factor: 22, sizes: [3, 3.5, 4, 4.5, 5, 5.5, 6, 7],       minWind: 10, maxWind: 35 }
+        };
+        const cfg = sportConfig[sport] || sportConfig.twintip;
+        const TOLERANCE = 0.35; // matches KiteSizeCalculator's "acceptable" band
+
+        const months = Math.min(Math.max(parseInt(req.query.months) || 12, 1), 24);
+        const minHours = Math.max(parseInt(req.query.minHours) || 2, 1);
+
+        const rawWeight = parseFloat(req.query.weight);
+        const weight = isFinite(rawWeight)
+          ? Math.min(Math.max(rawWeight, 40), 120)
+          : 75;
+
+        // Effective wind range for this rider:
+        //   smallest kite covers the high-wind end, largest kite covers the low-wind end.
+        // Acceptability: |kite - optimal| / optimal ≤ TOLERANCE
+        // optimal = weight * factor / wind²
+        const sMin = Math.min(...cfg.sizes);
+        const sMax = Math.max(...cfg.sizes);
+
+        // Lowest wind where the largest kite is still within tolerance:
+        //   s_max ≥ (1 - TOL) * optimal  →  wind ≥ sqrt((1-TOL) * weight * factor / s_max)
+        const minWindRider = Math.sqrt((1 - TOLERANCE) * weight * cfg.factor / sMax);
+        // Highest wind where the smallest kite is still within tolerance:
+        //   s_min ≤ (1 + TOL) * optimal  →  wind ≤ sqrt((1+TOL) * weight * factor / s_min)
+        const maxWindRider = Math.sqrt((1 + TOLERANCE) * weight * cfg.factor / sMin);
+
+        // Clamp to the absolute sport bounds (below sport.minWind it's pointless,
+        // above sport.maxWind it's not safe)
+        const minWind = Math.max(minWindRider, cfg.minWind);
+        const maxWind = Math.min(maxWindRider, cfg.maxWind);
+
+        const calibrationOffset = this.calibrationManager
+          ? this.calibrationManager.getOffset()
+          : 0;
+
+        const stats = await this.archiveManager.getMonthlyRideableStats({
+          months,
+          minWind,
+          maxWind,
+          minHours,
+          calibrationOffset
+        });
+
+        res.json({
+          sport,
+          weight,
+          minWind: parseFloat(minWind.toFixed(1)),
+          maxWind: parseFloat(maxWind.toFixed(1)),
+          minHours,
+          months: stats
+        });
+      } catch (error) {
+        console.error('Monthly rideable stats error:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Get wind patterns by hour of day
     this.router.get('/archive/patterns/:days?', async (req, res) => {
       try {

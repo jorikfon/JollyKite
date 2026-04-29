@@ -139,6 +139,21 @@ export default {
     actual: 'Actual',
     forecast: 'Forecast',
     loadingError: 'Loading error',
+    monthly: {
+      title: '📅 Rideable days by month',
+      caption: 'Days with suitable wind',
+      total: 'Total for period: {total}',
+      noData: 'No data for previous months yet',
+      offshoreNote: 'Offshore wind excluded',
+      peakDay: 'Best day',
+      daysShort: 'd',
+      hoursShort: 'h',
+      dayShort: 'day',
+      headerMonth: 'Month',
+      headerDays: 'Rideable days',
+      kg: 'kg',
+      range: 'your wind',
+    },
   },
 
   // Kite recommendations

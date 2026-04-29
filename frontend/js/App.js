@@ -19,6 +19,7 @@ import NotificationManager from './NotificationManager.js';
 import KiteSizeSlider from './KiteSizeSlider.js';
 import TodayWindTimeline from './TodayWindTimeline.js';
 import WeekWindHistory from './WeekWindHistory.js';
+import MonthlyRideableStats from './MonthlyRideableStats.js';
 import { rippleManager } from './MaterialRipple.js';
 
 class App {
@@ -39,6 +40,7 @@ class App {
         this.kiteSizeSlider = new KiteSizeSlider(this.i18nManager);
         this.todayWindTimeline = new TodayWindTimeline(this.i18nManager, this.settingsManager);
         this.weekWindHistory = new WeekWindHistory(this.i18nManager);
+        this.monthlyRideableStats = new MonthlyRideableStats(this.i18nManager, this.settingsManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
@@ -173,6 +175,13 @@ class App {
                 console.log('✓ История ветра за 7 дней инициализирована');
             }
 
+            // Инициализация месячной статистики катабельных дней
+            if (!this.monthlyRideableStats.init()) {
+                console.warn('⚠ Не удалось инициализировать месячную статистику');
+            } else {
+                console.log('✓ Месячная статистика инициализирована');
+            }
+
             // Настройка симуляции ветра для прогнозов
             this.forecastManager.setupSimulation((direction, speed) => {
                 this.simulateWind(direction, speed);
@@ -240,6 +249,14 @@ class App {
             console.log('✓ История за 7 дней загружена');
         } catch (error) {
             console.error('⚠ Ошибка загрузки истории за 7 дней:', error);
+        }
+
+        // Загрузка месячной статистики катабельных дней
+        try {
+            await this.monthlyRideableStats.display();
+            console.log('✓ Месячная статистика загружена');
+        } catch (error) {
+            console.error('⚠ Ошибка загрузки месячной статистики:', error);
         }
 
         // Загрузка прогноза

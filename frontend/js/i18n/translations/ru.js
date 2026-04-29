@@ -139,6 +139,21 @@ export default {
     actual: 'Факт',
     forecast: 'Прогноз',
     loadingError: 'Ошибка загрузки',
+    monthly: {
+      title: '📅 Катабельные дни по месяцам',
+      caption: 'Дней с подходящим ветром',
+      total: 'Всего за период: {total}',
+      noData: 'Пока нет данных за прошлые месяцы',
+      offshoreNote: 'Оффшор (с берега) исключён',
+      peakDay: 'Лучший день',
+      daysShort: 'дн',
+      hoursShort: 'ч',
+      dayShort: 'день',
+      headerMonth: 'Месяц',
+      headerDays: 'Катабельных дней',
+      kg: 'кг',
+      range: 'твой ветер',
+    },
   },
 
   // Рекомендации по кайту
