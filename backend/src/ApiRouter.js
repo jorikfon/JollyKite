@@ -549,12 +549,14 @@ export class ApiRouter {
     // personalized for the rider's weight + available kite quiver.
     //
     // A day counts as rideable if during 6:00–19:00 Bangkok time there were
-    // ≥ minHours hours where:
-    //   • wind direction is NOT offshore (calibrated SW–NW excluded), AND
-    //   • there is at least one kite size in the sport's quiver that is
-    //     within ±35% of the optimal size for the rider's weight at that
-    //     wind speed (mirrors the "acceptable" tolerance used by the
-    //     frontend KiteSizeCalculator.getSuitability).
+    // ≥ minHours hours where wind speed falls into a range where at least
+    // one kite size in the sport's quiver is within ±35% of the optimal
+    // size for the rider's weight (mirrors the "acceptable" tolerance from
+    // the frontend KiteSizeCalculator.getSuitability).
+    //
+    // Wind direction is not considered — station calibration is unreliable
+    // for some sensors, so offshore filtering would distort historical
+    // aggregates more than it helps.
     //
     // Query params:
     //   months   - how many past months to return (default 12, max 24)
@@ -601,16 +603,11 @@ export class ApiRouter {
         const minWind = Math.max(minWindRider, cfg.minWind);
         const maxWind = Math.min(maxWindRider, cfg.maxWind);
 
-        const calibrationOffset = this.calibrationManager
-          ? this.calibrationManager.getOffset()
-          : 0;
-
         const stats = await this.archiveManager.getMonthlyRideableStats({
           months,
           minWind,
           maxWind,
-          minHours,
-          calibrationOffset
+          minHours
         });
 
         res.json({

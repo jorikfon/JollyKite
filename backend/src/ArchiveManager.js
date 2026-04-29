@@ -164,7 +164,7 @@ export class ArchiveManager {
   }
 
   /**
-   * Get hourly rows for the last N months in Bangkok time
+   * Get hourly rows for the last N months in Bangkok time.
    * Returns minimal columns for rideable-day computation.
    */
   async getHourlyRowsForMonths(months = 12, stationId = 'pak_nam_pran') {
@@ -172,9 +172,7 @@ export class ArchiveManager {
       `SELECT
          hour_timestamp,
          avg_wind_speed,
-         max_wind_speed,
-         avg_wind_direction,
-         dominant_wind_direction
+         max_wind_speed
        FROM hourly_archive
        WHERE station_id = $1
          AND hour_timestamp >= NOW() - $2::interval
@@ -188,19 +186,18 @@ export class ArchiveManager {
    * Compute monthly statistics on "rideable days" for a given sport.
    *
    * A day is considered rideable if during working hours (6:00–19:00 Bangkok)
-   * it had at least `minHours` hours where:
-   *   - avg_wind_speed is within [minWind, maxWind] (knots)
-   *   - direction (after applying calibration offset) is NOT offshore
-   *     (NOT in [offshoreMin, offshoreMax], default 225°–315° SW–NW)
+   * it had at least `minHours` hours with avg_wind_speed within
+   * [minWind, maxWind] (knots).
+   *
+   * Direction is intentionally NOT checked here — station calibration is
+   * unreliable for some sensors and offshore-vs-onshore can be misleading
+   * for historical aggregates.
    *
    * @param {Object} opts
-   * @param {number} opts.months         - number of past months to scan (default 12)
-   * @param {number} opts.minWind        - min wind speed in knots
-   * @param {number} opts.maxWind        - max wind speed in knots
-   * @param {number} [opts.minHours=2]   - min hours of suitable wind in a day
-   * @param {number} [opts.calibrationOffset=0] - calibration offset to apply to directions
-   * @param {number} [opts.offshoreMin=225]
-   * @param {number} [opts.offshoreMax=315]
+   * @param {number} opts.months       - number of past months to scan (default 12)
+   * @param {number} opts.minWind      - min wind speed in knots
+   * @param {number} opts.maxWind      - max wind speed in knots
+   * @param {number} [opts.minHours=2] - min hours of suitable wind in a day
    * @param {string} [opts.stationId='pak_nam_pran']
    * @returns {Promise<Array>} months in chronological order, each with
    *   { month: 'YYYY-MM', rideableDays, totalDays, totalRideableHours, bestDay }
@@ -210,26 +207,11 @@ export class ArchiveManager {
     minWind,
     maxWind,
     minHours = 2,
-    calibrationOffset = 0,
-    offshoreMin = 225,
-    offshoreMax = 315,
     workStartHour = 6,
     workEndHour = 19,
     stationId = 'pak_nam_pran'
   }) {
     const rows = await this.getHourlyRowsForMonths(months, stationId);
-
-    const applyOffset = (dir) => {
-      if (dir === null || dir === undefined) return null;
-      let d = (parseInt(dir, 10) + calibrationOffset) % 360;
-      if (d < 0) d += 360;
-      return d;
-    };
-
-    const isOffshore = (dir) => {
-      if (dir === null) return false;
-      return dir >= offshoreMin && dir <= offshoreMax;
-    };
 
     // Bucket by Bangkok-local date
     const bangkokFmt = new Intl.DateTimeFormat('en-CA', {
@@ -244,7 +226,7 @@ export class ArchiveManager {
       hour12: false
     });
 
-    const days = new Map(); // dateKey -> { rideableHours, hasAnyData }
+    const days = new Map(); // dateKey -> { rideableHours, anyHours }
 
     for (const row of rows) {
       const ts = new Date(row.hour_timestamp);
@@ -263,13 +245,6 @@ export class ArchiveManager {
       const speed = parseFloat(row.avg_wind_speed);
       if (!isFinite(speed)) continue;
       if (speed < minWind || speed > maxWind) continue;
-
-      // Prefer dominant direction if available (more representative for kiting)
-      const rawDir = row.dominant_wind_direction !== null && row.dominant_wind_direction !== undefined
-        ? row.dominant_wind_direction
-        : row.avg_wind_direction;
-      const dir = applyOffset(rawDir);
-      if (isOffshore(dir)) continue;
 
       entry.rideableHours += 1;
     }
