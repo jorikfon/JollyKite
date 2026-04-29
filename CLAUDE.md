@@ -189,7 +189,7 @@ Version auto-propagates to: backend `/api/version`, frontend UI, Service Worker 
 
 | Manager | Responsibility |
 |---------|---------------|
-| `DatabaseManager` | PostgreSQL, 1-minute wind data granularity |
+| `DatabaseManager` | PostgreSQL, 5-minute wind data granularity |
 | `ArchiveManager` | Historical hourly aggregated data |
 | `WindDataCollector` | Ambient Weather API → knots conversion, multi-station averaging |
 | `ForecastCollector` | Open-Meteo API → 3-day hourly forecast with correction factors |
