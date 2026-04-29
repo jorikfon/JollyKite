@@ -20,6 +20,10 @@ class MonthlyRideableStats {
     this.container = null;
     this.apiUrl = '/api';
     this._weightDebounce = null;
+    // Monotonic id used to discard out-of-order responses when sport/weight
+    // change quickly (slow network, slider scrubbing, etc).
+    this._requestSeq = 0;
+    this._inflightAbort = null;
   }
 
   init() {
@@ -74,12 +78,12 @@ class MonthlyRideableStats {
     return `${name} ${shortYear}`;
   }
 
-  async fetchStats(sport, weight) {
+  async fetchStats(sport, weight, signal) {
     const url = `${this.apiUrl}/archive/monthly-rideable`
       + `?sport=${encodeURIComponent(sport)}`
       + `&weight=${encodeURIComponent(weight)}`
       + `&months=12`;
-    const response = await fetch(url);
+    const response = await fetch(url, { signal });
     if (!response.ok) throw new Error(`API returned ${response.status}`);
     return response.json();
   }
@@ -113,16 +117,34 @@ class MonthlyRideableStats {
     const sport = (this.settingsManager && this.settingsManager.getSetting('boardType')) || 'twintip';
     const weight = (this.settingsManager && this.settingsManager.getSetting('riderWeight')) || 75;
 
+    // Cancel any in-flight request and claim a fresh sequence id. We compare
+    // this id after `await fetchStats` and discard the response if a newer
+    // call has been issued in the meantime — prevents stale data from
+    // overwriting the UI when the user scrubs sport/weight quickly.
+    const seq = ++this._requestSeq;
+    if (this._inflightAbort) {
+      try { this._inflightAbort.abort(); } catch (_) { /* ignore */ }
+    }
+    const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    this._inflightAbort = controller;
+
     this.showLoading();
 
     let payload;
     try {
-      payload = await this.fetchStats(sport, weight);
+      payload = await this.fetchStats(sport, weight, controller ? controller.signal : undefined);
     } catch (error) {
+      // Aborted requests are expected when the user changes settings quickly.
+      if (error && (error.name === 'AbortError' || error.code === 20)) return;
+      // If a newer request has already started, don't overwrite its UI state.
+      if (seq !== this._requestSeq) return;
       console.error('MonthlyRideableStats: fetch failed', error);
       this.showError(error);
       return;
     }
+
+    // Late response: a newer request superseded this one — drop silently.
+    if (seq !== this._requestSeq) return;
 
     if (!payload || !Array.isArray(payload.months) || payload.months.length === 0) {
       this.showNoData();
