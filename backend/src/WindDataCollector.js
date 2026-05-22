@@ -1,3 +1,5 @@
+import { ProxyAgent } from 'undici';
+
 /**
  * WindDataCollector - collects wind data from multiple weather stations
  * and archives hourly aggregated data per station
@@ -9,6 +11,14 @@ export class WindDataCollector {
     this.archiveManager = archiveManager;
     this.stations = config.stations || [];
     this.primaryStationId = this.stations.find(s => s.isPrimary)?.id || 'pak_nam_pran';
+
+    // ambientweather.net is blocked in Russia — route ambient requests through an HTTP proxy.
+    // Configure via AMBIENT_PROXY_URL env var, e.g. http://172.205.184.88:3128
+    const proxyUrl = process.env.AMBIENT_PROXY_URL;
+    this.ambientProxy = proxyUrl ? new ProxyAgent(proxyUrl) : null;
+    if (this.ambientProxy) {
+      console.log(`✓ Ambient Weather proxy enabled: ${proxyUrl}`);
+    }
   }
 
   /**
@@ -27,7 +37,8 @@ export class WindDataCollector {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           'Referer': 'https://jollykite.com/'
-        }
+        },
+        ...(this.ambientProxy ? { dispatcher: this.ambientProxy } : {})
       });
 
       if (!response.ok) {
