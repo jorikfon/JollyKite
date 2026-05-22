@@ -21,7 +21,7 @@ try {
  * ApiRouter - defines all API endpoints for frontend
  */
 export class ApiRouter {
-  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, stations = []) {
+  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, stations = [], historyImporter = null) {
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
     this.windCollector = windCollector;
@@ -30,6 +30,7 @@ export class ApiRouter {
     this.calibrationManager = calibrationManager;
     this.forecastModelManager = forecastModelManager;
     this.stations = stations;
+    this.historyImporter = historyImporter;
     this.router = express.Router();
     this.sseClients = []; // Connected SSE clients
     this.setupRoutes();
@@ -641,6 +642,75 @@ export class ApiRouter {
         const data = await this.windCollector.collectWindData();
         res.json({ success: true, data: this.formatWindData(data) });
       } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Historical import — pulls 5-min measurements from the public Ambient
+    // Weather endpoint and writes them with dedupe.
+    // Body / query: { from?: ISO|epochMs, to?: ISO|epochMs, days?: number, stationIds?: string[] }
+    // Defaults: full year history for all ambient stations.
+    this.router.post('/wind/import', async (req, res) => {
+      if (!this.historyImporter) {
+        return res.status(503).json({ error: 'History importer is not configured' });
+      }
+      try {
+        const params = { ...req.query, ...req.body };
+        const now = Date.now();
+
+        const parseTime = (v) => {
+          if (v === undefined || v === null || v === '') return null;
+          if (typeof v === 'number') return v;
+          if (/^\d+$/.test(String(v))) return parseInt(v, 10);
+          const t = Date.parse(v);
+          return Number.isNaN(t) ? null : t;
+        };
+
+        let fromMs = parseTime(params.from);
+        let toMs = parseTime(params.to);
+        const days = params.days ? parseInt(params.days, 10) : null;
+
+        if (toMs === null) toMs = now;
+        if (fromMs === null) {
+          const span = days && days > 0 ? days : 365;
+          fromMs = toMs - span * 24 * 60 * 60 * 1000;
+        }
+        if (fromMs >= toMs) {
+          return res.status(400).json({ error: 'from must be earlier than to' });
+        }
+
+        let stationIds = params.stationIds || params.stationId;
+        if (typeof stationIds === 'string') {
+          stationIds = stationIds.split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        const results = await this.historyImporter.importAll(fromMs, toMs, stationIds);
+        res.json({
+          success: true,
+          from: new Date(fromMs).toISOString(),
+          to: new Date(toMs).toISOString(),
+          results
+        });
+      } catch (error) {
+        console.error('Import failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Refresh the last 24 hours for all ambient stations (gap fill).
+    this.router.post('/wind/import/daily', async (req, res) => {
+      if (!this.historyImporter) {
+        return res.status(503).json({ error: 'History importer is not configured' });
+      }
+      try {
+        let stationIds = req.body?.stationIds || req.query?.stationIds;
+        if (typeof stationIds === 'string') {
+          stationIds = stationIds.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        const results = await this.historyImporter.importLastDay(stationIds);
+        res.json({ success: true, results });
+      } catch (error) {
+        console.error('Daily import failed:', error);
         res.status(500).json({ error: error.message });
       }
     });

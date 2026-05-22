@@ -35,20 +35,36 @@ export class DatabaseManager {
       ON wind_data(station_id, timestamp DESC)
     `);
 
+    // Ensure (station_id, timestamp) uniqueness so historical imports are idempotent.
+    try {
+      await this.pool.query(`
+        DELETE FROM wind_data a USING wind_data b
+        WHERE a.id > b.id AND a.station_id = b.station_id AND a.timestamp = b.timestamp
+      `);
+      await this.pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS uniq_wind_station_ts
+        ON wind_data(station_id, timestamp)
+      `);
+    } catch (e) {
+      console.warn('Could not create unique index on wind_data:', e.message);
+    }
+
     const { rows } = await this.pool.query('SELECT COUNT(*) as count FROM wind_data');
     const recordCount = rows[0]?.count || 0;
     console.log(`✓ Working database initialized (${recordCount} existing records)`);
   }
 
   /**
-   * Insert new wind measurement
+   * Insert new wind measurement. Returns true if a new row was inserted,
+   * false if a row with the same (station_id, timestamp) already existed.
    */
   async insertWindData(data, stationId = 'pak_nam_pran') {
-    await this.pool.query(
+    const result = await this.pool.query(
       `INSERT INTO wind_data (
         timestamp, station_id, wind_speed_knots, wind_gust_knots, max_gust_knots,
         wind_direction, wind_direction_avg, temperature, humidity, pressure
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (station_id, timestamp) DO NOTHING`,
       [
         data.timestamp,
         stationId,
@@ -62,6 +78,53 @@ export class DatabaseManager {
         data.pressure
       ]
     );
+    return result.rowCount > 0;
+  }
+
+  /**
+   * Bulk-insert measurements for one station. Skips duplicates via ON CONFLICT.
+   * Returns the number of new rows inserted.
+   */
+  async insertWindDataBatch(records, stationId) {
+    if (!records || records.length === 0) return 0;
+
+    const cols = 10;
+    const values = [];
+    const placeholders = [];
+    records.forEach((d, i) => {
+      const base = i * cols;
+      placeholders.push(
+        `($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},`
+        + `$${base + 6},$${base + 7},$${base + 8},$${base + 9},$${base + 10})`
+      );
+      values.push(
+        d.timestamp, stationId, d.windSpeedKnots, d.windGustKnots, d.maxGustKnots,
+        d.windDir, d.windDirAvg, d.temperature, d.humidity, d.pressure
+      );
+    });
+
+    const result = await this.pool.query(
+      `INSERT INTO wind_data (
+        timestamp, station_id, wind_speed_knots, wind_gust_knots, max_gust_knots,
+        wind_direction, wind_direction_avg, temperature, humidity, pressure
+      ) VALUES ${placeholders.join(',')}
+      ON CONFLICT (station_id, timestamp) DO NOTHING`,
+      values
+    );
+    return result.rowCount;
+  }
+
+  /**
+   * Get all raw measurements in a time range, ordered ascending.
+   */
+  async getDataInRange(stationId, fromIso, toIso) {
+    const { rows } = await this.pool.query(
+      `SELECT * FROM wind_data
+       WHERE station_id = $1 AND timestamp >= $2 AND timestamp < $3
+       ORDER BY timestamp ASC`,
+      [stationId, fromIso, toIso]
+    );
+    return rows;
   }
 
   /**

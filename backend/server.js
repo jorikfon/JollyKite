@@ -10,6 +10,7 @@ import { NotificationManager } from './src/NotificationManager.js';
 import { ForecastCollector } from './src/ForecastCollector.js';
 import { CalibrationManager } from './src/CalibrationManager.js';
 import { ForecastModelManager } from './src/ForecastModelManager.js';
+import { AmbientHistoryImporter } from './src/AmbientHistoryImporter.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -73,6 +74,9 @@ const windCollector = new WindDataCollector(config, dbManager, archiveManager);
 const forecastCollector = new ForecastCollector(config);
 const calibrationManager = new CalibrationManager('./data/calibration.json');
 const forecastModelManager = new ForecastModelManager(pgPool, forecastCollector, archiveManager, dbManager);
+const historyImporter = new AmbientHistoryImporter(
+  config.stations, dbManager, archiveManager, windCollector, windCollector.ambientProxy
+);
 
 // Middleware
 app.use(cors());
@@ -82,7 +86,7 @@ app.use(express.json());
 app.use(express.static('../frontend'));
 
 // API Routes
-const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, config.stations);
+const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, config.stations, historyImporter);
 app.use('/api', apiRouter.getRouter());
 
 // Health check
@@ -183,7 +187,7 @@ async function initialize() {
     // Schedule daily cleanup (every day at 00:05)
     cron.schedule('5 0 * * *', async () => {
       try {
-        await dbManager.cleanupOldData(7); // Keep 7 days of raw data
+        await dbManager.cleanupOldData(3650); // Keep ~10 years of raw 5-min data (effectively never)
         notificationManager.resetDailyLog(); // Reset notification log
         console.log(`✓ Old data cleaned up at ${new Date().toISOString()}`);
       } catch (error) {
