@@ -143,6 +143,7 @@ export default {
       title: '📅 Fahrbare Tage pro Monat',
       noData: 'Noch keine Daten aus früheren Monaten',
       daysShort: 'T',
+      hoursShort: 'Std',
       kg: 'kg',
       range: 'dein Wind',
     },

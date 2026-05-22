@@ -625,6 +625,88 @@ export class ApiRouter {
       }
     });
 
+    // Per-day breakdown for one calendar month with rideable flag per hour.
+    // Used by the frontend to expand a month row into daily mini-charts.
+    //
+    // Query params:
+    //   month    - 'YYYY-MM' (Bangkok calendar)
+    //   sport    - twintip | hydrofoil | wingfoil (default twintip)
+    //   weight   - rider weight in kg (default 75)
+    //   stationId - default 'pak_nam_pran'
+    this.router.get('/archive/days', async (req, res) => {
+      try {
+        const month = (req.query.month || '').toString();
+        if (!/^\d{4}-\d{2}$/.test(month)) {
+          return res.status(400).json({ error: 'month=YYYY-MM is required' });
+        }
+
+        const sport = (req.query.sport || 'twintip').toString();
+        const stationId = (req.query.stationId || 'pak_nam_pran').toString();
+
+        const sportConfig = {
+          twintip:   { factor: 35, sizes: [8, 9, 10, 11, 12, 13.5, 14, 17], minWind: 8,  maxWind: 35 },
+          hydrofoil: { factor: 25, sizes: [8, 9, 10, 11, 12, 13.5, 14, 17], minWind: 6,  maxWind: 30 },
+          wingfoil:  { factor: 22, sizes: [3, 3.5, 4, 4.5, 5, 5.5, 6, 7],   minWind: 10, maxWind: 35 }
+        };
+        const cfg = sportConfig[sport] || sportConfig.twintip;
+        const TOLERANCE = 0.35;
+
+        const rawWeight = parseFloat(req.query.weight);
+        const weight = isFinite(rawWeight) ? Math.min(Math.max(rawWeight, 40), 120) : 75;
+
+        const sMin = Math.min(...cfg.sizes);
+        const sMax = Math.max(...cfg.sizes);
+        const minWindRider = Math.sqrt((1 - TOLERANCE) * weight * cfg.factor / sMax);
+        const maxWindRider = Math.sqrt((1 + TOLERANCE) * weight * cfg.factor / sMin);
+        const minWind = Math.max(minWindRider, cfg.minWind);
+        const maxWind = Math.min(maxWindRider, cfg.maxWind);
+
+        const rows = await this.archiveManager.getHourlyRowsForMonth(month, stationId);
+
+        const bkkDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+        const bkkHour = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Bangkok', hour: 'numeric', hour12: false
+        });
+
+        const days = new Map();
+        for (const row of rows) {
+          const ts = new Date(row.hour_timestamp);
+          const date = bkkDate.format(ts);
+          const hour = parseInt(bkkHour.format(ts), 10);
+          const speed = parseFloat(row.avg_wind_speed);
+          const speedNum = isFinite(speed) ? +speed.toFixed(1) : null;
+          const maxSpeed = row.max_wind_speed !== null ? +parseFloat(row.max_wind_speed).toFixed(1) : null;
+          const gust = row.max_wind_gust !== null ? +parseFloat(row.max_wind_gust).toFixed(1) : null;
+          const dir = row.dominant_wind_direction !== null ? parseInt(row.dominant_wind_direction, 10) : null;
+          const rideable = speedNum !== null && speedNum >= minWind && speedNum <= maxWind;
+
+          if (!days.has(date)) days.set(date, []);
+          days.get(date).push({ hour, avgWind: speedNum, maxWind: maxSpeed, maxGust: gust, dir, rideable });
+        }
+
+        const result = [];
+        for (const [date, hours] of Array.from(days.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
+          hours.sort((a, b) => a.hour - b.hour);
+          const rideableHours = hours.filter(h => h.rideable).length;
+          result.push({ date, rideableHours, hours });
+        }
+
+        res.json({
+          month,
+          sport,
+          weight,
+          minWind: +minWind.toFixed(1),
+          maxWind: +maxWind.toFixed(1),
+          days: result
+        });
+      } catch (error) {
+        console.error('Daily breakdown error:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     // Get wind patterns by hour of day
     this.router.get('/archive/patterns/:days?', async (req, res) => {
       try {

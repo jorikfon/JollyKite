@@ -143,6 +143,7 @@ export default {
       title: '📅 วันที่เล่นได้ในแต่ละเดือน',
       noData: 'ยังไม่มีข้อมูลจากเดือนก่อน ๆ',
       daysShort: 'วัน',
+      hoursShort: 'ชม.',
       kg: 'กก.',
       range: 'ลมของคุณ',
     },

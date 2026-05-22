@@ -143,6 +143,7 @@ export default {
       title: '📅 Rideable days by month',
       noData: 'No data for previous months yet',
       daysShort: 'd',
+      hoursShort: 'h',
       kg: 'kg',
       range: 'your wind',
     },

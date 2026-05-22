@@ -143,6 +143,7 @@ export default {
       title: '📅 Катабельные дни по месяцам',
       noData: 'Пока нет данных за прошлые месяцы',
       daysShort: 'дн',
+      hoursShort: 'ч',
       kg: 'кг',
       range: 'твой ветер',
     },

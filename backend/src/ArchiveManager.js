@@ -183,6 +183,36 @@ export class ArchiveManager {
   }
 
   /**
+   * Get all hourly archive rows for a calendar month in Bangkok time.
+   * monthKey: 'YYYY-MM'
+   */
+  async getHourlyRowsForMonth(monthKey, stationId = 'pak_nam_pran') {
+    const [yStr, mStr] = monthKey.split('-');
+    const year = parseInt(yStr, 10);
+    const month = parseInt(mStr, 10);
+    const nextYear = month === 12 ? year + 1 : year;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const fromIso = `${monthKey}-01T00:00:00+07:00`;
+    const toIso = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01T00:00:00+07:00`;
+
+    const { rows } = await this.pool.query(
+      `SELECT
+         hour_timestamp,
+         avg_wind_speed,
+         max_wind_speed,
+         max_wind_gust,
+         dominant_wind_direction
+       FROM hourly_archive
+       WHERE station_id = $1
+         AND hour_timestamp >= $2
+         AND hour_timestamp < $3
+       ORDER BY hour_timestamp ASC`,
+      [stationId, fromIso, toIso]
+    );
+    return rows;
+  }
+
+  /**
    * Compute monthly statistics on "rideable days" for a given sport.
    *
    * A day is considered rideable if during working hours (6:00–19:00 Bangkok)

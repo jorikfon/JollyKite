@@ -24,6 +24,11 @@ class MonthlyRideableStats {
     // change quickly (slow network, slider scrubbing, etc).
     this._requestSeq = 0;
     this._inflightAbort = null;
+    // Months the user has expanded — persisted across re-renders so toggling
+    // sport/weight doesn't collapse open panels.
+    this._expandedMonths = new Set();
+    // Cached daily breakdowns keyed by `${month}|${sport}|${weight}`.
+    this._daysCache = new Map();
   }
 
   init() {
@@ -154,7 +159,8 @@ class MonthlyRideableStats {
     // Drop fully-empty months at the start (before the station was online)
     let startIdx = 0;
     while (startIdx < payload.months.length && payload.months[startIdx].totalDays === 0) startIdx += 1;
-    const monthsToShow = payload.months.slice(startIdx);
+    // Newest months on top — payload arrives in chronological order.
+    const monthsToShow = payload.months.slice(startIdx).reverse();
     if (monthsToShow.length === 0) {
       this.showNoData();
       return;
@@ -174,10 +180,16 @@ class MonthlyRideableStats {
       const monthLabel = this.formatMonthLabel(m.month);
       const isEmpty = m.rideableDays === 0;
       const minWidthRule = m.rideableDays > 0 ? 'min-width: 18px;' : '';
+      const isExpanded = this._expandedMonths.has(m.month);
+      const chevron = isExpanded ? '▾' : '▸';
+      const detailHtml = isExpanded
+        ? `<div class="monthly-detail" data-month="${m.month}" style="padding: 6px 0 12px 16px;">${this._renderDetailContents(m.month, sport, weight, barGradient)}</div>`
+        : '';
 
       return `
-        <div class="monthly-row"
-             style="display: grid; grid-template-columns: 64px 1fr 56px; align-items: center; gap: 10px; padding: 5px 0;">
+        <div class="monthly-row" data-month="${m.month}"
+             style="display: grid; grid-template-columns: 16px 64px 1fr 56px; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer;">
+          <div style="font-size: 0.7rem; color: rgba(255,255,255,0.55); text-align: center; user-select: none;">${chevron}</div>
           <div style="font-size: 0.85rem; color: rgba(255,255,255,0.85); text-align: right; white-space: nowrap;">
             ${monthLabel}
           </div>
@@ -196,6 +208,7 @@ class MonthlyRideableStats {
             ${m.rideableDays}<span style="font-size: 0.7rem; font-weight: 500; opacity: 0.65; margin-left: 2px;">${daysLabel}</span>
           </div>
         </div>
+        ${detailHtml}
       `;
     }).join('');
 
@@ -209,9 +222,157 @@ class MonthlyRideableStats {
             ${rangeLabel}: ${payload.minWind}–${payload.maxWind} kn
           </div>
         </div>
-        <div>${rows}</div>
+        <div data-monthly-list>${rows}</div>
       </div>
     `;
+
+    this._attachRowHandlers(sport, weight, barGradient);
+
+    // Kick off background fetches for already-expanded months that have no
+    // cached data yet (after sport/weight change).
+    for (const monthKey of this._expandedMonths) {
+      const cacheKey = this._cacheKey(monthKey, sport, weight);
+      if (!this._daysCache.has(cacheKey)) {
+        this._loadAndRenderDetail(monthKey, sport, weight, barGradient);
+      }
+    }
+  }
+
+  _cacheKey(monthKey, sport, weight) {
+    return `${monthKey}|${sport}|${weight}`;
+  }
+
+  _attachRowHandlers(sport, weight, barGradient) {
+    const list = this.container.querySelector('[data-monthly-list]');
+    if (!list) return;
+    list.querySelectorAll('.monthly-row[data-month]').forEach(row => {
+      row.addEventListener('click', () => {
+        const monthKey = row.dataset.month;
+        if (this._expandedMonths.has(monthKey)) {
+          this._expandedMonths.delete(monthKey);
+        } else {
+          this._expandedMonths.add(monthKey);
+        }
+        // Re-render — uses cached payload for collapsed/expanded states without
+        // re-fetching the monthly summary.
+        this._renderRowsOnly(sport, weight, barGradient);
+      });
+    });
+  }
+
+  // Refresh just the row list using the most recently rendered monthly
+  // payload, preserving the surrounding header.
+  _renderRowsOnly(sport, weight, barGradient) {
+    // Easiest path: re-call display(). Cheap, abort-safe.
+    this.display();
+  }
+
+  _renderDetailContents(monthKey, sport, weight, barGradient) {
+    const cacheKey = this._cacheKey(monthKey, sport, weight);
+    const cached = this._daysCache.get(cacheKey);
+    if (!cached) {
+      return `<div style="font-size: 0.8rem; color: rgba(255,255,255,0.55); padding: 8px 0;">${this.t('trends.loading', 'Loading...')}</div>`;
+    }
+    if (cached.error) {
+      return `<div style="font-size: 0.8rem; color: #f87171; padding: 8px 0;">${cached.error}</div>`;
+    }
+    return this._renderDays(cached.payload, barGradient);
+  }
+
+  async _loadAndRenderDetail(monthKey, sport, weight, barGradient) {
+    const cacheKey = this._cacheKey(monthKey, sport, weight);
+    try {
+      const url = `${this.apiUrl}/archive/days?month=${encodeURIComponent(monthKey)}`
+        + `&sport=${encodeURIComponent(sport)}`
+        + `&weight=${encodeURIComponent(weight)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`API ${response.status}`);
+      const payload = await response.json();
+      this._daysCache.set(cacheKey, { payload });
+    } catch (error) {
+      this._daysCache.set(cacheKey, { error: error.message });
+    }
+    // If still expanded, refresh the detail container in-place.
+    if (!this._expandedMonths.has(monthKey)) return;
+    const node = this.container.querySelector(`.monthly-detail[data-month="${monthKey}"]`);
+    if (node) {
+      node.innerHTML = this._renderDetailContents(monthKey, sport, weight, barGradient);
+    }
+  }
+
+  _renderDays(payload, barGradient) {
+    if (!payload || !Array.isArray(payload.days) || payload.days.length === 0) {
+      return `<div style="font-size: 0.8rem; color: rgba(255,255,255,0.55); padding: 8px 0;">${this.t('history.monthly.noData', 'Нет архивных данных')}</div>`;
+    }
+
+    const WORK_START = 6;
+    const WORK_END = 19; // exclusive
+    const HOURS = [];
+    for (let h = WORK_START; h < WORK_END; h++) HOURS.push(h);
+    const SPEED_CAP = 30; // kn — bar height cap
+    const daysLabel = this.t('history.monthly.daysShort', 'дн');
+    const hoursLabel = this.t('history.monthly.hoursShort', 'ч');
+
+    // Newest day first
+    const days = [...payload.days].reverse();
+
+    const dayRows = days.map(d => {
+      const hourMap = new Map(d.hours.map(h => [h.hour, h]));
+      const bars = HOURS.map(h => {
+        const entry = hourMap.get(h);
+        if (!entry || entry.avgWind === null) {
+          return `<div title="${h}:00 — no data" style="flex: 1; height: 22px; background: rgba(255,255,255,0.04); border-radius: 2px;"></div>`;
+        }
+        const heightPct = Math.min(100, (entry.avgWind / SPEED_CAP) * 100);
+        const color = entry.rideable
+          ? barGradient
+          : 'rgba(255,255,255,0.18)';
+        const dirTxt = entry.dir !== null ? `, ${entry.dir}°` : '';
+        const gustTxt = entry.maxGust !== null && entry.maxGust > entry.avgWind
+          ? ` (gust ${entry.maxGust})` : '';
+        return `<div title="${h}:00 — ${entry.avgWind} kn${gustTxt}${dirTxt}"
+                     style="flex: 1; height: 22px; background: rgba(255,255,255,0.04); border-radius: 2px; position: relative; overflow: hidden;">
+                  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: ${heightPct}%; background: ${color}; opacity: ${entry.rideable ? 1 : 0.6}; border-radius: 2px;"></div>
+                </div>`;
+      }).join('');
+
+      const dateLabel = this._formatDayLabel(d.date);
+
+      return `
+        <div style="display: grid; grid-template-columns: 56px 1fr 36px; align-items: center; gap: 8px; padding: 3px 0;">
+          <div style="font-size: 0.7rem; color: rgba(255,255,255,0.75); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;">
+            ${dateLabel}
+          </div>
+          <div style="display: flex; gap: 2px; align-items: flex-end;">${bars}</div>
+          <div style="font-size: 0.7rem; color: rgba(255,255,255,0.65); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;">
+            ${d.rideableHours}${hoursLabel}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const hourAxis = HOURS.map(h => (h % 3 === 0)
+      ? `<div style="flex: 1; text-align: center;">${h}</div>`
+      : `<div style="flex: 1;"></div>`
+    ).join('');
+
+    return `
+      <div>
+        <div style="display: grid; grid-template-columns: 56px 1fr 36px; gap: 8px; padding-bottom: 4px;">
+          <div></div>
+          <div style="display: flex; font-size: 0.6rem; color: rgba(255,255,255,0.4);">${hourAxis}</div>
+          <div></div>
+        </div>
+        ${dayRows}
+      </div>
+    `;
+  }
+
+  _formatDayLabel(dateKey) {
+    const [year, month, day] = dateKey.split('-').map(n => parseInt(n, 10));
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const locale = this.i18n ? this.i18n.getFullLocale() : 'ru-RU';
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', timeZone: 'UTC' }).replace('.', '');
   }
 }
 
