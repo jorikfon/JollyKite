@@ -633,7 +633,7 @@ export class ApiRouter {
     //   sport    - twintip | hydrofoil | wingfoil (default twintip)
     //   weight   - rider weight in kg (default 75)
     //   stationId - default 'pak_nam_pran'
-    this.router.get('/archive/days', async (req, res) => {
+    this.router.get('/archive/month-days', async (req, res) => {
       try {
         const month = (req.query.month || '').toString();
         if (!/^\d{4}-\d{2}$/.test(month)) {

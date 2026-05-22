@@ -282,7 +282,7 @@ class MonthlyRideableStats {
   async _loadAndRenderDetail(monthKey, sport, weight, barGradient) {
     const cacheKey = this._cacheKey(monthKey, sport, weight);
     try {
-      const url = `${this.apiUrl}/archive/days?month=${encodeURIComponent(monthKey)}`
+      const url = `${this.apiUrl}/archive/month-days?month=${encodeURIComponent(monthKey)}`
         + `&sport=${encodeURIComponent(sport)}`
         + `&weight=${encodeURIComponent(weight)}`;
       const response = await fetch(url);
