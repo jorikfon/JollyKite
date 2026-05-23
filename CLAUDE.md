@@ -12,6 +12,8 @@
 | PWA | Vanilla JS ES6, Leaflet, Tailwind | `frontend/` |
 | iOS app | SwiftUI, iOS 17+, `@Observable` | `apple/JollyKite/` |
 | iOS widgets | WidgetKit, AppIntents | `apple/JollyKiteWidgets/` |
+| macOS app | SwiftUI, sandbox | `apple/JollyKiteMacApp/` |
+| macOS widgets | WidgetKit | `apple/JollyKiteMacWidgets/` |
 | Shared Swift | Swift Package | `apple/JollyKiteShared/` |
 | Деплой | Docker, k3s, ArgoCD, nginx | `k8s/`, `Dockerfile*` |
 
@@ -113,7 +115,6 @@ cd apple/JollyKiteShared && swift test
 ## Ресурсы
 
 - 📘 **Полная техническая документация:** [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
-- iOS-архитектура: [`docs/architecture/IPHONE_APP_ARCHITECTURE.md`](./docs/architecture/IPHONE_APP_ARCHITECTURE.md)
-- Watch-приложение: [`docs/WATCH_APP_DESIGN.md`](./docs/WATCH_APP_DESIGN.md)
-- Деплой: [`DEPLOY.md`](./DEPLOY.md)
+- README: [`README.md`](./README.md)
+- История изменений: `git log` (отдельный CHANGELOG не ведём)
 - Контакт: Telegram @gypsy_mermaid

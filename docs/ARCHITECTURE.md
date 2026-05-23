@@ -19,6 +19,7 @@
 - **Push-уведомления.** Когда ветер стабильно держится выше порога 15 минут — приходит уведомление: на iOS через APNs, в браузер — через Web Push (VAPID).
 - **Карта.** Leaflet-карта с маркерами станций и стрелкой направления ветра.
 - **Локализация.** UI в основном русский, но есть переводы (EN, DE, TH); единицы измерения — узлы / м/с / км/ч / мили/ч.
+- **macOS-приложение и виджеты.** Тот же кодовый пакет `JollyKiteShared`, отдельные таргеты `JollyKiteMacApp` и `JollyKiteMacWidgets`.
 
 ### 1.2. Рабочие часы
 
@@ -262,7 +263,7 @@ App.js
 
 ---
 
-## 4. Frontend — iOS приложение
+## 4. Frontend — Apple-приложения (iOS + macOS)
 
 ### 4.1. Стек
 
@@ -277,15 +278,17 @@ App.js
 ```
 apple/
 ├── project.yml                — XcodeGen-спецификация
-├── JollyKite/                 — основное приложение
+├── JollyKite/                 — iOS-приложение
 │   ├── JollyKiteApp.swift     — @main + AppDelegate (APNs)
 │   ├── ContentView.swift      — TabView из 5 вкладок
 │   ├── Config/
 │   ├── Services/              — WindSSEService, PushNotificationService, HapticService
 │   ├── ViewModels/            — 5 @Observable
 │   └── Views/                 — Dashboard/Forecast/Timeline/Map/Settings/Shared
-├── JollyKiteWidgets/          — WidgetKit extension (3 семейства виджетов)
-└── JollyKiteShared/           — Swift Package
+├── JollyKiteWidgets/          — iOS WidgetKit extension (3 семейства виджетов)
+├── JollyKiteMacApp/           — macOS-приложение (SwiftUI, sandbox)
+├── JollyKiteMacWidgets/       — macOS WidgetKit extension
+└── JollyKiteShared/           — Swift Package, общий для всех таргетов
     └── Sources/JollyKiteShared/
         ├── Models/            — WindData, SafetyLevel, WindForecast, KiteSize, WindUnit
         ├── Networking/        — APIClient, SSEClient (actor), AmbientWeatherClient, OpenMeteoClient
@@ -293,6 +296,8 @@ apple/
         ├── Utils/             — PreferencesStore, SharedDataStore, UnitConverter, WindDataCache
         └── Extensions/        — Color+Hex, Date+Bangkok, Double+Formatting
 ```
+
+Все четыре таргета (`JollyKite`, `JollyKiteWidgets`, `JollyKiteMacApp`, `JollyKiteMacWidgets`) зависят от пакета `JollyKiteShared` — модели, сетевой клиент, сервисы безопасности и подбора снаряжения дублируются один раз.
 
 ### 4.3. Виджеты
 
@@ -436,9 +441,6 @@ PWA и backend — без автотестов, ручная проверка в
 ## 8. Ресурсы
 
 - Кратко: [CLAUDE.md](../CLAUDE.md)
-- Направление ветра: [docs/WIND_DIRECTION.md](./WIND_DIRECTION.md) *(если присутствует)*
-- iOS-архитектура: [docs/architecture/IPHONE_APP_ARCHITECTURE.md](./architecture/IPHONE_APP_ARCHITECTURE.md)
-- Xcode-проект: [docs/architecture/XCODE_PROJECT_PLAN.md](./architecture/XCODE_PROJECT_PLAN.md)
-- Watch-приложение: [docs/WATCH_APP_DESIGN.md](./WATCH_APP_DESIGN.md)
-- Деплой: [DEPLOY.md](../DEPLOY.md)
+- README: [README.md](../README.md)
+- История изменений — `git log` (отдельный CHANGELOG.md не ведём)
 - Контакт: Telegram @gypsy_mermaid
