@@ -242,10 +242,34 @@
         </div>
 
         <!-- Info -->
-        <div class="card text-xs text-slate-500">
+        <div class="card text-xs text-slate-500 mb-4">
             <p>This page adjusts the wind direction offset applied server-side to all users.</p>
             <p class="mt-1">Positive offset rotates clockwise, negative counter-clockwise.</p>
             <p class="mt-1">Data refreshes automatically every 5 seconds.</p>
+        </div>
+
+        <!-- Forecast Backtest -->
+        <div class="card mb-4">
+            <h2 class="text-lg font-bold mb-3 text-sky-400">Forecast Backtest</h2>
+            <p class="text-xs text-slate-400 mb-3">
+                Pull historical forecasts from Open-Meteo for the last N days and join them
+                against hourly_archive to compute per-model RMSE/MAE/Bias. Idempotent — safe
+                to re-run. Server-side processing usually takes 5–15 min; nginx returns 504
+                after 60 s but the import continues in the background.
+            </p>
+            <div class="flex items-center gap-3 mb-3">
+                <label class="text-sm text-slate-300">Days back:</label>
+                <input id="backtestDays" type="number" min="1" max="730" step="1" value="730"
+                       class="offset-input" style="width: 100px;">
+                <button id="runBacktestBtn" class="btn btn-primary">Run backtest</button>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+                <button id="refreshSummaryBtn" class="btn btn-sm bg-slate-600 hover:bg-slate-500">
+                    Refresh summary
+                </button>
+                <span id="backtestStatus" class="text-xs text-slate-500"></span>
+            </div>
+            <div id="backtestSummary" class="text-xs text-slate-300"></div>
         </div>
     </div>
 
@@ -533,6 +557,99 @@
                     e.target.blur();
                 }
             });
+
+            // === Forecast backtest ===
+            const runBtn = document.getElementById('runBacktestBtn');
+            const refreshBtn = document.getElementById('refreshSummaryBtn');
+            const daysInput = document.getElementById('backtestDays');
+            const statusEl = document.getElementById('backtestStatus');
+            const summaryEl = document.getElementById('backtestSummary');
+
+            const renderSummary = (models) => {
+                if (!models || models.length === 0) {
+                    summaryEl.innerHTML = '<p class="text-slate-500">No backtest data yet.</p>';
+                    return;
+                }
+                const evaluated = models.filter(m => parseInt(m.eval_count, 10) > 0);
+                if (evaluated.length === 0) {
+                    summaryEl.innerHTML = '<p class="text-slate-500">No backtest data yet.</p>';
+                    return;
+                }
+                const sorted = [...evaluated].sort((a, b) =>
+                    (parseFloat(a.rmse_speed) || Infinity) - (parseFloat(b.rmse_speed) || Infinity)
+                );
+                const fmt = (v) => v == null ? '—' : parseFloat(v).toFixed(2);
+                const fmtBias = (v) => {
+                    if (v == null) return '—';
+                    const f = parseFloat(v);
+                    return (f > 0 ? '+' : '') + f.toFixed(2);
+                };
+                const fmtDate = (d) => d ? String(d).slice(0, 10) : '—';
+                summaryEl.innerHTML = `
+                    <table class="w-full text-xs">
+                        <thead class="text-slate-500 border-b border-slate-700">
+                            <tr>
+                                <th class="text-left py-1">Model</th>
+                                <th class="text-right py-1">RMSE</th>
+                                <th class="text-right py-1">MAE</th>
+                                <th class="text-right py-1">Bias</th>
+                                <th class="text-right py-1">Dir°</th>
+                                <th class="text-right py-1">N</th>
+                                <th class="text-right py-1">Period</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sorted.map((m, i) => `
+                                <tr class="border-b border-slate-800">
+                                    <td class="py-1.5">${i === 0 ? '⭐ ' : ''}${m.name}</td>
+                                    <td class="text-right py-1.5 font-mono">${fmt(m.rmse_speed)}</td>
+                                    <td class="text-right py-1.5 font-mono">${fmt(m.mae_speed)}</td>
+                                    <td class="text-right py-1.5 font-mono ${parseFloat(m.bias_speed) > 0 ? 'text-orange-400' : 'text-sky-400'}">${fmtBias(m.bias_speed)}</td>
+                                    <td class="text-right py-1.5 font-mono">${fmt(m.mae_direction)}</td>
+                                    <td class="text-right py-1.5">${parseInt(m.eval_count, 10).toLocaleString()}</td>
+                                    <td class="text-right py-1.5 text-slate-500">${fmtDate(m.since_date)} → ${fmtDate(m.until_date)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <p class="text-slate-500 mt-2">Speeds in knots. Bias > 0 means model overestimates wind.</p>
+                `;
+            };
+
+            const refreshSummary = async () => {
+                try {
+                    statusEl.textContent = 'Loading summary…';
+                    const res = await fetch('/api/wind/forecast/backtest/summary');
+                    if (!res.ok) throw new Error(`API ${res.status}`);
+                    const data = await res.json();
+                    renderSummary(data.models || []);
+                    statusEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+                } catch (e) {
+                    statusEl.textContent = `Error: ${e.message}`;
+                }
+            };
+
+            runBtn.addEventListener('click', async () => {
+                const days = parseInt(daysInput.value, 10) || 730;
+                runBtn.disabled = true;
+                runBtn.textContent = 'Running…';
+                statusEl.textContent = 'Backtest started — nginx will 504 in ~60s but the server continues. Polling every minute.';
+                fetch('/api/wind/forecast/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ days })
+                }).catch(() => {}); // ignore the 504; backend keeps going
+                const poll = setInterval(refreshSummary, 60_000);
+                setTimeout(() => {
+                    clearInterval(poll);
+                    runBtn.disabled = false;
+                    runBtn.textContent = 'Run backtest';
+                    statusEl.textContent = 'Polling stopped after 20 min.';
+                }, 20 * 60 * 1000);
+            });
+
+            refreshBtn.addEventListener('click', refreshSummary);
+            refreshSummary();
 
             // Init map and start polling
             initMap();

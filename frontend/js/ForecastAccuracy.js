@@ -72,19 +72,11 @@ class ForecastAccuracy {
         if (evaluated.length === 0) {
             this.container.innerHTML = `
                 <div style="text-align: center; padding: 16px;">
-                    <p class="text-white/70 text-sm" style="margin-bottom: 12px;">
+                    <p class="text-white/70 text-sm">
                         ${this.t('history.accuracy.noData', 'Бэктест ещё не запускался')}
                     </p>
-                    <button id="runBacktestBtn"
-                        style="padding: 10px 20px; border-radius: 12px; border: none;
-                               background: linear-gradient(90deg, #4ECDC4, #44A08D);
-                               color: #fff; font-weight: 600; cursor: pointer;">
-                        ${this.t('history.accuracy.run', 'Запустить бэктест (2 года)')}
-                    </button>
                 </div>
             `;
-            const btn = document.getElementById('runBacktestBtn');
-            if (btn) btn.addEventListener('click', () => this._runBacktest(btn));
             return;
         }
 
@@ -153,50 +145,17 @@ class ForecastAccuracy {
             `;
         }).join('');
 
-        const refreshLabel = this.t('history.accuracy.refresh', 'Обновить бэктест');
         const explainer = this.t('history.accuracy.hint',
             'RMSE/MAE — средняя ошибка модели по скорости; Bias > 0 — модель переоценивает; dir — средняя ошибка направления.');
 
         this.container.innerHTML = `
             <div style="padding: 0 4px;">
                 ${rows}
-                <div style="display: flex; justify-content: space-between; align-items: center;
-                            margin-top: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px;">
-                    <p class="text-white/50" style="font-size: 0.65rem; margin: 0; max-width: 70%;">
-                        ${explainer}
-                    </p>
-                    <button id="runBacktestBtn"
-                        style="padding: 6px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
-                               background: rgba(255,255,255,0.05); color: #fff; font-size: 0.75rem; cursor: pointer;">
-                        ${refreshLabel}
-                    </button>
-                </div>
+                <p class="text-white/50" style="font-size: 0.65rem; margin-top: 10px; padding: 0 4px;">
+                    ${explainer}
+                </p>
             </div>
         `;
-        const btn = document.getElementById('runBacktestBtn');
-        if (btn) btn.addEventListener('click', () => this._runBacktest(btn));
-    }
-
-    async _runBacktest(button) {
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = this.t('history.accuracy.running', 'Запущено… (5–15 мин)');
-        try {
-            await fetch('/api/wind/forecast/backtest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ days: 730 })
-            });
-        } catch (_) { /* request likely times out at nginx; backend keeps running */ }
-        button.textContent = originalText + ' ⏳';
-        // Poll summary every 60s; the server keeps processing after the 504.
-        const poll = async () => {
-            this._lastRenderedAt = 0;
-            await this.display();
-        };
-        setTimeout(poll, 60_000);
-        setTimeout(poll, 180_000);
-        setTimeout(poll, 360_000);
     }
 
     _formatDate(d) {
