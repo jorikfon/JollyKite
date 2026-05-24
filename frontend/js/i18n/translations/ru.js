@@ -15,6 +15,7 @@ export default {
 
   // Навигация
   nav: {
+    home: 'Ветер сейчас',
     forecast: 'Прогноз',
     history: 'История',
     settings: 'Настройки',

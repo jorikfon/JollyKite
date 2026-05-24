@@ -15,6 +15,7 @@ export default {
 
   // เมนูการตั้งค่า
   nav: {
+    home: 'ลมตอนนี้',
     forecast: 'พยากรณ์',
     history: 'ประวัติ',
     settings: 'ตั้งค่า',

@@ -15,6 +15,7 @@ export default {
 
   // Einstellungsmenü
   nav: {
+    home: 'Wind jetzt',
     forecast: 'Vorhersage',
     history: 'Verlauf',
     settings: 'Einstellungen',

@@ -199,6 +199,10 @@
 
     <!-- Выпадающее меню навигации -->
     <div id="navDropdown" class="menu-dropdown" role="menu" aria-labelledby="menuButton">
+        <button class="menu-dropdown__item" data-nav="home" role="menuitem">
+            <span class="menu-dropdown__icon">🏠</span>
+            <span data-i18n="nav.home">Ветер сейчас</span>
+        </button>
         <button class="menu-dropdown__item" data-nav="forecast" role="menuitem">
             <span class="menu-dropdown__icon">🌪️</span>
             <span data-i18n="nav.forecast">Прогноз</span>
@@ -333,7 +337,7 @@
         </div>
 
         <!-- Блок рекомендаций по размеру кайта -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl p-3 sm:p-6 my-6 sm:my-8 animate-fadeIn" data-route="home" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6" data-i18n="kite.recommendation">
                 🪁 Kite Size Recommendation
             </h2>
@@ -351,7 +355,7 @@
         </div>
 
         <!-- Блок графика ветра на сегодня (история + прогноз) -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" data-route="home" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 id="todayTimelineHeader" class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0">
                 <span data-i18n="history.todayTimeline">📊 Today's Wind Timeline</span>
                 <span id="todayTimelineUnit" style="font-size: 0.7em; opacity: 0.8; margin-left: 8px;">(kn)</span>
@@ -365,7 +369,7 @@
         </div>
 
         <!-- Блок прогноза ветра -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" data-route="home" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0" data-i18n="forecast.title">
                 🌪️ 3-Day Wind Forecast
             </h2>
@@ -379,7 +383,7 @@
         </div>
 
         <!-- Блок истории ветра за последние 7 дней -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
+        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" data-route="home" style="box-shadow: var(--md-sys-elevation-2);">
             <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0" data-i18n="history.weekHistory">
                 📈 7-Day Wind History
             </h2>
