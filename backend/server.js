@@ -239,6 +239,23 @@ async function initialize() {
     });
     console.log('✓ Forecast snapshot cleanup scheduler started (weekly)');
 
+    // Weekly historical-forecast-api backtest: pulls the last 14 days from each
+    // model (incremental, idempotent) and re-joins against actuals. Sunday 03:00
+    // Bangkok = Saturday 20:00 UTC. Lightweight: ~14 days × 5 models × 14h ≈ 1k rows.
+    cron.schedule('0 20 * * 6', async () => {
+      try {
+        const toMs = Date.now();
+        const fromMs = toMs - 14 * 24 * 60 * 60 * 1000;
+        console.log('🎯 Weekly forecast backtest starting…');
+        const results = await backtestImporter.importAll(fromMs, toMs);
+        const total = results.reduce((s, r) => s + (r.inserted || 0), 0);
+        console.log(`✓ Weekly backtest done: ${total} rows across ${results.length} models`);
+      } catch (error) {
+        console.error('✗ Weekly backtest failed:', error.message);
+      }
+    });
+    console.log('✓ Forecast backtest scheduler started (weekly, last 14 days)');
+
     // Start server
     app.listen(PORT, () => {
       console.log(`\n✅ JollyKite Backend is running on port ${PORT}`);

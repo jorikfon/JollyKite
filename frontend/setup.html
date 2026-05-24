@@ -248,24 +248,17 @@
             <p class="mt-1">Data refreshes automatically every 5 seconds.</p>
         </div>
 
-        <!-- Forecast Backtest -->
+        <!-- Forecast Backtest (read-only summary; cron updates weekly) -->
         <div class="card mb-4">
             <h2 class="text-lg font-bold mb-3 text-sky-400">Forecast Backtest</h2>
             <p class="text-xs text-slate-400 mb-3">
-                Pull historical forecasts from Open-Meteo for the last N days and join them
-                against hourly_archive to compute per-model RMSE/MAE/Bias. Idempotent — safe
-                to re-run. Server-side processing usually takes 5–15 min; nginx returns 504
-                after 60 s but the import continues in the background.
+                Per-model accuracy from Open-Meteo historical-forecast-api joined against
+                hourly_archive. Refreshed automatically every Sunday at 03:00 Bangkok
+                (last 14 days, incremental).
             </p>
             <div class="flex items-center gap-3 mb-3">
-                <label class="text-sm text-slate-300">Days back:</label>
-                <input id="backtestDays" type="number" min="1" max="730" step="1" value="730"
-                       class="offset-input" style="width: 100px;">
-                <button id="runBacktestBtn" class="btn btn-primary">Run backtest</button>
-            </div>
-            <div class="flex items-center gap-3 mb-3">
                 <button id="refreshSummaryBtn" class="btn btn-sm bg-slate-600 hover:bg-slate-500">
-                    Refresh summary
+                    Refresh
                 </button>
                 <span id="backtestStatus" class="text-xs text-slate-500"></span>
             </div>
@@ -559,9 +552,7 @@
             });
 
             // === Forecast backtest ===
-            const runBtn = document.getElementById('runBacktestBtn');
             const refreshBtn = document.getElementById('refreshSummaryBtn');
-            const daysInput = document.getElementById('backtestDays');
             const statusEl = document.getElementById('backtestStatus');
             const summaryEl = document.getElementById('backtestSummary');
 
@@ -628,25 +619,6 @@
                     statusEl.textContent = `Error: ${e.message}`;
                 }
             };
-
-            runBtn.addEventListener('click', async () => {
-                const days = parseInt(daysInput.value, 10) || 730;
-                runBtn.disabled = true;
-                runBtn.textContent = 'Running…';
-                statusEl.textContent = 'Backtest started — nginx will 504 in ~60s but the server continues. Polling every minute.';
-                fetch('/api/wind/forecast/backtest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ days })
-                }).catch(() => {}); // ignore the 504; backend keeps going
-                const poll = setInterval(refreshSummary, 60_000);
-                setTimeout(() => {
-                    clearInterval(poll);
-                    runBtn.disabled = false;
-                    runBtn.textContent = 'Run backtest';
-                    statusEl.textContent = 'Polling stopped after 20 min.';
-                }, 20 * 60 * 1000);
-            });
 
             refreshBtn.addEventListener('click', refreshSummary);
             refreshSummary();
