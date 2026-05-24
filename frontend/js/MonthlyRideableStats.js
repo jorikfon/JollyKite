@@ -174,6 +174,15 @@ class MonthlyRideableStats {
     const daysLabel = this.t('history.monthly.daysShort', 'дн');
     const kgLabel = this.t('history.monthly.kg', 'кг');
     const rangeLabel = this.t('history.monthly.range', 'твой ветер');
+    const currentUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+    const unitSymbol = window.unitConverter?.getUnitSymbol(currentUnit) || 'kn';
+    const convSpeed = (knots) => window.unitConverter
+      ? window.unitConverter.convert(knots, 'knots', currentUnit)
+      : knots;
+    const fmtSpeed = (knots) => {
+      const v = convSpeed(knots);
+      return currentUnit === 'ms' ? v.toFixed(1) : Math.round(v).toString();
+    };
 
     const rows = monthsToShow.map((m) => {
       const widthPct = (m.rideableDays / maxRideable) * 100;
@@ -219,7 +228,7 @@ class MonthlyRideableStats {
             ${sportIcon} <strong>${sportName}</strong> · ${payload.weight} ${kgLabel}
           </div>
           <div style="font-size: 0.7rem; color: rgba(255,255,255,0.55); margin-top: 2px;">
-            ${rangeLabel}: ${payload.minWind}–${payload.maxWind} kn
+            ${rangeLabel}: ${fmtSpeed(payload.minWind)}–${fmtSpeed(payload.maxWind)} ${unitSymbol}
           </div>
         </div>
         <div data-monthly-list>${rows}</div>
@@ -312,6 +321,12 @@ class MonthlyRideableStats {
     const SPEED_CAP = 30; // kn — bar height cap
     const daysLabel = this.t('history.monthly.daysShort', 'дн');
     const hoursLabel = this.t('history.monthly.hoursShort', 'ч');
+    const currentUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+    const unitSymbol = window.unitConverter?.getUnitSymbol(currentUnit) || 'kn';
+    const fmtSpeed = (knots) => {
+      const v = window.unitConverter ? window.unitConverter.convert(knots, 'knots', currentUnit) : knots;
+      return currentUnit === 'ms' ? v.toFixed(1) : Math.round(v).toString();
+    };
 
     // Newest day first
     const days = [...payload.days].reverse();
@@ -329,8 +344,8 @@ class MonthlyRideableStats {
           : 'rgba(255,255,255,0.18)';
         const dirTxt = entry.dir !== null ? `, ${entry.dir}°` : '';
         const gustTxt = entry.maxGust !== null && entry.maxGust > entry.avgWind
-          ? ` (gust ${entry.maxGust})` : '';
-        return `<div title="${h}:00 — ${entry.avgWind} kn${gustTxt}${dirTxt}"
+          ? ` (gust ${fmtSpeed(entry.maxGust)})` : '';
+        return `<div title="${h}:00 — ${fmtSpeed(entry.avgWind)} ${unitSymbol}${gustTxt}${dirTxt}"
                      style="flex: 1; height: 22px; background: rgba(255,255,255,0.04); border-radius: 2px; position: relative; overflow: hidden;">
                   <div style="position: absolute; left: 0; right: 0; bottom: 0; height: ${heightPct}%; background: ${color}; opacity: ${entry.rideable ? 1 : 0.6}; border-radius: 2px;"></div>
                 </div>`;

@@ -10,7 +10,7 @@ export default {
     loading: 'Loading...',
     error: 'Error',
     retry: 'Retry',
-    footer: '© 2025 Pak Nam Pran. Made with ❤️ for kitesurfers',
+    footer: '© 2026. Made with ❤️ for kitesurfers',
   },
 
   // Settings menu
@@ -27,6 +27,7 @@ export default {
     riderWeight: 'Rider Weight (kg)',
     weightHint: 'Used to calculate optimal kite size',
     close: 'Close',
+    feedback: 'Feedback',
   },
 
   // Units

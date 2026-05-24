@@ -265,24 +265,35 @@ class WindHistoryDisplay {
                     </svg>
 
                     <!-- Legend -->
-                    <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 0.7rem; color: rgba(255,255,255,0.8); flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <div style="width: 12px; height: 12px; background: #87CEEB; border-radius: 2px;"></div>
-                            <span>&lt;5 узлов</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <div style="width: 12px; height: 12px; background: #00FF00; border-radius: 2px;"></div>
-                            <span>10-15 узлов</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <div style="width: 12px; height: 12px; background: #FFD700; border-radius: 2px;"></div>
-                            <span>15-20 узлов</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <div style="width: 12px; height: 12px; background: #FF4500; border-radius: 2px;"></div>
-                            <span>25-30 узлов</span>
-                        </div>
-                    </div>
+                    ${(() => {
+                        const currentUnit = window.settings?.getSetting('windSpeedUnit') || 'knots';
+                        const unitSymbol = window.unitConverter?.getUnitSymbol(currentUnit) || 'kn';
+                        const conv = (knots) => window.unitConverter
+                            ? window.unitConverter.convert(knots, 'knots', currentUnit)
+                            : knots;
+                        const fmt = (v) => Number.isInteger(v) ? v : v.toFixed(1);
+                        const range = (from, to) => `${fmt(conv(from))}-${fmt(conv(to))}`;
+                        const lt = (v) => `&lt;${fmt(conv(v))}`;
+                        return `
+                        <div style="display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 0.7rem; color: rgba(255,255,255,0.8); flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <div style="width: 12px; height: 12px; background: #87CEEB; border-radius: 2px;"></div>
+                                <span>${lt(5)} ${unitSymbol}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <div style="width: 12px; height: 12px; background: #00FF00; border-radius: 2px;"></div>
+                                <span>${range(10, 15)} ${unitSymbol}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <div style="width: 12px; height: 12px; background: #FFD700; border-radius: 2px;"></div>
+                                <span>${range(15, 20)} ${unitSymbol}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <div style="width: 12px; height: 12px; background: #FF4500; border-radius: 2px;"></div>
+                                <span>${range(25, 30)} ${unitSymbol}</span>
+                            </div>
+                        </div>`;
+                    })()}
                 </div>
             `;
 
