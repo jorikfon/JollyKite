@@ -1,6 +1,6 @@
 // JollyKite Service Worker
 // Version must match frontend/version.json
-const APP_VERSION = '2.11.0';
+const APP_VERSION = '2.12.0';
 const CACHE_NAME = `jollykite-v${APP_VERSION}`;
 const API_CACHE_NAME = `jollykite-api-v${APP_VERSION}`;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
@@ -32,6 +32,7 @@ const CORE_ASSETS = [
   '/js/MonthlyRideableStats.js',
   '/js/NavController.js',
   '/js/ForecastLongPage.js',
+  '/js/ForecastAccuracy.js',
   '/js/utils/KiteSizeCalculator.js',
   // i18n System
   '/js/i18n/I18nManager.js',

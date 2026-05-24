@@ -21,7 +21,7 @@ try {
  * ApiRouter - defines all API endpoints for frontend
  */
 export class ApiRouter {
-  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, stations = [], historyImporter = null) {
+  constructor(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, stations = [], historyImporter = null, backtestImporter = null) {
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
     this.windCollector = windCollector;
@@ -31,6 +31,7 @@ export class ApiRouter {
     this.forecastModelManager = forecastModelManager;
     this.stations = stations;
     this.historyImporter = historyImporter;
+    this.backtestImporter = backtestImporter;
     this.router = express.Router();
     this.sseClients = []; // Connected SSE clients
     this.setupRoutes();
@@ -776,6 +777,84 @@ export class ApiRouter {
         });
       } catch (error) {
         console.error('Import failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Backtest forecast models vs hourly_archive using historical-forecast-api.
+    // Body/query: { from?, to?, days?, modelIds? }. Defaults: last 730 days, all models.
+    this.router.post('/wind/forecast/backtest', async (req, res) => {
+      if (!this.backtestImporter) {
+        return res.status(503).json({ error: 'Backtest importer is not configured' });
+      }
+      try {
+        const params = { ...req.query, ...req.body };
+        const now = Date.now();
+        const parseTime = (v) => {
+          if (v === undefined || v === null || v === '') return null;
+          if (typeof v === 'number') return v;
+          if (/^\d+$/.test(String(v))) return parseInt(v, 10);
+          const t = Date.parse(v);
+          return Number.isNaN(t) ? null : t;
+        };
+        let fromMs = parseTime(params.from);
+        let toMs = parseTime(params.to);
+        const days = params.days ? parseInt(params.days, 10) : null;
+        if (toMs === null) toMs = now;
+        if (fromMs === null) {
+          const span = days && days > 0 ? days : 730;
+          fromMs = toMs - span * 24 * 60 * 60 * 1000;
+        }
+        if (fromMs >= toMs) {
+          return res.status(400).json({ error: 'from must be earlier than to' });
+        }
+        let modelIds = params.modelIds || params.modelId;
+        if (typeof modelIds === 'string') {
+          modelIds = modelIds.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        const results = await this.backtestImporter.importAll(fromMs, toMs, modelIds);
+        res.json({
+          success: true,
+          from: new Date(fromMs).toISOString(),
+          to: new Date(toMs).toISOString(),
+          results
+        });
+      } catch (error) {
+        console.error('Backtest failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Per-model aggregate accuracy from backtest data.
+    this.router.get('/wind/forecast/backtest/summary', async (req, res) => {
+      if (!this.backtestImporter) {
+        return res.status(503).json({ error: 'Backtest importer is not configured' });
+      }
+      try {
+        const summary = await this.backtestImporter.getSummary();
+        // Decorate with model display names if available
+        const modelMap = new Map((this.forecastModelManager?.models || []).map(m => [m.id, m.name]));
+        const decorated = summary.map(row => ({
+          ...row,
+          name: modelMap.get(row.model_id) || row.model_id
+        }));
+        res.json({ models: decorated });
+      } catch (error) {
+        console.error('Backtest summary failed:', error);
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Per-model monthly bias / MAE for seasonal drift insight.
+    this.router.get('/wind/forecast/backtest/by-month', async (req, res) => {
+      if (!this.backtestImporter) {
+        return res.status(503).json({ error: 'Backtest importer is not configured' });
+      }
+      try {
+        const rows = await this.backtestImporter.getByMonth();
+        res.json({ rows });
+      } catch (error) {
+        console.error('Backtest by-month failed:', error);
         res.status(500).json({ error: error.message });
       }
     });

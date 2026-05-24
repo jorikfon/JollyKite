@@ -161,6 +161,17 @@ export default {
       breakdownTitle: 'Detailliert nach Monaten',
       yearsShort: 'J',
     },
+    accuracy: {
+      title: '🎯 Genauigkeit der Vorhersagemodelle',
+      noData: 'Backtest noch nicht ausgeführt',
+      run: 'Backtest starten (2 Jahre)',
+      refresh: 'Backtest aktualisieren',
+      running: 'Läuft… (5–15 Min.)',
+      evalShort: 'Aw.',
+      bias: 'Bias',
+      dir: 'Richt.',
+      hint: 'RMSE/MAE — mittlerer Geschwindigkeitsfehler; Bias > 0 — Modell überschätzt; Richt. — mittlerer Richtungsfehler.',
+    },
   },
 
   // Kite-Empfehlungen

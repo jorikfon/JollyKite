@@ -22,6 +22,7 @@ import WeekWindHistory from './WeekWindHistory.js';
 import MonthlyRideableStats from './MonthlyRideableStats.js';
 import NavController from './NavController.js';
 import ForecastLongPage from './ForecastLongPage.js';
+import ForecastAccuracy from './ForecastAccuracy.js';
 import { rippleManager } from './MaterialRipple.js';
 
 class App {
@@ -45,6 +46,7 @@ class App {
         this.monthlyRideableStats = new MonthlyRideableStats(this.i18nManager, this.settingsManager);
         this.navController = null;
         this.forecastLongPage = new ForecastLongPage(this.i18nManager);
+        this.forecastAccuracy = new ForecastAccuracy(this.i18nManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
@@ -121,6 +123,9 @@ class App {
                     // Monthly stats already inits on load; refresh just in case unit changed.
                     if (this.monthlyRideableStats) {
                         await this.monthlyRideableStats.display();
+                    }
+                    if (this.forecastAccuracy.init()) {
+                        await this.forecastAccuracy.display();
                     }
                 }
             });

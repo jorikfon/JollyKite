@@ -161,6 +161,17 @@ export default {
       breakdownTitle: 'รายละเอียดแต่ละเดือน',
       yearsShort: 'ปี',
     },
+    accuracy: {
+      title: '🎯 ความแม่นยำของโมเดลพยากรณ์',
+      noData: 'ยังไม่ได้ทำ backtest',
+      run: 'เริ่ม backtest (2 ปี)',
+      refresh: 'อัปเดต backtest',
+      running: 'กำลังทำงาน… (5–15 นาที)',
+      evalShort: 'จุด',
+      bias: 'Bias',
+      dir: 'ทิศ',
+      hint: 'RMSE/MAE — ค่าเฉลี่ยความคลาดเคลื่อนของความเร็ว; Bias > 0 — โมเดลประเมินสูง; ทิศ — ค่าเฉลี่ยความคลาดเคลื่อนของทิศทาง',
+    },
   },
 
   // คำแนะนำเกี่ยวกับเครื่อง

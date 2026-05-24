@@ -114,7 +114,7 @@ class MonthlyRideableStats {
     const bars = averages.map(a => {
       const heightPct = a.avg !== null ? (a.avg / maxAvg) * 100 : 0;
       const isEmpty = a.avg === null;
-      const valueLabel = isEmpty ? '—' : a.avg.toFixed(1);
+      const valueLabel = isEmpty ? '—' : Math.round(a.avg).toString();
       return `
         <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
           <div style="font-size: 0.78rem; font-weight: 600; color: #fff; text-align: center; min-height: 14px; font-variant-numeric: tabular-nums;">

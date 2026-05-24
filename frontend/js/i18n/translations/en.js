@@ -161,6 +161,17 @@ export default {
       breakdownTitle: 'Month-by-month breakdown',
       yearsShort: 'y',
     },
+    accuracy: {
+      title: '🎯 Forecast Model Accuracy',
+      noData: 'Backtest has not been run yet',
+      run: 'Run backtest (2 years)',
+      refresh: 'Refresh backtest',
+      running: 'Running… (5–15 min)',
+      evalShort: 'eval.',
+      bias: 'Bias',
+      dir: 'dir',
+      hint: 'RMSE/MAE — mean speed error; Bias > 0 — model overestimates; dir — mean direction error.',
+    },
   },
 
   // Kite recommendations

@@ -11,6 +11,7 @@ import { ForecastCollector } from './src/ForecastCollector.js';
 import { CalibrationManager } from './src/CalibrationManager.js';
 import { ForecastModelManager } from './src/ForecastModelManager.js';
 import { AmbientHistoryImporter } from './src/AmbientHistoryImporter.js';
+import { ForecastBacktestImporter } from './src/ForecastBacktestImporter.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -77,6 +78,9 @@ const forecastModelManager = new ForecastModelManager(pgPool, forecastCollector,
 const historyImporter = new AmbientHistoryImporter(
   config.stations, dbManager, archiveManager, windCollector, windCollector.ambientProxy
 );
+const backtestImporter = new ForecastBacktestImporter(
+  pgPool, forecastModelManager.models
+);
 
 // Middleware
 app.use(cors());
@@ -86,7 +90,7 @@ app.use(express.json());
 app.use(express.static('../frontend'));
 
 // API Routes
-const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, config.stations, historyImporter);
+const apiRouter = new ApiRouter(dbManager, archiveManager, windCollector, notificationManager, forecastCollector, calibrationManager, forecastModelManager, config.stations, historyImporter, backtestImporter);
 app.use('/api', apiRouter.getRouter());
 
 // Health check
@@ -110,6 +114,7 @@ async function initialize() {
     await dbManager.initialize();
     await archiveManager.initialize();
     await forecastModelManager.initialize();
+    await backtestImporter.initialize();
     console.log('✓ Databases initialized');
 
     // Collect initial data only during working hours (6:00-19:00 Bangkok time)
