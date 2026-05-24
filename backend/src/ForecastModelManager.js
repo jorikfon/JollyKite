@@ -10,12 +10,14 @@ export class ForecastModelManager {
     this.archiveManager = archiveManager;
     this.dbManager = dbManager;
 
+    // histModelId — id accepted by historical-forecast-api's `?models=` param
+    // (a specific submodel; the generic 'meteofrance' isn't valid there).
     this.models = [
-      { id: 'best_match',   name: 'GFS Seamless',  baseUrl: 'https://api.open-meteo.com/v1/forecast' },
-      { id: 'ecmwf_ifs025', name: 'ECMWF IFS',     baseUrl: 'https://api.open-meteo.com/v1/ecmwf' },
-      { id: 'meteofrance',  name: 'Météo-France',   baseUrl: 'https://api.open-meteo.com/v1/meteofrance' },
-      { id: 'gfs_global',   name: 'GFS',            baseUrl: 'https://api.open-meteo.com/v1/gfs' },
-      { id: 'gem_global',   name: 'GEM',            baseUrl: 'https://api.open-meteo.com/v1/gem' },
+      { id: 'best_match',   name: 'GFS Seamless',  baseUrl: 'https://api.open-meteo.com/v1/forecast',     histModelId: 'best_match' },
+      { id: 'ecmwf_ifs025', name: 'ECMWF IFS',     baseUrl: 'https://api.open-meteo.com/v1/ecmwf',        histModelId: 'ecmwf_ifs025' },
+      { id: 'meteofrance',  name: 'Météo-France',   baseUrl: 'https://api.open-meteo.com/v1/meteofrance',  histModelId: 'meteofrance_arpege_world' },
+      { id: 'gfs_global',   name: 'GFS',            baseUrl: 'https://api.open-meteo.com/v1/gfs',          histModelId: 'gfs_global' },
+      { id: 'gem_global',   name: 'GEM',            baseUrl: 'https://api.open-meteo.com/v1/gem',          histModelId: 'gem_global' },
     ];
   }
 

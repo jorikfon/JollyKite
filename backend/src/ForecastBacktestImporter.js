@@ -60,12 +60,14 @@ export class ForecastBacktestImporter {
   }
 
   async _fetchChunk(modelId, fromIso, toIso) {
+    const model = this.models.find(m => m.id === modelId);
+    const histId = model?.histModelId || modelId;
     const url = `${HIST_URL}?latitude=${LAT}&longitude=${LON}`
       + `&start_date=${fromIso}&end_date=${toIso}`
       + `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m`
       + `&timezone=${encodeURIComponent(TZ)}`
       + `&wind_speed_unit=kn`
-      + `&models=${encodeURIComponent(modelId)}`;
+      + `&models=${encodeURIComponent(histId)}`;
 
     const opts = {
       headers: {
@@ -225,7 +227,7 @@ export class ForecastBacktestImporter {
          COUNT(*) FILTER (WHERE actual_speed IS NOT NULL) AS eval_count,
          MIN(target_date) FILTER (WHERE actual_speed IS NOT NULL) AS since_date,
          MAX(target_date) FILTER (WHERE actual_speed IS NOT NULL) AS until_date,
-         SQRT(AVG(speed_error * speed_error)) FILTER (WHERE actual_speed IS NOT NULL) AS rmse_speed,
+         SQRT(AVG(speed_error * speed_error) FILTER (WHERE actual_speed IS NOT NULL)) AS rmse_speed,
          AVG(speed_error) FILTER (WHERE actual_speed IS NOT NULL) AS mae_speed,
          AVG(forecast_speed - actual_speed) FILTER (WHERE actual_speed IS NOT NULL) AS bias_speed,
          AVG(direction_error) FILTER (WHERE actual_speed IS NOT NULL) AS mae_direction
