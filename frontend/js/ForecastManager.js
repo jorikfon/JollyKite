@@ -1,13 +1,14 @@
 class ForecastManager {
-    constructor(i18n) {
+    constructor(i18n, containerId = 'windForecast') {
         this.forecastContainer = null;
         this.i18n = i18n || window.i18n;
+        this.containerId = containerId;
     }
 
     init() {
-        this.forecastContainer = document.getElementById('windForecast');
+        this.forecastContainer = document.getElementById(this.containerId);
         if (!this.forecastContainer) {
-            console.error('Forecast container not found');
+            console.error(`Forecast container #${this.containerId} not found`);
             return false;
         }
         return true;

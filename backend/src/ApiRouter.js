@@ -339,7 +339,8 @@ export class ApiRouter {
           }
         }
 
-        const forecast = await this.forecastCollector.fetchWindForecast(baseUrl);
+        const days = req.query.days ? parseInt(req.query.days, 10) : 3;
+        const forecast = await this.forecastCollector.fetchWindForecast(baseUrl, days);
 
         // Apply model-specific correction and tag entries
         if (this.forecastModelManager && modelId) {
@@ -577,7 +578,7 @@ export class ApiRouter {
         const cfg = sportConfig[sport] || sportConfig.twintip;
         const TOLERANCE = 0.35; // matches KiteSizeCalculator's "acceptable" band
 
-        const months = Math.min(Math.max(parseInt(req.query.months) || 12, 1), 24);
+        const months = Math.min(Math.max(parseInt(req.query.months) || 12, 1), 60);
         const minHours = Math.max(parseInt(req.query.minHours) || 2, 1);
 
         const rawWeight = parseFloat(req.query.weight);

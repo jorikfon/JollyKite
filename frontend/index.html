@@ -189,12 +189,44 @@
     </div>
 
     <!-- Кнопка открытия меню -->
-    <button id="menuButton" class="menu-button" aria-label="Settings menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 1v6m0 6v6m-9-9h6m6 0h6"></path>
+    <button id="menuButton" class="menu-button" aria-label="Open navigation menu" aria-haspopup="true" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="4" y1="7" x2="20" y2="7"></line>
+            <line x1="4" y1="12" x2="20" y2="12"></line>
+            <line x1="4" y1="17" x2="20" y2="17"></line>
         </svg>
     </button>
+
+    <!-- Выпадающее меню навигации -->
+    <div id="navDropdown" class="menu-dropdown" role="menu" aria-labelledby="menuButton">
+        <button class="menu-dropdown__item" data-nav="forecast" role="menuitem">
+            <span class="menu-dropdown__icon">🌪️</span>
+            <span data-i18n="nav.forecast">Прогноз</span>
+        </button>
+        <button class="menu-dropdown__item" data-nav="history" role="menuitem">
+            <span class="menu-dropdown__icon">📅</span>
+            <span data-i18n="nav.history">История</span>
+        </button>
+        <button class="menu-dropdown__item" data-nav="settings" role="menuitem">
+            <span class="menu-dropdown__icon">⚙️</span>
+            <span data-i18n="nav.settings">Настройки</span>
+        </button>
+        <div class="menu-dropdown__divider"></div>
+        <div class="menu-dropdown__langs" role="group" aria-label="Language">
+            <button class="lang-pill" data-lang="en" role="menuitem" title="English">
+                <span class="lang-pill__flag">🇬🇧</span><span class="lang-pill__code">EN</span>
+            </button>
+            <button class="lang-pill" data-lang="ru" role="menuitem" title="Русский">
+                <span class="lang-pill__flag">🇷🇺</span><span class="lang-pill__code">RU</span>
+            </button>
+            <button class="lang-pill" data-lang="de" role="menuitem" title="Deutsch">
+                <span class="lang-pill__flag">🇩🇪</span><span class="lang-pill__code">DE</span>
+            </button>
+            <button class="lang-pill" data-lang="th" role="menuitem" title="ไทย">
+                <span class="lang-pill__flag">🇹🇭</span><span class="lang-pill__code">TH</span>
+            </button>
+        </div>
+    </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <header class="text-center py-8 sm:py-12 animate-fadeInDown">
@@ -203,7 +235,7 @@
             </h1>
         </header>
 
-        <div class="wind-dashboard">
+        <div class="wind-dashboard" data-route="home">
             <!-- Информационная карточка о времени работы станции (скрыта по умолчанию) -->
             <div id="offlineNotice" style="display: none; background: rgba(255,165,0,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 30px; margin-bottom: 15px; border: 2px solid rgba(255,165,0,0.3); text-align: center;">
                 <div style="font-size: 3rem; margin-bottom: 15px;">🌙</div>
@@ -359,18 +391,28 @@
             </div>
         </div>
 
-        <!-- Блок статистики катабельных дней по месяцам -->
-        <div class="bg-white/15 backdrop-blur-md rounded-2xl px-0 py-3 sm:p-6 -mx-4 sm:mx-0 my-6 sm:my-8 animate-fadeIn" style="box-shadow: var(--md-sys-elevation-2);">
-            <h2 class="text-center text-lg sm:text-2xl font-semibold text-white mb-3 sm:mb-6 px-3 sm:px-0" data-i18n="history.monthly.title">
-                📅 Катабельные дни по месяцам
-            </h2>
+        <!-- Страница: Прогноз ветра на 10 дней -->
+        <section class="route-page" data-route="forecast" hidden>
+            <h2 class="route-page__title" data-i18n="forecast.longTitle">🌪️ Прогноз ветра на 10 дней</h2>
+            <p id="forecastModelInfo" class="route-page__subtitle"></p>
+            <div id="forecastLongPage" class="overflow-hidden min-h-[120px]">
+                <div class="text-center py-6">
+                    <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
+                    <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading forecast...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Страница: История катабельных дней -->
+        <section class="route-page" data-route="history" hidden>
+            <h2 class="route-page__title" data-i18n="history.monthly.title">📅 Катабельные дни по месяцам</h2>
             <div id="monthlyRideableStats" class="overflow-hidden min-h-[120px]">
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
                     <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading data...</p>
                 </div>
             </div>
-        </div>
+        </section>
 
         <!-- Боковое меню настроек -->
         <div id="settingsMenu" class="settings-menu">
@@ -388,25 +430,6 @@
 
                 <!-- Контент -->
                 <div class="settings-menu__content">
-                    <!-- Секция языка -->
-                    <section class="settings-section">
-                        <h3 id="languageTitle" data-i18n="menu.language">Язык</h3>
-                        <div class="language-selector">
-                            <button class="language-option" data-lang="en">
-                                🇬🇧 English
-                            </button>
-                            <button class="language-option" data-lang="ru">
-                                🇷🇺 Русский
-                            </button>
-                            <button class="language-option" data-lang="de">
-                                🇩🇪 Deutsch
-                            </button>
-                            <button class="language-option" data-lang="th">
-                                🇹🇭 ไทย
-                            </button>
-                        </div>
-                    </section>
-
                     <!-- Секция единиц измерения -->
                     <section class="settings-section">
                         <h3 id="unitsTitle" data-i18n="menu.units">Единицы скорости ветра</h3>

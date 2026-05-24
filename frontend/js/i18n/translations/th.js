@@ -14,6 +14,12 @@ export default {
   },
 
   // เมนูการตั้งค่า
+  nav: {
+    forecast: 'พยากรณ์',
+    history: 'ประวัติ',
+    settings: 'ตั้งค่า',
+  },
+
   menu: {
     title: 'การตั้งค่า',
     language: 'ภาษา',
@@ -127,6 +133,8 @@ export default {
     maxWind: 'ลมสูงสุด',
     avgWind: 'ลมเฉลี่ย',
     noData: 'ไม่มีข้อมูลพยากรณ์',
+    usingModel: 'โมเดล',
+    longTitle: 'พยากรณ์ลม 10 วัน',
   },
 
   // ประวัติ

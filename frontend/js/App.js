@@ -20,6 +20,8 @@ import KiteSizeSlider from './KiteSizeSlider.js';
 import TodayWindTimeline from './TodayWindTimeline.js';
 import WeekWindHistory from './WeekWindHistory.js';
 import MonthlyRideableStats from './MonthlyRideableStats.js';
+import NavController from './NavController.js';
+import ForecastLongPage from './ForecastLongPage.js';
 import { rippleManager } from './MaterialRipple.js';
 
 class App {
@@ -41,6 +43,8 @@ class App {
         this.todayWindTimeline = new TodayWindTimeline(this.i18nManager, this.settingsManager);
         this.weekWindHistory = new WeekWindHistory(this.i18nManager);
         this.monthlyRideableStats = new MonthlyRideableStats(this.i18nManager, this.settingsManager);
+        this.navController = null;
+        this.forecastLongPage = new ForecastLongPage(this.i18nManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
         this.updateInterval = null;
@@ -104,6 +108,26 @@ class App {
             );
             if (this.menuController.init()) {
                 console.log('✓ Меню настроек инициализировано');
+            }
+
+            // 4b. Навигационный роутер: подписку ставим до init(), чтобы поймать первый routeChanged
+            window.addEventListener('routeChanged', async (e) => {
+                const route = e.detail.route;
+                if (route === 'forecast') {
+                    if (this.forecastLongPage.init()) {
+                        await this.forecastLongPage.display();
+                    }
+                } else if (route === 'history') {
+                    // Monthly stats already inits on load; refresh just in case unit changed.
+                    if (this.monthlyRideableStats) {
+                        await this.monthlyRideableStats.display();
+                    }
+                }
+            });
+
+            this.navController = new NavController(this.menuController);
+            if (this.navController.init()) {
+                console.log('✓ Навигационное меню инициализировано');
             }
 
             // Подписка на изменение единиц измерения

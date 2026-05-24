@@ -14,6 +14,12 @@ export default {
   },
 
   // Settings menu
+  nav: {
+    forecast: 'Forecast',
+    history: 'History',
+    settings: 'Settings',
+  },
+
   menu: {
     title: 'Settings',
     language: 'Language',
@@ -127,6 +133,8 @@ export default {
     maxWind: 'Max wind',
     avgWind: 'Avg wind',
     noData: 'No forecast data',
+    usingModel: 'Model',
+    longTitle: '10-Day Wind Forecast',
   },
 
   // History

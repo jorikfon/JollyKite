@@ -31,10 +31,10 @@ class WindDataManager {
         }
     }
 
-    async fetchWindForecast() {
+    async fetchWindForecast(days = 3) {
         try {
             // Fetch forecast from backend API
-            const response = await fetch(`${this.backendApiUrl}/wind/forecast`);
+            const response = await fetch(`${this.backendApiUrl}/wind/forecast?days=${days}`);
 
             if (!response.ok) {
                 throw new Error(`Backend returned ${response.status}`);

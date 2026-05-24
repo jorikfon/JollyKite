@@ -14,6 +14,12 @@ export default {
   },
 
   // Einstellungsmenü
+  nav: {
+    forecast: 'Vorhersage',
+    history: 'Verlauf',
+    settings: 'Einstellungen',
+  },
+
   menu: {
     title: 'Einstellungen',
     language: 'Sprache',
@@ -127,6 +133,8 @@ export default {
     maxWind: 'Max. Wind',
     avgWind: 'Durchschn. Wind',
     noData: 'Keine Vorhersagedaten',
+    usingModel: 'Modell',
+    longTitle: '10-Tage-Windvorhersage',
   },
 
   // Verlauf

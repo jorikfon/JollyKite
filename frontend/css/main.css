@@ -1463,6 +1463,134 @@ footer {
 }
 
 /* ============================================
+   ROUTE PAGES
+   ============================================ */
+
+.route-page {
+    margin: 24px 0;
+}
+
+.route-page__title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 24px 0 8px;
+}
+
+.route-page__subtitle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 16px;
+}
+
+/* ============================================
+   MENU DROPDOWN
+   ============================================ */
+
+.menu-dropdown {
+    position: fixed;
+    top: 70px;
+    right: 1rem;
+    z-index: 950;
+    background: rgba(20,30,50,0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 14px;
+    box-shadow: var(--md-sys-elevation-3);
+    padding: 6px;
+    min-width: 200px;
+    display: none;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.menu-dropdown.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.menu-dropdown__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    color: #fff;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease-out;
+}
+
+.menu-dropdown__item:hover,
+.menu-dropdown__item:focus {
+    background: rgba(255,255,255,0.1);
+    outline: none;
+}
+
+.menu-dropdown__icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    width: 20px;
+    text-align: center;
+}
+
+.menu-dropdown__divider {
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 6px 8px;
+}
+
+.menu-dropdown__langs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 4px;
+}
+
+.lang-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 4px;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.85);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.lang-pill:hover,
+.lang-pill:focus {
+    background: rgba(255,255,255,0.08);
+    outline: none;
+}
+
+.lang-pill.active {
+    background: rgba(99,179,237,0.2);
+    border-color: rgba(99,179,237,0.5);
+}
+
+.lang-pill__flag {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.lang-pill__code {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* ============================================
    SETTINGS MENU
    ============================================ */
 

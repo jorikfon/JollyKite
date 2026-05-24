@@ -19,10 +19,10 @@ export class ForecastCollector {
   /**
    * Fetch wind forecast from Open-Meteo
    */
-  async fetchWindForecast(baseUrl = null) {
+  async fetchWindForecast(baseUrl = null, days = 3) {
     const [lat, lon] = this.spotLocation;
     const timezone = 'Asia/Bangkok';
-    const daysToShow = 3;
+    const daysToShow = Math.min(Math.max(parseInt(days) || 3, 1), 16);
     const apiBase = baseUrl || this.forecastApiUrl;
 
     try {
@@ -94,7 +94,7 @@ export class ForecastCollector {
     const startHour = 6;
     const endHour = 19;
     const hourInterval = 1;
-    const daysToShow = 3;
+    const daysToShow = Math.floor((hourly.time?.length || 72) / 24);
 
     for (let day = 0; day < daysToShow; day++) {
       for (let hour = startHour; hour <= endHour; hour += hourInterval) {

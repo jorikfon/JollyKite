@@ -89,8 +89,7 @@ class MenuController {
    * Установить обработчики событий
    */
   setupEventListeners() {
-    // Открытие меню
-    this.menuButton.addEventListener('click', () => this.open());
+    // Открытие меню — теперь триггерится из nav dropdown, не напрямую с кнопки
 
     // Закрытие меню
     this.closeButton?.addEventListener('click', () => this.close());

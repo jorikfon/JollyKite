@@ -84,10 +84,14 @@ class MonthlyRideableStats {
   }
 
   async fetchStats(sport, weight, signal) {
+    // Months count: from January 2024 up to now (Bangkok) — covers full imported history.
+    const now = new Date();
+    const monthsSince2024 = (now.getUTCFullYear() - 2024) * 12 + (now.getUTCMonth() + 1);
+    const months = Math.min(Math.max(monthsSince2024, 12), 60);
     const url = `${this.apiUrl}/archive/monthly-rideable`
       + `?sport=${encodeURIComponent(sport)}`
       + `&weight=${encodeURIComponent(weight)}`
-      + `&months=12`;
+      + `&months=${months}`;
     const response = await fetch(url, { signal });
     if (!response.ok) throw new Error(`API returned ${response.status}`);
     return response.json();
