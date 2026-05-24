@@ -53,7 +53,8 @@
 | `WindDataCollector` | Опрос 4 публичных станций Ambient Weather (`lightning.ambientweather.net/devices?public.slug=`). Конверсия MPH→knots, усреднение по станциям, запись каждого станционного отсчёта отдельной строкой. Использует прокси, если задан `AMBIENT_PROXY_URL`. |
 | `ForecastCollector` | Опрос Open-Meteo (`/v1/forecast`), 3-дневный почасовой прогноз. Поправочные коэффициенты на локальный микроклимат. Конверсия км/ч→knots. |
 | `ForecastModelManager` | Оркестрация 5 моделей Open-Meteo. Каждые 3 часа сохраняет снапшоты в `forecast_snapshots`. Раз в сутки оценивает точность каждой модели за последние 14 дней по фактическим архивным данным. Когда накоплено ≥10 точек — автоматически выбирает наиболее точную модель как «лучшую». |
-| `AmbientHistoryImporter` | Импорт исторических данных с публичного эндпоинта `lightning.ambientweather.net/device-data?...&dataKey=graphDataRefined`. Постранично (по 2000 точек / ~7 дней), идемпотентно. Поддерживает разовый импорт диапазона и ежедневный «дозбор». После вставки пересчитывает затронутые часы в `hourly_archive`. |
+| `AmbientHistoryImporter` | Импорт исторических данных с публичного эндпоинта `lightning.ambientweather.net/device-data?...&dataKey=graphDataRefined`. Постранично (по 2000 точек / ~7 дней), идемпотентно. Поддерживает разовый импорт диапазона и ежедневный «дозбор». После вставки пересчитывает затронутые часы в `hourly_archive`. Сейчас в БД: `pak_nam_pran` с 2024-01-03, `pvf2_thap_tai` с ~2024-01-31, `hua_hin` с ~2023-02-28; известный гэп источника `pak_nam_pran` 2024-07-26..2024-08-06. |
+| `ForecastBacktestImporter` | Бэктест 5 моделей прогноза на всю историю архива через публичный `historical-forecast-api.open-meteo.com`. Чанки по 90 дней, конверсия в узлы, идемпотентный `INSERT … ON CONFLICT DO UPDATE`, после загрузки одним `UPDATE … FROM hourly_archive` подтягиваются актуалы и считаются ошибки. Текущий лидер по RMSE — ECMWF IFS; все модели систематически завышают ветер на 1.8–3.6 узлов (локальный bias). |
 | `NotificationManager` | Web Push (VAPID) + APNs. Алгоритм стабильности: ветер ≥8 узлов 15 минут (3 подряд 5-минутных измерения), разброс направления ≤45°, гасты не критичны (max−avg ≤8 узлов), тренд не падает резко. Максимум 1 уведомление в сутки на подписку. |
 | `APNsProvider` | HTTP/2 + JWT, токен кешируется 50 минут. Читает `.p8` из `APNS_KEY_FILE`. Если ключ не задан — провайдер тихо отключается. |
 | `CalibrationManager` | Постоянный JSON-сдвиг направления ветра (±180°) для коррекции показаний станций. |
@@ -68,6 +69,7 @@
 | Ежедневно 20:00 | Оценка точности прогноза | `ForecastModelManager` |
 | Ежедневно 00:05 | Чистка `wind_data` старше 3650 дней | `DatabaseManager` |
 | Еженедельно, воскресенье 01:00 | Чистка снапшотов прогноза >14 дней | `ForecastModelManager` |
+| Еженедельно, воскресенье 03:00 | Догон backtest за последние 14 дней | `ForecastBacktestImporter` |
 
 ### 2.4. Схема БД
 
@@ -101,6 +103,20 @@ forecast_snapshots
   wind_direction  NUMERIC
   precipitation_probability NUMERIC
 
+forecast_backtest
+  id                  SERIAL PK
+  model_id            TEXT
+  target_date         DATE
+  target_hour         INTEGER  -- 0..23 Bangkok, фильтр 6..19 при вставке
+  forecast_speed      DOUBLE PRECISION  -- knots
+  forecast_direction  INTEGER
+  forecast_gust       DOUBLE PRECISION
+  actual_speed        DOUBLE PRECISION  -- из hourly_archive (UPDATE после импорта)
+  actual_direction    INTEGER
+  speed_error         DOUBLE PRECISION
+  direction_error     DOUBLE PRECISION
+  UNIQUE (model_id, target_date, target_hour)
+
 -- JSON-файлы (PVC, не БД): подписки Web Push, токены APNs, калибровка, состояние коллектора.
 ```
 
@@ -118,11 +134,14 @@ forecast_snapshots
 | GET | `/wind/today/gradient?start=6&end=20&interval=5` | Сегодня агрегированно для градиентного бара |
 | GET | `/wind/statistics/:hours?` | Min/max/avg/тренд за период |
 | GET | `/wind/trend` | Направление тренда (растёт/падает/стабильно) |
-| GET | `/wind/forecast?model=` | Прогноз 3 дня (по умолчанию — лучшая модель) |
+| GET | `/wind/forecast?model=&days=` | Прогноз на N дней (1..16, по умолчанию 3), модель — лучшая или указанная |
 | GET | `/wind/forecast/models` | Список 5 моделей с метриками точности |
 | GET | `/wind/forecast/compare` | Все модели сравнительно |
 | POST | `/wind/forecast/snapshot` | Принудительный снапшот всех моделей |
 | POST | `/wind/forecast/evaluate` | Принудительная оценка точности |
+| POST | `/wind/forecast/backtest` | Бэктест моделей через historical-forecast-api. Body: `{from, to, days?, modelIds?}`. Идемпотентно. |
+| GET | `/wind/forecast/backtest/summary` | RMSE/MAE/Bias по моделям + период наблюдений |
+| GET | `/wind/forecast/backtest/by-month` | MAE/Bias моделей по календарным месяцам (сезонный дрейф) |
 | GET | `/wind/today/full` | История за сегодня + прогноз |
 | POST | `/wind/collect` | Принудительный сбор сейчас |
 | POST | `/wind/import` | Импорт исторических данных. Body/query: `from`, `to` (ISO), либо `days` (по умолчанию 365); опционально `stationIds`. |
@@ -204,24 +223,27 @@ forecast_snapshots
 
 ### 3.2. Архитектура
 
-Координатор-паттерн: `App.js` создаёт менеджеры и связывает их через события/прямые вызовы. Каждый менеджер — отдельный ES6-класс.
+Координатор-паттерн: `App.js` создаёт менеджеры и связывает их через события/прямые вызовы. Каждый менеджер — отдельный ES6-класс. Hash-router (`NavController`) переключает три страницы (`home`, `forecast`, `history`) показом/скрытием элементов с атрибутом `data-route`.
 
 ```
 App.js
-├── WindDataManager       — fetch + 30-сек цикл + SSE-подписка
-├── MapController         — Leaflet, маркеры станций
-├── ForecastManager       — 3-дневный прогноз, переключение моделей
-├── WindArrowController   — стрелка-роза ветров
-├── HistoryManager        — LocalStorage кэш
-├── WindStatistics        — расчёт трендов
-├── TodayWindTimeline     — сегодняшний график (Canvas)
-├── WeekWindHistory       — недельные графики
-├── MonthlyRideableStats  — помесячная статистика + разворот по дням
-├── NotificationManager   — Web Push подписка
+├── NavController          — выпадашка справа сверху + hash-роутер + язык
+├── WindDataManager        — fetch + 30-сек цикл + SSE-подписка
+├── MapController          — Leaflet, маркеры станций
+├── ForecastManager        — 3-дневный прогноз на главной + переиспользуется для 10-дневного
+├── ForecastLongPage       — оборачивает ForecastManager: 10 дней + название активной модели (страница /#/forecast)
+├── ForecastAccuracy       — таблица RMSE/MAE/Bias по моделям из /api/wind/forecast/backtest/summary
+├── WindArrowController    — стрелка-роза ветров
+├── HistoryManager         — LocalStorage кэш
+├── WindStatistics         — расчёт трендов
+├── TodayWindTimeline      — сегодняшний график (Canvas)
+├── WeekWindHistory        — недельные графики
+├── MonthlyRideableStats   — 12-баров «средние катабельные дни по месяцам года» + подробный список с янв 2024 (страница /#/history)
+├── NotificationManager    — Web Push подписка
 └── settings/
     ├── SettingsManager
     ├── LocalStorageManager
-    └── MenuController
+    └── MenuController     — боковая панель настроек (без секции языка — она переехала в nav-dropdown)
 ```
 
 Утилиты: `WindUtils` (безопасность, конверсии), `UnitConverter` (knots ↔ м/с ↔ км/ч ↔ mph), `KiteSizeCalculator` (подбор кайта).
