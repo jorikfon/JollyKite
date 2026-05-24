@@ -74,6 +74,88 @@ class MonthlyRideableStats {
     return this.t(keys[sport] || keys.twintip, fallbacks[sport] || sport);
   }
 
+  /**
+   * Aggregate rideable days by calendar month (Jan..Dec) across all years.
+   * Only considers months that are mostly complete (totalDays ≥ 20) so a
+   * partial current month doesn't pull averages down.
+   */
+  _renderAveragesByMonth(months, barGradient, daysLabel) {
+    if (!Array.isArray(months) || months.length === 0) return '';
+
+    const buckets = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+    for (const m of months) {
+      if (!m || m.totalDays == null || m.totalDays < 20) continue;
+      const parts = m.month.split('-');
+      const mm = parseInt(parts[1], 10);
+      if (!(mm >= 1 && mm <= 12)) continue;
+      buckets[mm - 1].sum += m.rideableDays || 0;
+      buckets[mm - 1].count += 1;
+    }
+
+    const averages = buckets.map((b, i) => ({
+      month: i + 1,
+      avg: b.count > 0 ? b.sum / b.count : null,
+      years: b.count
+    }));
+
+    const hasAny = averages.some(a => a.avg !== null);
+    if (!hasAny) return '';
+
+    const maxAvg = Math.max(1, ...averages.map(a => a.avg || 0));
+    const locale = this.i18n ? this.i18n.getFullLocale() : 'ru-RU';
+    const monthName = (mm) => {
+      const d = new Date(Date.UTC(2024, mm - 1, 1));
+      return d.toLocaleDateString(locale, { month: 'short', timeZone: 'UTC' }).replace('.', '');
+    };
+
+    const title = this.t('history.monthly.averageTitle', 'Среднее по месяцам года');
+    const hint = this.t('history.monthly.averageHint', 'Усреднено по доступным годам');
+
+    const bars = averages.map(a => {
+      const heightPct = a.avg !== null ? (a.avg / maxAvg) * 100 : 0;
+      const isEmpty = a.avg === null;
+      const valueLabel = isEmpty ? '—' : a.avg.toFixed(1);
+      return `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <div style="font-size: 0.78rem; font-weight: 600; color: #fff; text-align: center; min-height: 14px; font-variant-numeric: tabular-nums;">
+            ${valueLabel}
+          </div>
+          <div style="position: relative; width: 100%; height: 90px; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden;">
+            <div style="
+              position: absolute; left: 0; right: 0; bottom: 0;
+              height: ${heightPct}%;
+              background: ${barGradient};
+              opacity: ${isEmpty ? 0.2 : 1};
+              border-radius: 6px;
+              box-shadow: 0 0 6px rgba(255,255,255,0.15);
+              transition: height 0.6s ease-out;
+            "></div>
+          </div>
+          <div style="font-size: 0.7rem; color: rgba(255,255,255,0.7); text-align: center; text-transform: capitalize;">
+            ${monthName(a.month)}
+          </div>
+          <div style="font-size: 0.62rem; color: rgba(255,255,255,0.4); text-align: center;">
+            ${a.years > 0 ? `${a.years}${this.t('history.monthly.yearsShort', 'г')}` : '—'}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div style="margin-bottom: 18px;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: rgba(255,255,255,0.9); margin: 4px 0 6px; padding: 0 4px;">
+          ${title} <span style="font-size: 0.65rem; font-weight: 400; opacity: 0.7;">· ${daysLabel}</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px;">
+          ${bars}
+        </div>
+        <div style="font-size: 0.65rem; color: rgba(255,255,255,0.4); text-align: center; margin-top: 6px;">
+          ${hint}
+        </div>
+      </div>
+    `;
+  }
+
   formatMonthLabel(monthKey) {
     const [year, month] = monthKey.split('-').map(n => parseInt(n, 10));
     const date = new Date(Date.UTC(year, month - 1, 1));
@@ -225,6 +307,8 @@ class MonthlyRideableStats {
       `;
     }).join('');
 
+    const averagesBlock = this._renderAveragesByMonth(payload.months, barGradient, daysLabel);
+
     this.container.innerHTML = `
       <div style="padding: 0 16px;">
         <div style="text-align: center; margin-bottom: 12px;">
@@ -234,6 +318,10 @@ class MonthlyRideableStats {
           <div style="font-size: 0.7rem; color: rgba(255,255,255,0.55); margin-top: 2px;">
             ${rangeLabel}: ${fmtSpeed(payload.minWind)}–${fmtSpeed(payload.maxWind)} ${unitSymbol}
           </div>
+        </div>
+        ${averagesBlock}
+        <div style="font-size: 0.8rem; color: rgba(255,255,255,0.65); margin: 18px 0 8px; padding: 0 4px;">
+          ${this.t('history.monthly.breakdownTitle', 'Подробно по месяцам')}
         </div>
         <div data-monthly-list>${rows}</div>
       </div>

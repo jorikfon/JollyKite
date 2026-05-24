@@ -157,6 +157,10 @@ export default {
       hoursShort: 'ч',
       kg: 'кг',
       range: 'твой ветер',
+      averageTitle: 'Среднее по месяцам года',
+      averageHint: 'Усреднено по полным месяцам всех лет — для планирования отпуска',
+      breakdownTitle: 'Подробно по месяцам',
+      yearsShort: 'г',
     },
   },
 

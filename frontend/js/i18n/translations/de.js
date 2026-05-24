@@ -156,6 +156,10 @@ export default {
       hoursShort: 'Std',
       kg: 'kg',
       range: 'dein Wind',
+      averageTitle: 'Durchschnitt pro Kalendermonat',
+      averageHint: 'Gemittelt über vollständige Monate aller Jahre — für die Urlaubsplanung',
+      breakdownTitle: 'Detailliert nach Monaten',
+      yearsShort: 'J',
     },
   },
 

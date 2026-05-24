@@ -156,6 +156,10 @@ export default {
       hoursShort: 'ชม.',
       kg: 'กก.',
       range: 'ลมของคุณ',
+      averageTitle: 'ค่าเฉลี่ยรายเดือนตามปฏิทิน',
+      averageHint: 'เฉลี่ยจากเดือนที่ครบทุกปี — สำหรับวางแผนเที่ยว',
+      breakdownTitle: 'รายละเอียดแต่ละเดือน',
+      yearsShort: 'ปี',
     },
   },
 

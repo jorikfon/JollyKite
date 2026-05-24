@@ -156,6 +156,10 @@ export default {
       hoursShort: 'h',
       kg: 'kg',
       range: 'your wind',
+      averageTitle: 'Average by calendar month',
+      averageHint: 'Averaged over complete months across all years — for trip planning',
+      breakdownTitle: 'Month-by-month breakdown',
+      yearsShort: 'y',
     },
   },
 
