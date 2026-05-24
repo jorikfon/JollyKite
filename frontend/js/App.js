@@ -119,13 +119,13 @@ class App {
                     if (this.forecastLongPage.init()) {
                         await this.forecastLongPage.display();
                     }
+                    if (this.forecastAccuracy.init()) {
+                        await this.forecastAccuracy.display();
+                    }
                 } else if (route === 'history') {
                     // Monthly stats already inits on load; refresh just in case unit changed.
                     if (this.monthlyRideableStats) {
                         await this.monthlyRideableStats.display();
-                    }
-                    if (this.forecastAccuracy.init()) {
-                        await this.forecastAccuracy.display();
                     }
                 }
             });

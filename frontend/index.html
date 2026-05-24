@@ -270,15 +270,16 @@
                         <!-- Индикатор текущей скорости -->
                         <div id="windSpeedIndicator" style="position: absolute; top: -5px; bottom: -5px; width: 4px; background: #fff; border-radius: 2px; box-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5); left: 0%; transition: left 0.5s ease-out;"></div>
                     </div>
-                    <!-- Метки на баре -->
-                    <div id="windBarLabels" style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7);">
-                        <span>0</span>
-                        <span>5</span>
-                        <span>10</span>
-                        <span>15</span>
-                        <span>20</span>
-                        <span>25</span>
-                        <span>30+</span>
+                    <!-- Метки на баре: абсолютное позиционирование — центры меток совпадают
+                         с теми же процентами по шкале, что и индикатор (knots / 30 × 100%). -->
+                    <div id="windBarLabels" style="position: relative; height: 16px; margin-top: 8px; font-size: 0.7rem; color: rgba(255,255,255,0.7);">
+                        <span style="position: absolute; left: 0%; transform: translateX(-50%);">0</span>
+                        <span style="position: absolute; left: 16.67%; transform: translateX(-50%);">5</span>
+                        <span style="position: absolute; left: 33.33%; transform: translateX(-50%);">10</span>
+                        <span style="position: absolute; left: 50%; transform: translateX(-50%);">15</span>
+                        <span style="position: absolute; left: 66.67%; transform: translateX(-50%);">20</span>
+                        <span style="position: absolute; left: 83.33%; transform: translateX(-50%);">25</span>
+                        <span style="position: absolute; left: 100%; transform: translateX(-50%);">30+</span>
                     </div>
                 </div>
 
@@ -405,6 +406,10 @@
                     <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading forecast...</p>
                 </div>
             </div>
+
+            <h3 class="text-center text-base sm:text-lg font-semibold text-white/90 mt-8 mb-3"
+                data-i18n="history.accuracy.title">🎯 Точность моделей прогноза</h3>
+            <div id="forecastAccuracy" class="overflow-hidden min-h-[80px]"></div>
         </section>
 
         <!-- Страница: История катабельных дней -->
@@ -416,10 +421,6 @@
                     <p class="text-white/80 text-sm" data-i18n="trends.loading">Loading data...</p>
                 </div>
             </div>
-
-            <h3 class="text-center text-base sm:text-lg font-semibold text-white/90 mt-8 mb-3"
-                data-i18n="history.accuracy.title">🎯 Точность моделей прогноза</h3>
-            <div id="forecastAccuracy" class="overflow-hidden min-h-[80px]"></div>
         </section>
 
         <!-- Боковое меню настроек -->
