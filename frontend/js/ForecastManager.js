@@ -145,9 +145,16 @@ class ForecastManager {
         Object.entries(dayGroups).forEach(([dayKey, group], dayIndex) => {
             const dayName = this.getDayName(new Date(dayKey));
 
-            // Extract data for smooth curves (always in knots internally)
-            const windSpeeds = group.map(h => parseFloat(h.speed));
-            const waveHeights = group.map(h => h.waveHeight !== undefined ? parseFloat(h.waveHeight) : 0);
+            // Extract data for smooth curves (always in knots internally).
+            // Marine API caps at ~7 days, so for a 10-day forecast the trailing
+            // days may have null/undefined wave entries — coerce to 0 to keep
+            // SVG paths free of NaN.
+            const safeNum = (v, fallback = 0) => {
+                const n = parseFloat(v);
+                return Number.isFinite(n) ? n : fallback;
+            };
+            const windSpeeds = group.map(h => safeNum(h.speed));
+            const waveHeights = group.map(h => safeNum(h.waveHeight));
             const times = group.map(h => h.time);
 
             // SVG dimensions
@@ -158,9 +165,9 @@ class ForecastManager {
             const padding = { top: 35, right: 30, bottom: 50, left: 50 };  // More padding for text and rain droplets
             const chartWidth = width - padding.left - padding.right;
 
-            // Find max values for scaling
-            const maxWindSpeed = Math.max(...windSpeeds) * 1.1;
-            const maxWaveHeight = Math.max(...waveHeights, 0.5) * 1.2;
+            // Find max values for scaling (floor at >0 so we never divide by zero)
+            const maxWindSpeed = Math.max(1, ...windSpeeds) * 1.1;
+            const maxWaveHeight = Math.max(0.5, ...waveHeights) * 1.2;
 
             // Create smooth paths
             const windPath = this.createSmoothPath(windSpeeds, chartWidth, windHeight, maxWindSpeed);
