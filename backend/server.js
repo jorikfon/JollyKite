@@ -79,7 +79,7 @@ const historyImporter = new AmbientHistoryImporter(
   config.stations, dbManager, archiveManager, windCollector, windCollector.ambientProxy
 );
 const backtestImporter = new ForecastBacktestImporter(
-  pgPool, forecastModelManager.models
+  pgPool, forecastModelManager.models, forecastCollector.dispatcher
 );
 
 // Middleware

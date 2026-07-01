@@ -27,7 +27,7 @@ spec:
             - name: AMBIENT_WEATHER_API
               value: "https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504"
             - name: AMBIENT_PROXY_URL
-              value: "http://172.205.184.88:3128"
+              value: "http://2.27.5.105:3128"
             - name: OPEN_METEO_API
               value: "https://api.open-meteo.com/v1/forecast"
             - name: DATA_COLLECTION_INTERVAL

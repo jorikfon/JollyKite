@@ -1,3 +1,6 @@
+import { Agent, ProxyAgent } from 'undici';
+import dns from 'node:dns';
+
 /**
  * ForecastCollector - fetches wind forecast from Open-Meteo API
  */
@@ -7,6 +10,43 @@ export class ForecastCollector {
     this.forecastApiUrl = config.openMeteoApi;
     this.marineApiUrl = 'https://marine-api.open-meteo.com/v1/marine';
     this.spotLocation = [12.346596280786017, 99.99817902532192];
+
+    // Open-Meteo egress.
+    // From the k3s cluster, Open-Meteo's Hetzner IPv4 addresses are unreachable
+    // (TCP connect to :443 times out), and there is no usable IPv6 either —
+    // Open-Meteo's authoritative DNS currently returns SERVFAIL for AAAA. So in
+    // production we tunnel forecast requests through the same HTTP proxy used for
+    // Ambient Weather, which resolves and reaches Open-Meteo fine. The proxy URL
+    // comes from FORECAST_PROXY_URL, falling back to AMBIENT_PROXY_URL.
+    const proxyUrl = process.env.FORECAST_PROXY_URL || process.env.AMBIENT_PROXY_URL;
+    if (proxyUrl) {
+      this.dispatcher = new ProxyAgent(proxyUrl);
+      console.log(`✓ Open-Meteo proxy enabled: ${proxyUrl}`);
+    } else {
+      // No proxy (local dev): connect directly, but force IPv4 via c-ares
+      // (dns.resolve4) so a SERVFAIL on Open-Meteo's AAAA record cannot break the
+      // lookup. On musl (Alpine) getaddrinfo fails the WHOLE resolve on the AAAA
+      // SERVFAIL even when family: 4 is requested; dns.resolve4 sends a bare A
+      // query via c-ares, never touching getaddrinfo or AAAA.
+      this.dispatcher = new Agent({ connect: { lookup: this.ipv4Lookup.bind(this) } });
+    }
+  }
+
+  /**
+   * undici connect.lookup hook — resolve A records only via c-ares (dns.resolve4),
+   * bypassing musl getaddrinfo so a SERVFAIL on AAAA cannot fail the lookup.
+   */
+  ipv4Lookup(hostname, options, callback) {
+    dns.resolve4(hostname, (err, addresses) => {
+      if (err) return callback(err);
+      if (!addresses || addresses.length === 0) {
+        return callback(new Error(`No A record for ${hostname}`));
+      }
+      if (options && options.all) {
+        return callback(null, addresses.map((address) => ({ address, family: 4 })));
+      }
+      return callback(null, addresses[0], 4);
+    });
   }
 
   /**
@@ -35,6 +75,7 @@ export class ForecastCollector {
 
       const windResponse = await fetch(windUrl, {
         signal: windController.signal,
+        dispatcher: this.dispatcher,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           'Referer': 'https://jollykite.com/'
@@ -57,6 +98,7 @@ export class ForecastCollector {
 
       const marineResponse = await fetch(marineUrl, {
         signal: marineController.signal,
+        dispatcher: this.dispatcher,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           'Referer': 'https://jollykite.com/'
