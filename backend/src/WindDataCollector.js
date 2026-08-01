@@ -13,7 +13,7 @@ export class WindDataCollector {
     this.primaryStationId = this.stations.find(s => s.isPrimary)?.id || 'pak_nam_pran';
 
     // ambientweather.net is blocked in Russia — route ambient requests through an HTTP proxy.
-    // Configure via AMBIENT_PROXY_URL env var, e.g. http://172.205.184.88:3128
+    // Configure via AMBIENT_PROXY_URL env var, e.g. http://10.255.248.2:1080 (mihomo mixed port)
     const proxyUrl = process.env.AMBIENT_PROXY_URL;
     this.ambientProxy = proxyUrl ? new ProxyAgent(proxyUrl) : null;
     if (this.ambientProxy) {

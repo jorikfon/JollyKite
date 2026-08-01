@@ -78,7 +78,7 @@ Hash-based роутинг в `frontend/js/NavController.js`. Главная кн
 ## Критичные правила
 
 - **Безопасность направления ветра зашита под Pak Nam Pran.** Offshore 225°–315° (опасно), onshore 45°–135° (безопасно), остальное — sideshore. Логика дублирована в `frontend/js/utils/WindUtils.js` и `apple/JollyKiteShared/.../WindSafetyService.swift` — изменения вносить в обоих местах.
-- **Внешний трафик идёт через HTTP-прокси.** Ambient Weather заблокирован в РФ, а к IPv4 Open-Meteo (Hetzner) из кластера нет прямого egress (TCP-коннект на :443 таймаутит, IPv6 недоступен — авторитетный AAAA отдаёт SERVFAIL). Поэтому **и Ambient, и прогноз Open-Meteo туннелируются через прокси** `AMBIENT_PROXY_URL` (текущий — `http://2.27.5.105:3128`; прогноз можно переопределить через `FORECAST_PROXY_URL`). Прокси задаётся в `k8s/argocd/backend.yaml` (правка через репозиторий — ArgoCD auto-sync с `selfHeal`, kubectl-патчи откатываются). Без прокси `ForecastCollector` фоллбэчит на прямой fetch с форсом IPv4 через `dns.resolve4` (c-ares, в обход musl getaddrinfo) — только для локалки.
+- **Внешний трафик идёт через HTTP-прокси.** Ambient Weather заблокирован в РФ, а к IPv4 Open-Meteo (Hetzner) из кластера нет прямого egress (TCP-коннект на :443 таймаутит, IPv6 недоступен — авторитетный AAAA отдаёт SERVFAIL). Поэтому **и Ambient, и прогноз Open-Meteo туннелируются через прокси** `AMBIENT_PROXY_URL` (текущий — `http://10.255.248.2:1080`, mixed-порт mihomo: балансировка по трём VLESS-выходам, переживает ротацию exit-нод; прогноз можно переопределить через `FORECAST_PROXY_URL`). Это адрес host-level туннеля, а **не** Service внутри кластера — пода/сервиса mihomo в k8s нет, искать его там бесполезно; при этом он доступен с разных нод (проверено с `k3s-agent2` и `k3s-agent12`), так что переезд пода egress не ломает. Прокси задаётся в `k8s/argocd/backend.yaml` (правка через репозиторий — ArgoCD auto-sync с `selfHeal`, kubectl-патчи откатываются). Без прокси `ForecastCollector` фоллбэчит на прямой fetch с форсом IPv4 через `dns.resolve4` (c-ares, в обход musl getaddrinfo) — только для локалки.
 - **Конверсия единиц.** Ambient отдаёт MPH, Open-Meteo — км/ч (для backtest запрашиваем сразу в узлах через `wind_speed_unit=kn`); во всех слоях работаем в **узлах**.
 - **Идемпотентность вставок.** `wind_data` имеет уникальный индекс `(station_id, timestamp)`, `hourly_archive` — `(station_id, hour_timestamp)`, `forecast_backtest` — `(model_id, target_date, target_hour)`. Любой импорт использует `ON CONFLICT DO NOTHING`/`DO UPDATE`.
 - **Не добавляй в git без явного запроса** (см. `~/.claude/CLAUDE.md`).
@@ -106,6 +106,20 @@ Hash-based роутинг в `frontend/js/NavController.js`. Главная кн
 - PWA: DevTools → Application (Manifest, SW, Cache, LocalStorage). Прямые URL для скрытых страниц: `/setup.html`.
 - iOS: Xcode Console для SSE; пуши — `PushNotificationService`; виджет — App Group через `SharedDataStore`.
 - Backtest: `GET /api/wind/forecast/backtest/summary` (RMSE/MAE/Bias по моделям), `GET /api/wind/forecast/backtest/by-month` (сезонный bias).
+- **Прокси.** При старте пода в логах должны быть обе строки: `✓ Ambient Weather proxy enabled: <url>` и `✓ Open-Meteo proxy enabled: <url>`. Живая проверка прямо из пода тем же клиентом, что и в проде (`undici.ProxyAgent`):
+
+  ```bash
+  POD=$(kubectl get pods -n jollykite -l app=jollykite-backend -o jsonpath='{.items[0].metadata.name}')
+  kubectl exec -n jollykite $POD -- node -e "
+    const {ProxyAgent}=require('undici');
+    const a=new ProxyAgent(process.env.AMBIENT_PROXY_URL);
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=12.3466&longitude=99.9982&hourly=wind_speed_10m&forecast_days=1',{dispatcher:a})
+      .then(r=>console.log('open-meteo', r.status)).catch(e=>console.log('ERR', e.message));
+  "
+  ```
+
+- **Разные станции ломаются по-разному.** `GET /api/stations/current` показывает `timestamp` каждой станции — это первое, что стоит смотреть. Если Ambient отвечает, но `timestamp` замер на месте, значит офлайн сама метеостанция: `WindDataCollector` берёт время из `lastData.dateutc`, повторная вставка глушится `ON CONFLICT DO NOTHING`, и в логах всё равно бодрое `✓ Got data from N/4`. Прокси и код тут ни при чём — проверяется запросом к Ambient напрямую из пода.
+- **Главная страница завязана на `pak_nam_pran`.** `getLatestData`/`getStatistics`/`getDataByHours` по умолчанию фильтруют по этой станции, поэтому её простой обнуляет `/api/wind/current`, статистику за 24 ч и `/api/wind/history/24` — даже когда остальные станции пишут данные исправно.
 
 ---
 

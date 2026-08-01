@@ -175,7 +175,7 @@ forecast_backtest
 
 ### 2.6. Внешние интеграции
 
-**Ambient Weather Network** — 4 публичных станции вокруг Pak Nam Pran. Без авторизации. Real-time: `https://lightning.ambientweather.net/devices?public.slug=<slug>`, история: `.../device-data?macAddress=...&start=&end=&limit=2000&res=5&dataKey=graphDataRefined`. Скорость — в MPH, конверсия в узлы на нашей стороне. **Важно:** домен заблокирован в России (DPI), поэтому все запросы идут через HTTP-прокси `AMBIENT_PROXY_URL` (по умолчанию `http://172.205.184.88:3128`).
+**Ambient Weather Network** — 4 публичных станции вокруг Pak Nam Pran. Без авторизации. Real-time: `https://lightning.ambientweather.net/devices?public.slug=<slug>`, история: `.../device-data?macAddress=...&start=&end=&limit=2000&res=5&dataKey=graphDataRefined`. Скорость — в MPH, конверсия в узлы на нашей стороне. **Важно:** домен заблокирован в России (DPI), поэтому все запросы идут через HTTP-прокси `AMBIENT_PROXY_URL`. Дефолта в коде нет — без переменной прокси просто не используется; актуальное значение задаётся в `k8s/argocd/backend.yaml` (сейчас `http://10.255.248.2:1080`, mixed-порт mihomo).
 
 **Open-Meteo Forecast** — 5 моделей, бесплатно, без авторизации. Скорости — в км/ч, конверсия в узлы. Météo-France не отдаёт `precipitation_probability`.
 
@@ -384,7 +384,8 @@ kubectl -n jollykite create secret generic apns-credentials \
 | Имя | Значение |
 |---|---|
 | `PG_*` / `DATABASE_URL` | Подключение к PostgreSQL |
-| `AMBIENT_PROXY_URL` | HTTP-прокси для Ambient Weather (обход DPI) |
+| `AMBIENT_PROXY_URL` | HTTP-прокси для Ambient Weather и Open-Meteo (обход DPI / отсутствия egress). Дефолта нет |
+| `FORECAST_PROXY_URL` | Отдельный прокси только для прогноза; при отсутствии берётся `AMBIENT_PROXY_URL` |
 | `APNS_KEY_FILE`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID` | APNs (опционально) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push |
 | `PORT` | По умолчанию 3000 |
