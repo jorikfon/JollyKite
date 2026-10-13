@@ -31,6 +31,7 @@ const config = {
     // Update Intervals (in milliseconds)
     intervals: {
         autoUpdate: 30000, // 30 seconds for wind data updates
+        windRequestTimeout: 10000, // abort a hung /wind/current so the next poll can send a new one
         trendAnalysis: 5 * 60 * 1000 // 5 minutes for trend analysis
     },
 

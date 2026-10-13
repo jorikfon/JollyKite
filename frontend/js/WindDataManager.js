@@ -11,7 +11,9 @@ class WindDataManager {
     async fetchCurrentWindData() {
         try {
             // Fetch current wind data from backend API
-            const response = await fetch(`${this.backendApiUrl}/wind/current`);
+            const response = await fetch(`${this.backendApiUrl}/wind/current`, {
+                signal: AbortSignal.timeout(config.intervals.windRequestTimeout)
+            });
 
             if (!response.ok) {
                 throw new Error(`Backend returned ${response.status}`);

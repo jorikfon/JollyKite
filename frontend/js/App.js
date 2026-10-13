@@ -49,7 +49,9 @@ class App {
         this.forecastAccuracy = new ForecastAccuracy(this.i18nManager);
 
         this.windArrowController = null; // Будет инициализирован после карты
-        this.updateInterval = null;
+        this.updateInterval = null; // опрос /wind/current; не null = живые обновления включены
+        this.windRequest = null; // текущий GET /wind/current (single-flight)
+        this.listeners = new AbortController(); // снимает подписки init() в destroy()
         this.historyUpdateInterval = null;
         this.liveCounterInterval = null;
         this.workingHoursCheckInterval = null;
@@ -113,6 +115,7 @@ class App {
             }
 
             // 4b. Навигационный роутер: подписку ставим до init(), чтобы поймать первый routeChanged
+            const { signal } = this.listeners;
             window.addEventListener('routeChanged', async (e) => {
                 const route = e.detail.route;
                 if (route === 'forecast') {
@@ -128,7 +131,7 @@ class App {
                         await this.monthlyRideableStats.display();
                     }
                 }
-            });
+            }, { signal });
 
             this.navController = new NavController(this.menuController);
             if (this.navController.init()) {
@@ -144,7 +147,7 @@ class App {
                 }
                 // Перерисовать графики
                 await this.loadInitialData();
-            });
+            }, { signal });
 
             // Подписка на изменение настроек райдера
             window.addEventListener('riderSettingsChanged', () => {
@@ -158,7 +161,7 @@ class App {
                         this.kiteSizeSlider.onSettingsChange();
                     }
                 }
-            });
+            }, { signal });
 
             // === ФАЗА 2: Инициализация основного приложения ===
 
@@ -223,22 +226,26 @@ class App {
                 console.log('✓ Менеджер истории готов');
             }
 
-            // Загрузка первоначальных данных
+            // Текущий ветер — сразу, не дожидаясь истории и прогноза
+            this.updateWindData().catch(error => {
+                console.error('⚠ Ошибка загрузки данных о ветре:', error);
+                this.showWindError('Ошибка загрузки данных о ветре');
+            });
+
+            // SSE + опрос: включаются/выключаются по видимости вкладки, маршруту и рабочим часам
+            document.addEventListener('visibilitychange', () => this.syncWindUpdates(), { signal });
+            window.addEventListener('routeChanged', () => this.syncWindUpdates(), { signal });
+            this.syncWindUpdates();
+            this.startWorkingHoursCheck();
+
+            // Загрузка графиков и прогноза
             await this.loadInitialData();
 
             // Инициализация кнопки уведомлений (один раз, не при каждом loadInitialData)
             this.setupNotificationButton();
 
-            // Подключение к SSE для real-time обновлений (только в рабочие часы)
-            if (this.isWithinWorkingHours()) {
-                this.connectToWindStream();
-            }
-
             // Запуск обновления истории (forecast обновляется по-прежнему по таймеру)
             this.startHistoryUpdate();
-
-            // Запуск проверки рабочих часов (каждую минуту)
-            this.startWorkingHoursCheck();
 
             // Инициализация Material Design 3 Ripple эффектов
             rippleManager.init();
@@ -255,15 +262,7 @@ class App {
     }
 
     async loadInitialData() {
-        // Загрузка текущих данных о ветре
-        try {
-            await this.updateWindData();
-            console.log('✓ Данные о ветре загружены');
-        } catch (error) {
-            console.error('⚠ Ошибка загрузки данных о ветре:', error);
-            this.showWindError('Ошибка загрузки данных о ветре');
-        }
-
+        // Текущий ветер грузит init() и живые обновления, здесь — только графики и прогноз
         // Загрузка графика на сегодня (история + прогноз)
         try {
             await this.updateTodayTimeline();
@@ -337,38 +336,8 @@ class App {
 
         this.windStreamManager.connect((windData, trend) => {
             try {
-                // Обновление времени последнего обновления из timestamp данных с сервера
-                if (windData.timestamp) {
-                    this.lastUpdateTime = new Date(windData.timestamp);
-                    console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
-                }
-
-                // Получение информации о безопасности
-                const safety = this.windDataManager.getWindSafety(
-                    windData.windDir,
-                    windData.windSpeedKnots
-                );
-
-                // Обновление данных с информацией о безопасности
-                windData.safety = safety;
-
-                // Обновление UI
-                this.updateWindDisplay(windData);
-
-                // Обновление стрелки ветра
-                if (this.windArrowController) {
-                    this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
-                }
-
-                // Добавление измерения в статистику
-                this.windStatistics.addMeasurement(windData);
-
-                // Обновление тренда с данными из backend
-                this.updateWindTrendFromBackend(trend);
-
-                // Сохранение в историю
-                if (this.historyManager.isStorageAvailable()) {
-                    this.historyManager.saveWindData(windData);
+                if (this.applyWindData(windData)) {
+                    this.updateWindTrendFromBackend(trend);
                 }
             } catch (error) {
                 console.error('Ошибка обработки SSE обновления:', error);
@@ -379,52 +348,60 @@ class App {
         this.startLiveCounter();
     }
 
-    async updateWindData() {
-        try {
-            const windData = await this.windDataManager.fetchCurrentWindData();
+    /**
+     * GET /wind/current; параллельные вызовы делят один запрос
+     */
+    updateWindData() {
+        if (!this.windRequest) {
+            this.windRequest = this.windDataManager.fetchCurrentWindData()
+                .then(windData => {
+                    if (this.applyWindData(windData)) {
+                        this.updateWindTrend();
+                    }
+                    return windData;
+                })
+                .catch(error => {
+                    console.error('Ошибка обновления данных о ветре:', error);
+                    throw error;
+                })
+                .finally(() => {
+                    this.windRequest = null;
+                });
+        }
+        return this.windRequest;
+    }
 
-            // Обновление времени последнего обновления из timestamp данных с сервера
-            if (windData.timestamp) {
-                this.lastUpdateTime = new Date(windData.timestamp);
-                console.log('📅 Время данных с ветрометра:', this.lastUpdateTime.toISOString());
-            }
+    /**
+     * Показать замер из GET или SSE. Замер старше показанного отбрасывается,
+     * тот же timestamp только перерисовывается (калибровка), в статистику и историю
+     * попадает лишь новый. Возвращает true только для нового замера (пора обновить тренд).
+     */
+    applyWindData(windData) {
+        windData.timestamp = new Date(windData.timestamp);
+        const shown = this.lastWindData?.timestamp;
+        if (shown && windData.timestamp < shown) {
+            return false;
+        }
+        const isNew = !shown || windData.timestamp > shown;
 
-            // Получение информации о безопасности
-            const safety = this.windDataManager.getWindSafety(
-                windData.windDir,
-                windData.windSpeedKnots
-            );
+        this.lastUpdateTime = windData.timestamp;
+        windData.safety = this.windDataManager.getWindSafety(windData.windDir, windData.windSpeedKnots);
 
-            // Обновление данных с информацией о безопасности
-            windData.safety = safety;
+        // Сохранить данные для перерисовки при изменении единиц
+        this.lastWindData = windData;
+        this.updateWindDisplay(windData);
 
-            // Сохранить данные для перерисовки при изменении единиц
-            this.lastWindData = windData;
+        if (this.windArrowController) {
+            this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
+        }
 
-            // Обновление UI
-            this.updateWindDisplay(windData);
-
-            // Обновление стрелки ветра
-            if (this.windArrowController) {
-                this.windArrowController.updateWind(windData.windDir, windData.windSpeedKnots);
-            }
-
-            // Добавление измерения в статистику
+        if (isNew) {
             this.windStatistics.addMeasurement(windData);
-
-            // Обновление тренда
-            this.updateWindTrend();
-
-            // Сохранение в историю
             if (this.historyManager.isStorageAvailable()) {
                 this.historyManager.saveWindData(windData);
             }
-
-            return windData;
-        } catch (error) {
-            console.error('Ошибка обновления данных о ветре:', error);
-            throw error;
         }
+        return isNew;
     }
 
     /**
@@ -871,50 +848,57 @@ class App {
      * Start periodic check of working hours
      */
     startWorkingHoursCheck() {
-        // Проверка каждую минуту
+        // Проверка каждую минуту: начало/конец рабочих часов включает/выключает живые обновления
         this.workingHoursCheckInterval = setInterval(() => {
-            const wasWorking = this.isWithinWorkingHours();
             this.updateWorkingHoursVisibility();
-            const isWorking = this.isWithinWorkingHours();
-
-            // Если статус изменился
-            if (wasWorking !== isWorking) {
-                if (isWorking) {
-                    // Начались рабочие часы - подключаемся к SSE
-                    console.log('🌅 Начались рабочие часы - подключение к SSE...');
-                    this.connectToWindStream();
-                } else {
-                    // Закончились рабочие часы - отключаемся от SSE
-                    console.log('🌙 Рабочие часы закончились - отключение от SSE...');
-                    if (this.windStreamManager) {
-                        this.windStreamManager.disconnect();
-                    }
-                }
-            }
-        }, 60000); // Проверка каждую минуту
+            this.syncWindUpdates();
+        }, 60000);
 
         console.log('✓ Проверка рабочих часов запущена (каждую минуту)');
     }
 
-    stopAutoUpdate() {
-        // Disconnect from SSE stream
-        if (this.windStreamManager) {
-            this.windStreamManager.disconnect();
-            console.log('SSE соединение закрыто');
+    /**
+     * SSE + опрос GET каждые config.intervals.autoUpdate — только когда вкладка видна,
+     * открыта главная и идут рабочие часы. При включении — сразу свежий запрос.
+     */
+    syncWindUpdates() {
+        const wanted = !document.hidden
+            && this.navController?.currentRoute === 'home'
+            && this.isWithinWorkingHours();
+        if (wanted === Boolean(this.updateInterval)) return;
+
+        if (wanted) {
+            console.log('🌅 Живые обновления ветра включены');
+            this.connectToWindStream();
+            // сбой опроса не затирает показанный замер — его возраст виден в LIVE счетчике
+            const refresh = () => this.updateWindData().catch(() => {
+                if (!this.lastWindData) this.showWindError('Ошибка загрузки данных о ветре');
+            });
+            this.updateInterval = setInterval(refresh, config.intervals.autoUpdate);
+            refresh();
+        } else {
+            console.log('🌙 Живые обновления ветра остановлены');
+            this.stopWindUpdates();
         }
+    }
+
+    stopWindUpdates() {
+        clearInterval(this.updateInterval);
+        this.updateInterval = null;
+        this.windStreamManager.disconnect();
+        clearInterval(this.liveCounterInterval);
+        this.liveCounterInterval = null;
+    }
+
+    stopAutoUpdate() {
+        // SSE, опрос и LIVE счетчик
+        this.stopWindUpdates();
 
         // Stop history updates
         if (this.historyUpdateInterval) {
             clearInterval(this.historyUpdateInterval);
             this.historyUpdateInterval = null;
             console.log('Обновление истории остановлено');
-        }
-
-        // Stop LIVE counter
-        if (this.liveCounterInterval) {
-            clearInterval(this.liveCounterInterval);
-            this.liveCounterInterval = null;
-            console.log('LIVE счетчик остановлен');
         }
 
         // Stop working hours check
@@ -996,9 +980,10 @@ class App {
     destroy() {
         console.log('Завершение работы JollyKite App...');
         
-        // Остановка автообновления
+        // Остановка автообновления и подписок init()
         this.stopAutoUpdate();
-        
+        this.listeners.abort();
+
         // Очистка карты
         this.mapController.destroy();
         

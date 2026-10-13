@@ -34,6 +34,11 @@ export class ApiRouter {
     this.backtestImporter = backtestImporter;
     this.router = express.Router();
     this.sseClients = []; // Connected SSE clients
+    this.windCollector.on('primaryUpdate', () => {
+      this.broadcastLatestWindData().catch(error => {
+        console.error('✗ Ошибка рассылки обновления ветра:', error.message);
+      });
+    });
     this.setupRoutes();
   }
 
@@ -62,6 +67,13 @@ export class ApiRouter {
     }
   }
 
+  async broadcastLatestWindData() {
+    const data = await this.dbManager.getLatestData();
+    if (!data) return;
+    const trend = await this.dbManager.calculateTrend();
+    this.broadcastWindUpdate(this.formatWindData(data), trend);
+  }
+
   setupRoutes() {
     // Version endpoint for cache invalidation (reads from frontend/version.json)
     this.router.get('/version', (req, res) => {
@@ -79,20 +91,9 @@ export class ApiRouter {
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('Access-Control-Allow-Origin', '*');
 
-      // Send initial data
-      const currentData = await this.dbManager.getLatestData();
-      const trend = await this.dbManager.calculateTrend();
+      res.flushHeaders();
 
-      if (currentData) {
-        const message = JSON.stringify({
-          type: 'wind_update',
-          data: this.formatWindData(currentData),
-          trend: trend,
-          timestamp: new Date().toISOString()
-        });
-        res.write(`data: ${message}\n\n`);
-      }
-
+      // Подписка до чтения БД: не теряем обновление, пришедшее во время загрузки.
       // Add client to broadcast list
       this.sseClients.push(res);
       console.log(`📡 SSE client connected (total: ${this.sseClients.length})`);
@@ -112,16 +113,37 @@ export class ApiRouter {
         this.sseClients = this.sseClients.filter(client => client !== res);
         console.log(`📡 SSE client disconnected (total: ${this.sseClients.length})`);
       });
+
+      try {
+        const currentData = await this.dbManager.getLatestData();
+        const trend = await this.dbManager.calculateTrend();
+        if (currentData && !res.destroyed) {
+          const message = JSON.stringify({
+            type: 'wind_update', data: this.formatWindData(currentData),
+            trend, timestamp: new Date().toISOString()
+          });
+          res.write(`data: ${message}\n\n`);
+        }
+      } catch (error) {
+        console.error('✗ Ошибка загрузки начальных данных SSE:', error.message);
+        res.end();
+      }
     });
 
     // Get current wind data
     this.router.get('/wind/current', async (req, res) => {
       try {
         const data = await this.dbManager.getLatestData();
+        res.setHeader('Cache-Control', 'no-store');
         if (!data) {
-          return res.status(404).json({ error: 'No wind data available' });
+          res.status(404).json({ error: 'No wind data available' });
+        } else {
+          res.json(this.formatWindData(data));
         }
-        res.json(this.formatWindData(data));
+        // Ответ из БД уже отправлен; сеть источника не задерживает пользователя.
+        this.windCollector.refreshPrimaryIfStale(data).catch(error => {
+          console.error('✗ Ошибка фонового обновления ветра:', error.message);
+        });
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
@@ -723,7 +745,8 @@ export class ApiRouter {
     // Force data collection (for testing)
     this.router.post('/wind/collect', async (req, res) => {
       try {
-        const data = await this.windCollector.collectWindData();
+        await this.windCollector.collectWindData();
+        const data = await this.dbManager.getLatestData();
         res.json({ success: true, data: this.formatWindData(data) });
       } catch (error) {
         res.status(500).json({ error: error.message });

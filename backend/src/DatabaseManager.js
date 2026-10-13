@@ -167,13 +167,14 @@ export class DatabaseManager {
   }
 
   /**
-   * Get last N measurements (for notification stability check)
+   * Последний отсчёт каждого пятиминутного интервала для проверки устойчивости.
    */
   async getLastMeasurements(count = 4, stationId = 'pak_nam_pran') {
     const { rows } = await this.pool.query(
-      `SELECT * FROM wind_data
-       WHERE station_id = $1
-       ORDER BY timestamp DESC
+      `SELECT DISTINCT ON (FLOOR(EXTRACT(EPOCH FROM timestamp) / 300)) *
+       FROM wind_data
+       WHERE station_id = $1 AND timestamp >= NOW() - ($2 * INTERVAL '5 minutes')
+       ORDER BY FLOOR(EXTRACT(EPOCH FROM timestamp) / 300) DESC, timestamp DESC
        LIMIT $2`,
       [stationId, count]
     );
@@ -270,55 +271,18 @@ export class DatabaseManager {
 
   /**
    * Calculate wind trend (increasing/decreasing)
-   * Compares last 30 minutes vs previous 30 minutes (with 5-min interval = 6 records each)
+   * Сравнивает последние 30 минут с предыдущими 30, независимо от частоты сбора.
    */
   async calculateTrend(stationId = 'pak_nam_pran') {
-    // Get average speed for last 30 minutes (6 records with 5-min interval)
-    const currentResult = await this.pool.query(
-      `SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
-       FROM (
-         SELECT wind_speed_knots
-         FROM wind_data
-         WHERE station_id = $1
-         ORDER BY timestamp DESC
-         LIMIT 6
-       ) sub`,
-      [stationId]
-    );
-
-    // Get average speed for 30-60 minutes ago (entries 7-12)
-    const previousResult = await this.pool.query(
-      `SELECT AVG(wind_speed_knots) as avg_speed, COUNT(*) as count
-       FROM (
-         SELECT wind_speed_knots
-         FROM wind_data
-         WHERE station_id = $1
-         ORDER BY timestamp DESC
-         LIMIT 6 OFFSET 6
-       ) sub`,
-      [stationId]
-    );
-
-    const currentRow = currentResult.rows[0];
-    const previousRow = previousResult.rows[0];
-
-    if (!currentRow || !previousRow) {
-      console.log(`[Trend] No data`);
-      return {
-        trend: 'insufficient_data',
-        text: 'Недостаточно данных',
-        icon: '⏳',
-        color: '#808080',
-        change: 0,
-        percentChange: 0,
-        ...(await this.calculateDirectionStability(stationId))
-      };
-    }
-
-    const currentSpeed = parseFloat(currentRow.avg_speed);
-    const currentCount = parseInt(currentRow.count);
-    const previousSpeed = parseFloat(previousRow.avg_speed);
-    const previousCount = parseInt(previousRow.count);
+    // Один отсчёт на интервал: активные посетители не увеличивают вес последних минут.
+    const measurements = await this.getLastMeasurements(12, stationId);
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    const current = measurements.filter(m => new Date(m.timestamp).getTime() > cutoff);
+    const previous = measurements.filter(m => new Date(m.timestamp).getTime() <= cutoff);
+    const currentCount = current.length;
+    const previousCount = previous.length;
+    const currentSpeed = current.reduce((sum, m) => sum + Number(m.wind_speed_knots), 0) / currentCount;
+    const previousSpeed = previous.reduce((sum, m) => sum + Number(m.wind_speed_knots), 0) / previousCount;
 
     console.log(`[Trend] Current: ${currentSpeed} knots (${currentCount} records), Previous: ${previousSpeed} knots (${previousCount} records)`);
 
@@ -384,7 +348,7 @@ export class DatabaseManager {
       }
     }
 
-    const directionData = await this.calculateDirectionStability();
+    const directionData = await this.calculateDirectionStability(stationId);
 
     return {
       trend,
@@ -401,18 +365,11 @@ export class DatabaseManager {
 
   /**
    * Calculate wind direction stability using circular standard deviation
-   * Uses last 6 records (~30 min) of wind_direction data
+   * Использует отсчёты из последних 30 минут, по одному на пяти­минутный интервал.
    */
   async calculateDirectionStability(stationId = 'pak_nam_pran') {
-    const { rows } = await this.pool.query(
-      `SELECT wind_direction FROM (
-        SELECT wind_direction FROM wind_data
-        WHERE station_id = $1 AND wind_direction IS NOT NULL
-        ORDER BY timestamp DESC
-        LIMIT 6
-      ) sub`,
-      [stationId]
-    );
+    const rows = (await this.getLastMeasurements(6, stationId))
+      .filter(m => m.wind_direction !== null);
 
     if (rows.length < 3) {
       return {

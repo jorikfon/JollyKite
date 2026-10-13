@@ -147,18 +147,9 @@ async function initialize() {
           return;
         }
 
-        const windData = await windCollector.collectWindData();
+        // Новые отсчёты рассылаются общим обработчиком primaryUpdate в ApiRouter.
+        await windCollector.collectWindData();
         console.log(`✓ Wind data collected at ${new Date().toISOString()} (Bangkok: ${hour}:xx)`);
-
-        // Get latest data and trend for broadcast
-        const latestData = await dbManager.getLatestData();
-        const trend = await dbManager.calculateTrend();
-
-        // Broadcast to connected SSE clients
-        if (latestData) {
-          const formattedData = apiRouter.formatWindData ? apiRouter.formatWindData(latestData) : latestData;
-          apiRouter.broadcastWindUpdate(formattedData, trend);
-        }
 
         // Check if we should send push notifications
         // Get last 3 measurements (15 minutes) for stability check

@@ -1,16 +1,20 @@
 import { ProxyAgent } from 'undici';
+import { EventEmitter } from 'node:events';
 
 /**
  * WindDataCollector - collects wind data from multiple weather stations
  * and archives hourly aggregated data per station
  */
-export class WindDataCollector {
+export class WindDataCollector extends EventEmitter {
   constructor(config, dbManager, archiveManager) {
+    super();
     this.config = config;
     this.dbManager = dbManager;
     this.archiveManager = archiveManager;
     this.stations = config.stations || [];
     this.primaryStationId = this.stations.find(s => s.isPrimary)?.id || 'pak_nam_pran';
+    // ponytail: координация в одном процессе; при нескольких репликах нужен общий lock и pub/sub.
+    this.stationCollections = new Map();
 
     // ambientweather.net is blocked in Russia — route ambient requests through an HTTP proxy.
     // Configure via AMBIENT_PROXY_URL env var, e.g. http://10.255.248.2:1080 (mihomo mixed port)
@@ -34,6 +38,7 @@ export class WindDataCollector {
   async fetchFromStation(apiUrl) {
     try {
       const response = await fetch(apiUrl, {
+        signal: AbortSignal.timeout(10000),
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           'Referer': 'https://jollykite.com/'
@@ -78,6 +83,7 @@ export class WindDataCollector {
   async fetchFromWeathercloud(station) {
     try {
       const response = await fetch(station.url, {
+        signal: AbortSignal.timeout(10000),
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
@@ -110,43 +116,66 @@ export class WindDataCollector {
     }
   }
 
+  isWithinWorkingHours() {
+    const hour = Number(new Date(Date.now()).toLocaleString('en-US', {
+      timeZone: this.config.timezone || 'Asia/Bangkok',
+      hour: 'numeric', hour12: false
+    }));
+    return hour >= 6 && hour < 19;
+  }
+
+  async refreshPrimaryIfStale(latestData) {
+    if (!this.isWithinWorkingHours()) return null;
+    const timestamp = latestData ? new Date(latestData.timestamp).getTime() : NaN;
+    if (Number.isFinite(timestamp) && Date.now() - timestamp <= 30000) return null;
+    const station = this.stations.find(s => s.id === this.primaryStationId);
+    return station ? this.collectStation(station) : null;
+  }
+
+  collectStation(station) {
+    const previous = this.stationCollections.get(station.id);
+    if (previous?.promise) return previous.promise;
+    // Время попытки, а не измерения: старый ответ или ошибка тоже ограничивают частоту.
+    if (previous && Date.now() - previous.attemptedAt < 30000) {
+      return Promise.resolve(previous.data);
+    }
+    const state = { attemptedAt: Date.now(), data: null, promise: null };
+    this.stationCollections.set(station.id, state);
+    state.promise = (async () => {
+      const data = station.type === 'weathercloud'
+        ? await this.fetchFromWeathercloud(station)
+        : await this.fetchFromStation(station.url);
+      if (!data) return null;
+      const inserted = await this.dbManager.insertWindData(data, station.id);
+      state.data = data;
+      if (inserted && station.id === this.primaryStationId) this.emit('primaryUpdate');
+      return data;
+    })().finally(() => { state.promise = null; });
+    return state.promise;
+  }
+
   /**
    * Collect and store wind data from all stations
    * Returns primary station data for backward compatibility (SSE, notifications)
    */
   async collectWindData() {
     console.log(`📡 Fetching data from ${this.stations.length} station(s)...`);
-
-    const results = await Promise.allSettled(
-      this.stations.map(station =>
-        station.type === 'weathercloud'
-          ? this.fetchFromWeathercloud(station)
-          : this.fetchFromStation(station.url)
-      )
-    );
-
+    const results = await Promise.allSettled(this.stations.map(station => this.collectStation(station)));
     let primaryData = null;
     let successCount = 0;
 
     for (let i = 0; i < results.length; i++) {
       const station = this.stations[i];
       if (results[i].status === 'fulfilled' && results[i].value) {
-        const data = results[i].value;
-        await this.dbManager.insertWindData(data, station.id);
         successCount++;
-        if (station.isPrimary) primaryData = data;
+        if (station.isPrimary) primaryData = results[i].value;
       } else {
         const reason = results[i].status === 'rejected' ? results[i].reason?.message : 'no data';
         console.warn(`  ⚠ ${station.id}: ${reason}`);
       }
     }
-
     console.log(`✓ Got data from ${successCount}/${this.stations.length} station(s)`);
-
-    if (successCount === 0) {
-      throw new Error('No data from any weather station');
-    }
-
+    if (successCount === 0) throw new Error('No data from any weather station');
     return primaryData;
   }
 
