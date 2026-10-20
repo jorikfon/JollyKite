@@ -58,16 +58,9 @@ class VersionManager {
                 );
             }
 
-            // Unregister all Service Workers
-            if ('serviceWorker' in navigator) {
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(
-                    registrations.map(registration => {
-                        console.log('  Unregistering Service Worker');
-                        return registration.unregister();
-                    })
-                );
-            }
+            // Service Workers are NOT unregistered: unregister() drops the push
+            // subscription (wind alerts), and re-subscribing needs a user click.
+            // New SW code arrives anyway: sw.js changes bytes, main.js calls update().
 
             console.log('✅ All caches cleared');
             return true;
@@ -121,7 +114,11 @@ class VersionManager {
     async init() {
         const shouldReload = await this.checkAndUpdate();
 
-        if (shouldReload) {
+        if (!shouldReload) {
+            // The flag only guards one reload; left set, it would skip the reload
+            // on the next release in this tab
+            sessionStorage.removeItem('jollykite_reloaded');
+        } else {
             console.log('🔄 Reloading page with fresh cache...');
             // Use a flag to prevent infinite reload loop
             const reloadFlag = sessionStorage.getItem('jollykite_reloaded');
