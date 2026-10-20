@@ -94,7 +94,7 @@ Hash-based роутинг в `frontend/js/NavController.js`. Главная кн
 - **Новая PWA-страница** → добавить `<section data-route="X" hidden>` в `index.html`, новый `data-nav="X"` в `#navDropdown`, обработчик в `NavController.handleNav`, при необходимости — отдельный компонент в `frontend/js/X.js` и подгрузка по событию `routeChanged` в `App.init`.
 - **Новая iOS-вьюшка** → файл в `apple/JollyKite/Views/...` → `xcodegen generate` → подключить в `ContentView.swift`.
 - **Пороги безопасности** → `frontend/js/config.js` (PWA) + `WindSafetyService.swift` (iOS) + `NotificationManager.checkWindStability()` (push).
-- **Обновление SW** → поднять `APP_VERSION` в обоих местах, добавить новые файлы в `CORE_ASSETS`, в DevTools: Service Workers → Unregister → hard refresh.
+- **Обновление SW** → поднять `APP_VERSION` в обоих местах (на каждый релиз фронта: HTML отдаётся из кэша SW, свежий подхватывается по смене версии). В проде JS — один бандл `js/main.js` (esbuild в `Dockerfile.nginx`), новые модули в `CORE_ASSETS` добавлять не нужно; в DevTools: Service Workers → Unregister → hard refresh.
 - **Догнать историю Ambient вручную** → `POST /api/wind/import` с `{from, to, stationIds}` (см. ниже). Гэпы в источнике обходить узкими диапазонами `to=<gap_start>`.
 - **Перезапустить полный backtest моделей** → `POST /api/wind/forecast/backtest` с `{days: 730}`. Иначе крон по воскресеньям 03:00 Bangkok догоняет последние 14 дней автоматически.
 

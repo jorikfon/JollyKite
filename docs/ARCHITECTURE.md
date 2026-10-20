@@ -262,7 +262,8 @@ App.js
 `frontend/sw.js`:
 
 - **Версия кэша** — `jollykite-v{APP_VERSION}`. `APP_VERSION` хардкодится в первой строке SW.
-- **Core assets** — cache-first (HTML, JS, CSS, иконки).
+- **HTML** — stale-while-revalidate: страница открывается из кэша, свежая качается в фоне (сервер в ~230 мс от пользователей). Релиз подхватывается сразу через `VersionManager` (`/api/version`).
+- **JS, CSS, иконки** — cache-first. В проде JS — один бандл `js/main.js` (esbuild в `Dockerfile.nginx`); локально (`npm run dev`) — исходные модули.
 - **API** — network-first с фолбэком на кэш до 24 часов (оффлайн-сценарий на пляже).
 - **Тайлы карты** — network-only (не кэшируем).
 - При смене `APP_VERSION` старый кэш сносится в `activate`.
@@ -348,7 +349,7 @@ apple/
 ### 5.1. Образы и сборка
 
 - `Dockerfile` → backend (`node:20-alpine`)
-- `Dockerfile.nginx` → frontend (`nginx:alpine`, отдаёт `frontend/` через nginx)
+- `Dockerfile.nginx` → frontend: stage `bundle` собирает `js/main.js` в один файл через esbuild, затем `nginx:alpine` отдаёт `frontend/`
 - `docker-compose.yml` — локальная разработка (postgres + backend + nginx)
 - `docker-compose.prod.yml` — продакшен-сборка
 
@@ -395,13 +396,15 @@ kubectl -n jollykite create secret generic apns-credentials \
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push |
 | `PORT` | По умолчанию 3000 |
 
-### 5.5. Nginx (`config/nginx.conf`)
+### 5.5. Nginx (`config/nginx.conf` — docker compose, `k8s/argocd/nginx.conf` — прод)
 
-- `/` → статика (no-cache)
+Прод-конфиг собирается в ConfigMap `nginx-config-<hash>` через `configMapGenerator` (`k8s/argocd/kustomization.yaml`): правка `nginx.conf` сама перекатывает под nginx. Апстрим в проде — `jollykite-backend`, в compose — `backend`.
+
+- `/` → статика (no-cache: ревалидация по ETag, 304)
 - `/api/wind/stream` → SSE-проксирование (`proxy_buffering off`, таймаут 24ч)
 - `/api/*` → backend (стандартные 60 секунд — учитывайте при долгих операциях типа годового импорта; делайте их в фоне)
 - Изображения/шрифты — кэш 1 год
-- JS/CSS — no-cache (версионируется через SW)
+- JS/CSS — no-cache, ревалидация по ETag (имена файлов без хэша)
 
 ---
 

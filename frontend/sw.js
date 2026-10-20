@@ -1,6 +1,6 @@
 // JollyKite Service Worker
 // Version must match frontend/version.json
-const APP_VERSION = '2.13.0';
+const APP_VERSION = '2.14.0';
 const CACHE_NAME = `jollykite-v${APP_VERSION}`;
 const API_CACHE_NAME = `jollykite-api-v${APP_VERSION}`;
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
@@ -15,37 +15,8 @@ const CORE_ASSETS = [
   '/kiter.png',
   '/images/map-background.png',
   '/css/main.css',
-  '/js/config.js',
-  '/js/utils/WindUtils.js',
-  '/js/App.js',
-  '/js/WindDataManager.js',
-  '/js/MapController.js',
-  '/js/ForecastManager.js',
-  '/js/WindArrowController.js',
-  '/js/WindStatistics.js',
-  '/js/HistoryManager.js',
-  '/js/WindStreamManager.js',
-  '/js/NotificationManager.js',
-  '/js/KiteSizeRecommendation.js',
-  '/js/TodayWindTimeline.js',
-  '/js/WeekWindHistory.js',
-  '/js/MonthlyRideableStats.js',
-  '/js/NavController.js',
-  '/js/ForecastLongPage.js',
-  '/js/ForecastAccuracy.js',
-  '/js/utils/KiteSizeCalculator.js',
-  // i18n System
-  '/js/i18n/I18nManager.js',
-  '/js/i18n/translations/en.js',
-  '/js/i18n/translations/ru.js',
-  '/js/i18n/translations/de.js',
-  '/js/i18n/translations/th.js',
-  // Settings System
-  '/js/settings/SettingsManager.js',
-  '/js/settings/LocalStorageManager.js',
-  '/js/settings/MenuController.js',
-  // Utils
-  '/js/utils/UnitConverter.js'
+  // Production serves one esbuild bundle (Dockerfile.nginx); dev modules are cached on first fetch
+  '/js/main.js'
 ];
 
 // API endpoints для кэширования (теперь все через backend)
@@ -124,9 +95,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Стратегия для HTML - Network First with Cache Fallback
+  // Стратегия для HTML - Stale-While-Revalidate
   if (isHTMLRequest(event.request)) {
-    event.respondWith(handleHTMLRequest(event.request));
+    event.respondWith(handleHTMLRequest(event));
     return;
   }
 
@@ -259,27 +230,39 @@ async function handleStaticAsset(request) {
   return new Response('Asset not available offline', { status: 404 });
 }
 
-// Обработка HTML запросов
-async function handleHTMLRequest(request) {
-  try {
-    const response = await fetch(request);
+// Обработка HTML запросов: stale-while-revalidate.
+// Сервер в ~230 мс от пользователей, поэтому страница открывается из кэша, а свежая
+// версия качается в фоне и показывается при следующем открытии. Новый релиз всё равно
+// подхватывается сразу: VersionManager сверяет /api/version и перезагружает страницу.
+async function handleHTMLRequest(event) {
+  const request = event.request;
+  // Ключ без query: /?utm_source=… не плодит записи и открывается из кэша /
+  const key = new URL(request.url);
+  key.search = '';
+  const cache = await caches.open(CACHE_NAME);
+  const network = fetch(request).then(async response => {
     if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      await cache.put(key.href, response.clone());
+    }
+    return response;
+  });
+
+  const cachedResponse = await cache.match(key.href);
+  if (cachedResponse) {
+    event.waitUntil(network.catch(() => console.log('[SW] Background HTML refresh failed')));
+    return cachedResponse;
+  }
+
+  try {
+    const response = await network;
+    if (response.ok) {
       return response;
     }
   } catch (error) {
     console.log('[SW] Network failed for HTML request');
   }
-  
-  // Fallback на кэшированную версию
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
-  }
-  
-  // Fallback на главную страницу если ничего не найдено
-  return caches.match('/');
+  // Сеть упала или ответила ошибкой (5xx при перекате пода) — главная из кэша
+  return (await caches.match('/')) || network.catch(() => Response.error());
 }
 
 // Обработка фоновых обновлений
