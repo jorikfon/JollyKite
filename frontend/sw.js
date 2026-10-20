@@ -236,27 +236,33 @@ async function handleStaticAsset(request) {
 // подхватывается сразу: VersionManager сверяет /api/version и перезагружает страницу.
 async function handleHTMLRequest(event) {
   const request = event.request;
+  // Ключ без query: /?utm_source=… не плодит записи и открывается из кэша /
+  const key = new URL(request.url);
+  key.search = '';
   const cache = await caches.open(CACHE_NAME);
-  const network = fetch(request).then(response => {
+  const network = fetch(request).then(async response => {
     if (response.ok) {
-      cache.put(request, response.clone());
+      await cache.put(key.href, response.clone());
     }
     return response;
   });
 
-  const cachedResponse = await cache.match(request);
+  const cachedResponse = await cache.match(key.href);
   if (cachedResponse) {
     event.waitUntil(network.catch(() => console.log('[SW] Background HTML refresh failed')));
     return cachedResponse;
   }
 
   try {
-    return await network;
+    const response = await network;
+    if (response.ok) {
+      return response;
+    }
   } catch (error) {
     console.log('[SW] Network failed for HTML request');
-    // Fallback на главную страницу если ничего не найдено
-    return (await caches.match('/')) || Response.error();
   }
+  // Сеть упала или ответила ошибкой (5xx при перекате пода) — главная из кэша
+  return (await caches.match('/')) || network.catch(() => Response.error());
 }
 
 // Обработка фоновых обновлений
