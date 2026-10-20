@@ -10,3 +10,11 @@ images:
     newTag: latest
   - name: ghcr.io/jorikfon/jollykite/nginx
     newTag: latest
+
+# Hashed name: a change to nginx.conf rolls the nginx pod (subPath mounts never hot-reload).
+# Before this the ConfigMap lived only in the cluster as an unmanaged `nginx-config`.
+configMapGenerator:
+  - name: nginx-config
+    namespace: jollykite
+    files:
+      - nginx.conf
