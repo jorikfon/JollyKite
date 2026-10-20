@@ -10,6 +10,10 @@ RUN npm install --omit=dev && npm cache clean --force
 # Copy backend source
 COPY backend/ ./
 
+# /api/version reads ../../frontend/version.json from src/ — without it the
+# endpoint answered 0.0.0 forever and VersionManager never saw a release
+COPY frontend/version.json /frontend/version.json
+
 # Create directories for databases
 RUN mkdir -p /app/data
 
