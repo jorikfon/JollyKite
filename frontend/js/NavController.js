@@ -51,7 +51,7 @@ class NavController {
                 this._updateActiveLang(lang);
             });
         });
-        this._updateActiveLang(window.settings?.getSetting('locale') || 'ru');
+        this._updateActiveLang(window.settings?.getSetting('locale') || 'en');
         window.settings?.on?.('change:locale', (locale) => this._updateActiveLang(locale));
 
         document.addEventListener('click', this._onDocClick);

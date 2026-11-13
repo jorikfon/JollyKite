@@ -334,7 +334,7 @@ class WeekWindHistory {
             this.container.innerHTML = `
                 <div class="text-center py-6">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80 text-sm">Загружаем историю...</p>
+                    <p class="text-white/80 text-sm">${this.i18n ? this.i18n.t('history.loading') : 'Загружаем историю...'}</p>
                 </div>
             `;
         }
@@ -344,7 +344,7 @@ class WeekWindHistory {
         if (this.container) {
             this.container.innerHTML = `
                 <div class="text-center py-6">
-                    <p class="text-white/70">Нет данных за последние 7 дней</p>
+                    <p class="text-white/70">${this.i18n ? this.i18n.t('history.noData') : 'Нет данных за последние 7 дней'}</p>
                 </div>
             `;
         }
@@ -354,7 +354,7 @@ class WeekWindHistory {
         if (this.container) {
             this.container.innerHTML = `
                 <div class="text-center py-6">
-                    <p class="text-red-400">Ошибка загрузки истории: ${error.message}</p>
+                    <p class="text-red-400">${this.i18n ? this.i18n.t('history.loadingError') : 'Ошибка загрузки истории'}: ${error.message}</p>
                 </div>
             `;
         }

@@ -19,7 +19,7 @@ class I18nManager {
    * Конструктор
    * @param {string} defaultLocale - Локаль по умолчанию
    */
-  constructor(defaultLocale = 'ru') {
+  constructor(defaultLocale = 'en') {
     this.currentLocale = defaultLocale;
     this.translations = {};
     this.eventListeners = {};
@@ -66,6 +66,11 @@ class I18nManager {
 
     const previousLocale = this.currentLocale;
     this.currentLocale = locale;
+
+    // Держать <html lang> в соответствии с выбранным языком (a11y, автоперевод браузера)
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = locale;
+    }
 
     // Триггер события смены языка
     this.emit('localeChange', {

@@ -102,7 +102,7 @@ class ForecastManager {
             this.forecastContainer.innerHTML = `
                 <div class="text-center py-8">
                     <div class="inline-block w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin mb-3"></div>
-                    <p class="text-white/80">Загружаем прогноз ветра...</p>
+                    <p class="text-white/80">${this.i18n ? this.i18n.t('forecast.loading') : 'Загружаем прогноз ветра...'}</p>
                 </div>
             `;
         }
@@ -112,7 +112,7 @@ class ForecastManager {
         if (this.forecastContainer) {
             this.forecastContainer.innerHTML = `
                 <div class="forecast-loading">
-                    <p class="text-red-400">Ошибка загрузки прогноза: ${error.message}</p>
+                    <p class="text-red-400">${this.i18n ? this.i18n.t('forecast.loadingError') : 'Ошибка загрузки прогноза'}: ${error.message}</p>
                 </div>
             `;
         }

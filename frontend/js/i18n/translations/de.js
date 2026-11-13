@@ -123,6 +123,8 @@ export default {
 
   // Vorhersage
   forecast: {
+    loading: 'Windvorhersage wird geladen...',
+    loadingError: 'Fehler beim Laden der Vorhersage',
     title: '3-Tage-Windvorhersage',
     today: 'Heute',
     tomorrow: 'Morgen',
@@ -140,6 +142,7 @@ export default {
 
   // Verlauf
   history: {
+    loading: 'Verlauf wird geladen...',
     todayTimeline: 'Heutiger Windverlauf',
     weekHistory: '7-Tage-Windverlauf',
     noData: 'Keine historischen Daten',

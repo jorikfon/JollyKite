@@ -124,6 +124,8 @@ export default {
 
   // Прогноз
   forecast: {
+    loading: 'Загружаем прогноз ветра...',
+    loadingError: 'Ошибка загрузки прогноза',
     title: 'Прогноз ветра на 3 дня',
     today: 'Сегодня',
     tomorrow: 'Завтра',
@@ -141,6 +143,7 @@ export default {
 
   // История
   history: {
+    loading: 'Загружаем историю...',
     todayTimeline: 'График ветра сегодня',
     weekHistory: 'История ветра за 7 дней',
     noData: 'Нет исторических данных',

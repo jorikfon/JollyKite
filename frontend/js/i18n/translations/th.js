@@ -123,6 +123,8 @@ export default {
 
   // พยากรณ์อากาศ
   forecast: {
+    loading: 'กำลังโหลดพยากรณ์ลม...',
+    loadingError: 'เกิดข้อผิดพลาดในการโหลดพยากรณ์',
     title: 'พยากรณ์ลม 3 วัน',
     today: 'วันนี้',
     tomorrow: 'พรุ่งนี้',
@@ -140,6 +142,7 @@ export default {
 
   // ประวัติ
   history: {
+    loading: 'กำลังโหลดประวัติ...',
     todayTimeline: 'กราฟลมวันนี้',
     weekHistory: 'ประวัติลม 7 วัน',
     noData: 'ไม่มีข้อมูลประวัติ',
