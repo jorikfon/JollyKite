@@ -1,4 +1,3 @@
-import { ProxyAgent } from 'undici';
 import { EventEmitter } from 'node:events';
 
 /**
@@ -15,14 +14,6 @@ export class WindDataCollector extends EventEmitter {
     this.primaryStationId = this.stations.find(s => s.isPrimary)?.id || 'pak_nam_pran';
     // ponytail: координация в одном процессе; при нескольких репликах нужен общий lock и pub/sub.
     this.stationCollections = new Map();
-
-    // ambientweather.net is blocked in Russia — route ambient requests through an HTTP proxy.
-    // Configure via AMBIENT_PROXY_URL env var, e.g. http://10.255.248.2:1080 (mihomo mixed port)
-    const proxyUrl = process.env.AMBIENT_PROXY_URL;
-    this.ambientProxy = proxyUrl ? new ProxyAgent(proxyUrl) : null;
-    if (this.ambientProxy) {
-      console.log(`✓ Ambient Weather proxy enabled: ${proxyUrl}`);
-    }
   }
 
   /**
@@ -42,8 +33,7 @@ export class WindDataCollector extends EventEmitter {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
           'Referer': 'https://jollykite.com/'
-        },
-        ...(this.ambientProxy ? { dispatcher: this.ambientProxy } : {})
+        }
       });
 
       if (!response.ok) {
