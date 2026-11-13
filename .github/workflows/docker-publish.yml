@@ -79,3 +79,26 @@ jobs:
           labels: ${{ steps.meta-nginx.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Delivery to the VPS. Replaces ArgoCD (MU-245): only push to main, only after a green build.
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      # IP, not pnp.miko.ru: DNS still points to the old k3s prod until the cutover.
+      VPS_HOST: 116.204.182.158
+    steps:
+      - name: Set up SSH key
+        run: |
+          install -d -m 700 ~/.ssh
+          # The deploy user's key is pinned by a forced command in authorized_keys,
+          # so this SSH call can only run /usr/local/bin/jollykite-deploy on the VPS.
+          printf '%s\n' "${{ secrets.VPS_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.VPS_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+
+      - name: Deploy on VPS (pull, up -d, health gate)
+        run: ssh -p 7722 -i ~/.ssh/id_ed25519 -o BatchMode=yes -o ConnectTimeout=20 "deploy@${VPS_HOST}"

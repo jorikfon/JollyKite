@@ -1,0 +1,74 @@
+# VPS stack (Bangmod, pnp.miko.ru): caddy (TLS) -> nginx (PWA + /api proxy) -> backend -> postgres.
+# Run from this directory on the VPS: `cp env.sample .env`, fill it, `docker compose up -d`.
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jollykite
+      POSTGRES_USER: jollykite
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      TZ: Asia/Bangkok
+    # ponytail: tuned for a 1 GB VPS; raise shared_buffers if RAM grows.
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=30"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jollykite -d jollykite"]
+      interval: 10s
+      retries: 5
+    mem_limit: 320m
+
+  backend:
+    image: ghcr.io/jorikfon/jollykite/backend:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_DATABASE: jollykite
+      PG_USER: jollykite
+      PG_PASSWORD: ${PG_PASSWORD}
+      AMBIENT_WEATHER_API: https://lightning.ambientweather.net/devices?public.slug=e63ff0d2119b8c024b5aad24cc59a504
+      OPEN_METEO_API: https://api.open-meteo.com/v1/forecast
+      DATA_COLLECTION_INTERVAL: "300000"
+      ARCHIVE_INTERVAL: "3600000"
+      TZ: Asia/Bangkok
+      APNS_KEY_FILE: /secrets/apns/apns-key
+      APNS_KEY_ID: ${APNS_KEY_ID}
+      APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
+    volumes:
+      - ./data:/app/data               # JSON state: push subscriptions, APNs tokens, calibration
+      - ./secrets/apns-key:/secrets/apns/apns-key:ro
+    mem_limit: 256m
+
+  nginx:
+    image: ghcr.io/jorikfon/jollykite/nginx:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ../../config/nginx.conf:/etc/nginx/nginx.conf:ro
+    mem_limit: 64m
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    mem_limit: 64m
+
+volumes:
+  pgdata:
+  caddy_data:

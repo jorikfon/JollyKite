@@ -1,0 +1,7 @@
+pnp.miko.ru {
+	encode zstd gzip
+	reverse_proxy nginx:80 {
+		# SSE (/api/wind/stream): do not buffer
+		flush_interval -1
+	}
+}
