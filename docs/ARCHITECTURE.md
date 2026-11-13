@@ -35,7 +35,7 @@
 - **Express** — REST + SSE
 - **PostgreSQL** (внешний), пул соединений на `pg`
 - **node-cron** — расписание сбора и обслуживания
-- **undici.ProxyAgent** — обход блокировки Ambient Weather из России (env `AMBIENT_PROXY_URL`)
+- **undici** — `fetch` и `Agent` с принудительным IPv4 (c-ares); внешние API вызываются напрямую с VPS
 - **web-push** — VAPID для PWA
 - Встроенные `http2` + `crypto` — APNs (HTTP/2 + JWT, без сторонних SDK)
 
@@ -50,7 +50,7 @@
 | `PostgresPool` | Синглтон пула `pg`. Читает `PG_HOST/PG_PORT/PG_DATABASE/PG_USER/PG_PASSWORD` или `DATABASE_URL`. |
 | `DatabaseManager` | Таблица `wind_data` — «сырые» измерения с временными метками источника. Уникальный индекс `(station_id, timestamp)` + `ON CONFLICT DO NOTHING` для идемпотентности. Для трендов и push — один отсчёт на пятиминутный интервал, чтобы частый сбор не сокращал временные окна. Пакетная вставка для импорта истории. Чистка старше N дней (по умолчанию 3650 = 10 лет). |
 | `ArchiveManager` | Таблица `hourly_archive` — почасовые агрегаты (avg, max gust, dominant direction). Чистка не настроена — данные хранятся бессрочно. |
-| `WindDataCollector` | Опрос 3 публичных станций Ambient Weather (`lightning.ambientweather.net/devices?public.slug=`) и 1 Weathercloud. Конверсия MPH→knots / м/с→knots, запись каждой станции отдельно; основной ветер — `pak_nam_pran`, без усреднения станций. Общие single-flight и cooldown 30 с для каждой станции, timeout запросов 10 с. Ambient использует прокси `AMBIENT_PROXY_URL`. Новый основной отсчёт вызывает `primaryUpdate` для SSE. |
+| `WindDataCollector` | Опрос 3 публичных станций Ambient Weather (`lightning.ambientweather.net/devices?public.slug=`) и 1 Weathercloud. Конверсия MPH→knots / м/с→knots, запись каждой станции отдельно; основной ветер — `pak_nam_pran`, без усреднения станций. Общие single-flight и cooldown 30 с для каждой станции, timeout запросов 10 с. Запросы идут напрямую: прод на VPS вне РФ, DPI-блокировки нет. Новый основной отсчёт вызывает `primaryUpdate` для SSE. |
 | `ForecastCollector` | Опрос Open-Meteo (`/v1/forecast`), 3-дневный почасовой прогноз. Поправочные коэффициенты на локальный микроклимат. Конверсия км/ч→knots. |
 | `ForecastModelManager` | Оркестрация 5 моделей Open-Meteo. Каждые 3 часа сохраняет снапшоты в `forecast_snapshots`. Раз в сутки оценивает точность каждой модели за последние 14 дней по фактическим архивным данным. Когда накоплено ≥10 точек — автоматически выбирает наиболее точную модель как «лучшую». |
 | `AmbientHistoryImporter` | Импорт исторических данных с публичного эндпоинта `lightning.ambientweather.net/device-data?...&dataKey=graphDataRefined`. Постранично (по 2000 точек / ~7 дней), идемпотентно. Поддерживает разовый импорт диапазона и ежедневный «дозбор». После вставки пересчитывает затронутые часы в `hourly_archive`. Сейчас в БД: `pak_nam_pran` с 2024-01-03, `pvf2_thap_tai` с ~2024-01-31, `hua_hin` с ~2023-02-28; известный гэп источника `pak_nam_pran` 2024-07-26..2024-08-06. |
@@ -179,7 +179,7 @@ forecast_backtest
 
 ### 2.6. Внешние интеграции
 
-**Ambient Weather Network** — 4 публичных станции вокруг Pak Nam Pran. Без авторизации. Real-time: `https://lightning.ambientweather.net/devices?public.slug=<slug>`, история: `.../device-data?macAddress=...&start=&end=&limit=2000&res=5&dataKey=graphDataRefined`. Скорость — в MPH, конверсия в узлы на нашей стороне. **Важно:** домен заблокирован в России (DPI), поэтому все запросы идут через HTTP-прокси `AMBIENT_PROXY_URL`. Дефолта в коде нет — без переменной прокси просто не используется; актуальное значение задаётся в `k8s/argocd/backend.yaml` (сейчас `http://10.255.248.2:1080`, mixed-порт mihomo).
+**Ambient Weather Network** — 4 публичных станции вокруг Pak Nam Pran. Без авторизации. Real-time: `https://lightning.ambientweather.net/devices?public.slug=<slug>`, история: `.../device-data?macAddress=...&start=&end=&limit=2000&res=5&dataKey=graphDataRefined`. Скорость — в MPH, конверсия в узлы на нашей стороне. **Важно:** домен заблокирован в России (DPI), поэтому прод размещён на VPS в Таиланде (`deploy/vps/`) и обращается к Ambient напрямую; прокси в коде нет.
 
 **Open-Meteo Forecast** — 5 моделей, бесплатно, без авторизации. Скорости — в км/ч, конверсия в узлы. Météo-France не отдаёт `precipitation_probability`.
 
@@ -390,8 +390,6 @@ kubectl -n jollykite create secret generic apns-credentials \
 | Имя | Значение |
 |---|---|
 | `PG_*` / `DATABASE_URL` | Подключение к PostgreSQL |
-| `AMBIENT_PROXY_URL` | HTTP-прокси для Ambient Weather и Open-Meteo (обход DPI / отсутствия egress). Дефолта нет |
-| `FORECAST_PROXY_URL` | Отдельный прокси только для прогноза; при отсутствии берётся `AMBIENT_PROXY_URL` |
 | `APNS_KEY_FILE`, `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_BUNDLE_ID` | APNs (опционально) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push |
 | `PORT` | По умолчанию 3000 |
@@ -462,7 +460,7 @@ PWA и backend — без автотестов, ручная проверка в
 ## 7. Прочие важные нюансы
 
 - **Геопривязка.** Алгоритм безопасности направления зашит под ориентацию пляжа Pak Nam Pran. Для другого пляжа нужно править диапазоны в `WindUtils` и `WindSafetyService`.
-- **DPI-блокировка.** Без `AMBIENT_PROXY_URL` бэкенд не получит данные при работе из РФ.
+- **DPI-блокировка.** Ambient Weather недоступен из РФ, поэтому прод живёт на VPS вне РФ и ходит к внешним API напрямую; прокси в коде нет.
 - **APNs опционален.** Без `.p8` `APNsProvider` тихо отключается, остальное работает.
 - **Mobile-first.** UI рассчитан на использование на пляже, в перчатках, при ярком солнце.
 - **Без бандлера для PWA.** Никаких webpack/vite — только ES-модули и нативный импорт.

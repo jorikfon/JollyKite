@@ -76,7 +76,7 @@ const forecastCollector = new ForecastCollector(config);
 const calibrationManager = new CalibrationManager('./data/calibration.json');
 const forecastModelManager = new ForecastModelManager(pgPool, forecastCollector, archiveManager, dbManager);
 const historyImporter = new AmbientHistoryImporter(
-  config.stations, dbManager, archiveManager, windCollector, windCollector.ambientProxy
+  config.stations, dbManager, archiveManager, windCollector
 );
 const backtestImporter = new ForecastBacktestImporter(
   pgPool, forecastModelManager.models, forecastCollector.dispatcher
