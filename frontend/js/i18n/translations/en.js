@@ -123,6 +123,8 @@ export default {
 
   // Forecast
   forecast: {
+    loading: 'Loading wind forecast...',
+    loadingError: 'Forecast loading error',
     title: '3-Day Wind Forecast',
     today: 'Today',
     tomorrow: 'Tomorrow',
@@ -140,6 +142,7 @@ export default {
 
   // History
   history: {
+    loading: 'Loading history...',
     todayTimeline: "Today's Wind Timeline",
     weekHistory: '7-Day Wind History',
     noData: 'No historical data',

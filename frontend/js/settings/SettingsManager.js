@@ -11,7 +11,7 @@ class SettingsManager {
    * Настройки по умолчанию
    */
   static DEFAULT_SETTINGS = {
-    locale: 'ru',           // en, ru, de, th
+    locale: 'en',           // en, ru, de, th — default for first visit; user can switch in menu
     windSpeedUnit: 'knots', // knots, ms
     notificationsEnabled: false,
     theme: 'auto',          // auto, light, dark (для будущего)
