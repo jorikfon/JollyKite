@@ -1,7 +1,7 @@
 # Bundle the PWA modules into one file: every level of nested ES imports costs
 # a round trip, and the users in Thailand sit ~230 ms away from the server.
 # Dev (`npm run dev`, docker compose) keeps serving the unbundled sources.
-FROM node:20-alpine AS bundle
+FROM node:24-alpine AS bundle
 WORKDIR /src
 COPY frontend/ ./
 RUN npx --yes esbuild@0.25.0 js/main.js --bundle --minify --format=esm \
