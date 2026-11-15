@@ -348,7 +348,7 @@ apple/
 
 ### 5.1. Образы и сборка
 
-- `Dockerfile` → backend (`node:20-alpine`)
+- `Dockerfile` → backend (`node:24-alpine`)
 - `Dockerfile.nginx` → frontend: stage `bundle` собирает `js/main.js` в один файл через esbuild, затем `nginx:alpine` отдаёт `frontend/`
 - `docker-compose.yml` — локальная разработка (postgres + backend + nginx)
 - `docker-compose.prod.yml` — продакшен-сборка
